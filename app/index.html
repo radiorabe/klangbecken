@@ -399,10 +399,12 @@
   src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
   integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
   crossorigin="anonymous"></script>
-<script
+<!--script
   src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/jquery.fileupload-jquery-ui.min.js"
   integrity="sha256-ebWsS1uxMivslAsWFrviZTbPTRwou9jgBx7cBGai9H8="
-  crossorigin="anonymous"></script>
+  crossorigin="anonymous"></script-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/vendor/jquery.ui.widget.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/jquery.iframe-transport.min.js"></script>
 <script
   src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/jquery.fileupload.min.js"
   integrity="sha256-tcXzqklRDpmITiQ0Ff+S6H2uUQl089oXkEyGjOOGmN4="
@@ -658,31 +660,24 @@ var Jingles = Vue.extend({
 //   template: '#settings-tmpl',
 // });
 
-var App = Vue.extend({});
+//var App = Vue.extend({});
 
-var router = new VueRouter({
+
+var routes = [
+  { path: '/music', component: Music },
+  { path: '/jingles', component: Jingles },
+];
+
+var router = new VueRouter(routes, /*{
   hashbang: false,
   linkActiveClass: 'active',
   history: true,
-});
+}*/);
 
-router.map({
-  '/music': {
-    component: Music,
-  },
-  '/jingles': {
-    component: Jingles,
-  },
-  // '/settings': {
-  //   component: Settings,
-  // },
-});
-
-router.redirect({
-  '*': '/music',
-});
-
-router.start(App, '#app');
+//router.start(App, '#app');
+const app = new Vue({
+  router
+}).$mount('#app')
 
 </script>
 </body>
