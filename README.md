@@ -1,1 +1,1 @@
-# RaBe Klangbecken Endless Music Player
+# Klangbecken: The RaBe Endless Music Player
