@@ -1,0 +1,19 @@
+language: python
+python: 2.7
+sudo: false
+
+env:
+  - TOX_ENV=py27
+  - TOX_ENV=py33
+  - TOX_ENV=py34
+  - TOX_ENV=py35
+  - TOX_ENV=py36
+
+  - TOX_ENV=coverage
+install:
+  # note: pip>=8.0.0 does not work on Python 3.2 but we want to test on py32
+  # note: virtualenv>=14.0.0 bundles newer version of pip that does not work on
+  #       py32
+  - pip install -U 'tox==2.2.1' 'pip<8.0.0' 'virtualenv<14.0.0'
+script:
+- cd backend && tox -e $TOX_ENV

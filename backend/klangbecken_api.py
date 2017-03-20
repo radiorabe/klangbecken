@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+from __future__ import print_function
+
 import json
 import os
 from collections import Counter
@@ -20,6 +22,8 @@ class KlangbeckenAPI:
             self.data_dir = os.environ.get('KLANGBECKEN_DATA',
                                            '/var/lib/klangbecken')
 
+        self.url_map = Map()
+        
         mappings = [
             ('/<any(music, jingles):category>/', 'GET', 'list'),
             ('/<any(music, jingles):category>/<filename>', 'GET', 'get'),
@@ -30,12 +34,12 @@ class KlangbeckenAPI:
 
         if stand_alone:
             # Serve html and prefix calls to api
-            mappings = ['/api' + path, method, endpoint
+            mappings = [('/api' + path, method, endpoint)
                         for path, method, endpoint in mappings]
             mappings.insert(0, ('/<any("", music, jingles, settings):page>',
-                                'GET', 'app')
+                                'GET', 'app'))
 
-        for path, method, endpoint in [:
+        for path, method, endpoint in mappings:
             self.url_map.add(Rule(path, methods=(method,), endpoint=endpoint))
 
 
