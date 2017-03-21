@@ -452,7 +452,7 @@ var Music = Vue.extend({
   methods: {
     loadMusic: function() {
       this.loading = true;
-      this.$http.get('/api/music').then(response => {
+      this.$http.get('/api/music/').then(response => {
         var formatDate = date => date.getFullYear() + '-' +
                                  ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
                                  ('00' + date.getDate()).slice(-2);
