@@ -13,6 +13,7 @@ addons:
       - python3.5
       - python3.5-dev
       - liquidsoap
+      - liquidsoap-plugin-icecast
 
 install:
   - pip install tox
@@ -22,7 +23,8 @@ script:
   - tox
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report -m
-  - test -f klangbecken.liq && liquidsoap --parse-only klangbecken.liq
+  - liquidsoap --version
+  - test -f klangbecken.liq && liquidsoap --check klangbecken.liq
 
 after_success:
   - coveralls
