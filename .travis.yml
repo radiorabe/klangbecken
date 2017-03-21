@@ -1,6 +1,7 @@
+dist: trusty
+sudo: false
 language: python
-python:
-  - 3.6
+python: 3.6
 
 # note: python3.5 is not preinstalled on docker-based (i.e. sudo: false)
 #       Travis workers at the moment of this writing, so we need to get
