@@ -12,6 +12,7 @@ addons:
     packages:
       - python3.5
       - python3.5-dev
+      - liquidsoap
 
 install:
   - pip install tox
@@ -21,6 +22,7 @@ script:
   - tox
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report -m
+  - liquidsoap --version
 
 after_success:
   - coveralls
