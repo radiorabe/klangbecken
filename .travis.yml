@@ -9,6 +9,7 @@ install:
   - pip install tox-travis
   - pip install coveralls
 script:
-- cd backend && if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then coverage run -m tox; else tox; fi
+  - cd backend
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then tox -e coverage; else tox; fi
 after_success:
-  if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then coveralls; fi
+  - echo $PWD && if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; fi
