@@ -23,7 +23,7 @@ class KlangbeckenAPI:
                                            '/var/lib/klangbecken')
 
         self.url_map = Map()
-        
+
         mappings = [
             ('/<any(music, jingles):category>/', 'GET', 'list'),
             ('/<any(music, jingles):category>/<filename>', 'GET', 'get'),
@@ -42,7 +42,6 @@ class KlangbeckenAPI:
         for path, method, endpoint in mappings:
             self.url_map.add(Rule(path, methods=(method,), endpoint=endpoint))
 
-
     def __call__(self, environ, start_response):
         request = Request(environ)
         adapter = self.url_map.bind_to_environ(request.environ)
@@ -54,7 +53,7 @@ class KlangbeckenAPI:
         return response(environ, start_response)
 
     def on_app(self, request, page):
-        del page # not used (client side routing)
+        del page   # not used (client side routing)
         return Response(wrap_file(request.environ, open('app/index.html')),
                         mimetype='text/html')
 
@@ -82,8 +81,8 @@ class KlangbeckenAPI:
         ]
 
         data = sorted(dicts, key=lambda v: v['mtime'], reverse=True)
-        return Response(json.dumps(data, indent=2, sort_keys=True, ensure_ascii=True),
-                        mimetype='text/json')
+        return Response(json.dumps(data, indent=2, sort_keys=True,
+                                   ensure_ascii=True), mimetype='text/json')
 
     def on_get(self, request, category, filename):
         path = os.path.join(category, secure_filename(filename))
@@ -99,14 +98,14 @@ class KlangbeckenAPI:
             raise UnprocessableEntity()
 
         filename = secure_filename(file.filename)
-        #filename = gen_file_name(filename) # FIXME: check for duplicate filenames
+        # filename = gen_file_name(filename) # FIXME: check duplicate filenames
         # mimetype = file.content_type
 
         if not file.filename.endswith('.mp3'):
             raise UnprocessableEntity('Filetype not allowed ')
 
         # save file to disk
-        uploaded_file_path = os.path.join(self.data_dir ,category, filename)
+        uploaded_file_path = os.path.join(self.data_dir, category, filename)
         file.save(uploaded_file_path)
         with open(category + '.m3u', 'a') as f:
             print(uploaded_file_path, file=f)
@@ -168,7 +167,9 @@ class KlangbeckenAPI:
         if not os.path.isfile(path):
             raise NotFound()
 
-        return Response(wrap_file(request.environ, open(path, 'rb')), mimetype=mimetype)
+        return Response(wrap_file(request.environ, open(path, 'rb')),
+                        mimetype=mimetype)
+
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple

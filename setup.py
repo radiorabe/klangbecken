@@ -6,4 +6,4 @@ setup(name='KlangbeckenAPI',
       author_email='marco@schess.ch ',
       url='https://github.com/radiorabe/klangbecken',
       py_modules=['klangbecken_api'],
-     )
+      )
