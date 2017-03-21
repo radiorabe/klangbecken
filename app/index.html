@@ -2,13 +2,11 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<title>RaBe Klangbecken</title>
-<link rel="stylesheet"
-  href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
-  crossorigin="anonymous">
-<link rel='stylesheet'
-  href='https://fonts.googleapis.com/css?family=Fjalla+One'>
+<title>Klangbecken Proof-of-Concept</title>
+<link rel="stylesheet" href="static/bootstrap.css">
+<link href='https://fonts.googleapis.com/css?family=Fjalla+One|Roboto:700,500italic,500,300&subset=latin,latin-ext'
+      rel='stylesheet'
+      type='text/css'>
 <style>
   body {
     margin: 0 20px;
@@ -391,37 +389,13 @@
 </template-->
 
 <!-- Code -->
-<script
-  src="https://code.jquery.com/jquery-3.1.1.min.js"
-  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-  crossorigin="anonymous"></script>
-<script
-  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
-  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
-  crossorigin="anonymous"></script>
-<!--script
-  src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/jquery.fileupload-jquery-ui.min.js"
-  integrity="sha256-ebWsS1uxMivslAsWFrviZTbPTRwou9jgBx7cBGai9H8="
-  crossorigin="anonymous"></script-->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/vendor/jquery.ui.widget.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/jquery.iframe-transport.min.js"></script>
-<script
-  src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/9.17.0/js/jquery.fileupload.min.js"
-  integrity="sha256-tcXzqklRDpmITiQ0Ff+S6H2uUQl089oXkEyGjOOGmN4="
-  crossorigin="anonymous"></script>
-<script
-  src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.4/vue.min.js"
-  integrity="sha256-OtO7ZEvocyorHF1dJOzHRiEgZ6NoZjIEIUfRviBF7eQ="
-  crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/2.3.0/vue-router.min.js"
-  integrity="sha256-AwwRTjxUqKG37pckPQGiyopzQq1JvornmSehYQa/LD4="
-  crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/1.2.1/vue-resource.min.js"
-  integrity="sha256-P6g4fDl1UmpoTtqDYVujZf0dSm8aqwT15ueMa3/1uyg="
-  crossorigin="anonymous"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-  integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-  crossorigin="anonymous"></script>
+<script src="static/jquery.js"></script>
+<script src="static/jquery.ui.widget.js"></script>
+<script src="static/jquery.fileupload.js"></script>
+<script src="static/vue.js"></script>
+<script src="static/vue-router.js"></script>
+<script src="static/vue-resource.js"></script>
+<script src="static/bootstrap.js"></script>
 <script>
 "use strict";
 
@@ -478,7 +452,7 @@ var Music = Vue.extend({
   methods: {
     loadMusic: function() {
       this.loading = true;
-      this.$http.get('/api/music/').then(response => {
+      this.$http.get('/api/music').then(response => {
         var formatDate = date => date.getFullYear() + '-' +
                                  ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
                                  ('00' + date.getDate()).slice(-2);
@@ -660,24 +634,31 @@ var Jingles = Vue.extend({
 //   template: '#settings-tmpl',
 // });
 
-//var App = Vue.extend({});
+var App = Vue.extend({});
 
-
-var routes = [
-  { path: '/music', component: Music },
-  { path: '/jingles', component: Jingles },
-];
-
-var router = new VueRouter(routes, /*{
+var router = new VueRouter({
   hashbang: false,
   linkActiveClass: 'active',
   history: true,
-}*/);
+});
 
-//router.start(App, '#app');
-const app = new Vue({
-  router
-}).$mount('#app')
+router.map({
+  '/music': {
+    component: Music,
+  },
+  '/jingles': {
+    component: Jingles,
+  },
+  // '/settings': {
+  //   component: Settings,
+  // },
+});
+
+router.redirect({
+  '*': '/music',
+});
+
+router.start(App, '#app');
 
 </script>
 </body>
