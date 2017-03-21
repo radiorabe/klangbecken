@@ -22,7 +22,7 @@ script:
   - tox
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report -m
-  - liquidsoap --version
+  - test -f klangbecken.liq && liquidsoap --parse-only klangbecken.liq
 
 after_success:
   - coveralls
