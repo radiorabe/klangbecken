@@ -23,7 +23,7 @@ set("server.socket", true)
 #set("harbor.reverse_dns",true)
 
 data_dir = getenv("KLANGBECKEN_DATA")
-if not file.is_directory(data_dir) then
+if not is_directory(data_dir) then
     log(level=2, "ERROR: Cannot find data directory: " ^ data_dir)
     shutdown()
 end

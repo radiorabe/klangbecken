@@ -3,18 +3,15 @@ sudo: false
 language: python
 python: 3.6
 
-# note: python3.5 is not preinstalled on docker-based (i.e. sudo: false)
-#       Travis workers at the moment of this writing, so we need to get
-#       it via addon repository.
 addons:
   apt:
-    sources:
-      - deadsnakes
     packages:
-      - python3.5
-      - python3.5-dev
       - liquidsoap
       - liquidsoap-plugin-icecast
+
+env:
+  global:
+    - KLANGBECKEN_DATA=data
 
 install:
   - pip install tox
@@ -25,6 +22,7 @@ script:
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report -m
   - liquidsoap --version
+  - test -d $KLANGBECKEN_DATA || mkdir $KLANGBECKEN_DATA
   - test -f klangbecken.liq && liquidsoap --check klangbecken.liq
 
 after_success:
