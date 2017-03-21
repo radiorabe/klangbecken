@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-from __future__ import print_function
+from __future__ import print_function, unicode_literals, division
 
 import json
 import os
 from collections import Counter
+from io import open
+from os.path import join as pjoin
 
 import mutagen
 from werkzeug.exceptions import HTTPException, UnprocessableEntity, NotFound
@@ -16,11 +18,8 @@ from werkzeug.wsgi import wrap_file
 class KlangbeckenAPI:
 
     def __init__(self, stand_alone=False):
-        if stand_alone:
-            self.data_dir = os.environ.get('KLANGBECKEN_DATA', '..')
-        else:
-            self.data_dir = os.environ.get('KLANGBECKEN_DATA',
-                                           '/var/lib/klangbecken')
+        self.data_dir = os.environ.get('KLANGBECKEN_DATA',
+                                       '/var/lib/klangbecken')
 
         self.url_map = Map()
 
@@ -36,11 +35,14 @@ class KlangbeckenAPI:
             # Serve html and prefix calls to api
             mappings = [('/api' + path, method, endpoint)
                         for path, method, endpoint in mappings]
-            mappings.insert(0, ('/<any("", music, jingles, settings):page>',
-                                'GET', 'app'))
+            mappings.append(('/', 'GET', 'static'))
+            mappings.append(('/<path:path>', 'GET', 'static'))
 
         for path, method, endpoint in mappings:
             self.url_map.add(Rule(path, methods=(method,), endpoint=endpoint))
+
+    def _full_path(self, path):
+        return pjoin(self.data_dir, path)
 
     def __call__(self, environ, start_response):
         request = Request(environ)
@@ -52,20 +54,18 @@ class KlangbeckenAPI:
             response = e
         return response(environ, start_response)
 
-    def on_app(self, request, page):
-        del page   # not used (client side routing)
-        return Response(wrap_file(request.environ, open('app/index.html')),
-                        mimetype='text/html')
-
     def on_list(self, request, category):
-        cat_dir = os.path.join(self.data_dir, category)
+        cat_dir = self._full_path(category)
         filenames = os.listdir(cat_dir)
-        tuples = [(filename, os.path.join(cat_dir, filename))
+        tuples = [(filename, os.path.join(category, filename))
                   for filename in filenames]
-        tuples = [(filename, path, mutagen.File(path, easy=True))
+        tuples = [(filename, path,
+                   mutagen.File(self._full_path(path), easy=True))
                   for (filename, path) in tuples
-                  if os.path.isfile(path) and path.endswith('.mp3')]
-        counter = Counter(open(category + ".m3u").read().split())
+                  if os.path.isfile(self._full_path(path))
+                  and path.endswith('.mp3')]
+        counter = Counter(path.strip() for path in
+                          open(self._full_path(category + ".m3u")).readlines())
         # FIXME: cue-points and replaygain
         dicts = [
             {
@@ -75,7 +75,7 @@ class KlangbeckenAPI:
                 'title': mutagenfile.get('title', [''])[0],
                 'album': mutagenfile.get('album', [''])[0],
                 'length': float(mutagenfile.info.length),
-                'mtime': os.stat(path).st_mtime,
+                'mtime': os.stat(self._full_path(path)).st_mtime,
                 'repeate': counter[path],
             } for (filename, path, mutagenfile) in tuples
         ]
@@ -85,10 +85,11 @@ class KlangbeckenAPI:
                                    ensure_ascii=True), mimetype='text/json')
 
     def on_get(self, request, category, filename):
-        path = os.path.join(category, secure_filename(filename))
-        if not os.path.exists(path):
+        path = pjoin(category, secure_filename(filename))
+        full_path = self._full_path(path)
+        if not os.path.exists(full_path):
             raise NotFound()
-        return Response(wrap_file(request.environ, open(path, 'rb')),
+        return Response(wrap_file(request.environ, open(full_path, 'rb')),
                         mimetype='audio/mpeg')
 
     def on_upload(self, request, category):
@@ -105,36 +106,36 @@ class KlangbeckenAPI:
             raise UnprocessableEntity('Filetype not allowed ')
 
         # save file to disk
-        uploaded_file_path = os.path.join(self.data_dir, category, filename)
-        file.save(uploaded_file_path)
-        with open(category + '.m3u', 'a') as f:
-            print(uploaded_file_path, file=f)
+        file_path = pjoin(category, filename)
+        file.save(self._full_path(file_path))
+        with open(self._full_path(category + '.m3u'), 'a') as f:
+            print(file_path, file=f)
 
         # FIXME: silan and replaygain
 
-        mutagenfile = mutagen.File(uploaded_file_path, easy=True)
+        mutagenfile = mutagen.File(self._full_path(file_path), easy=True)
         metadata = {
             'filename': filename,
-            'path': uploaded_file_path,
+            'path': file_path,
             'artist': mutagenfile.get('artist', [''])[0],
             'title': mutagenfile.get('title', [''])[0],
             'album': mutagenfile.get('album', [''])[0],
-            'repeat': 1,
+            'repeate': 1,
             'length': float(mutagenfile.info.length),
-            'mtime': os.stat(uploaded_file_path).st_mtime,
+            'mtime': os.stat(self._full_path(file_path)).st_mtime,
         }
         return Response(json.dumps(metadata), mimetype='text/json')
 
     def on_update(self, request, category, filename):
         # FIXME: other values (artist, title)
-        path = os.path.join(self.data_dir, category, secure_filename(filename))
+        path = pjoin(category, secure_filename(filename))
         try:
-            repeates = int(json.loads(str(request.data, 'UTF-8'))['repeate'])
+            repeates = int(json.loads(request.data)['repeate'])
         except:
             raise UnprocessableEntity('Cannot parse PUT request')
 
-        lines = open(category + '.m3u').read().split('\n')
-        with open(category + '.m3u', 'w') as f:
+        lines = open(self._full_path(category + '.m3u')).read().split('\n')
+        with open(self._full_path(category + '.m3u'), 'w') as f:
             for line in lines:
                 if line != path and line:
                     print(line, file=f)
@@ -144,20 +145,26 @@ class KlangbeckenAPI:
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
     def on_delete(self, request, category, filename):
-        path = os.path.join(self.data_dir, category, secure_filename(filename))
-        if not os.path.exists(path):
+        path = pjoin(category, secure_filename(filename))
+        if not os.path.exists(self._full_path(path)):
             raise NotFound()
-        os.remove(path)
-        lines = open(category + '.m3u').read().split('\n')
-        with open(category + '.m3u', 'w') as f:
+        os.remove(self._full_path(path))
+        lines = open(self._full_path(category + '.m3u')).read().split('\n')
+        with open(self._full_path(category + '.m3u'), 'w') as f:
             for line in lines:
                 if line != path and line:
                     print(line, file=f)
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
-    def on_static(self, request, folder, filename):
-        path = os.path.join(folder, secure_filename(filename))
-        if path.endswith('.css'):
+    def on_static(self, request, path=''):
+        print(path)
+        if path in ['', 'music', 'jinges']:
+            path = 'index.html'
+        path = os.path.join('app', path)
+        print(path)
+        if path.endswith('.html'):
+            mimetype = 'text/html'
+        elif path.endswith('.css'):
             mimetype = 'text/css'
         elif path.endswith('.js'):
             mimetype = 'text/javascript'
@@ -173,8 +180,16 @@ class KlangbeckenAPI:
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
-    app = KlangbeckenAPI(stand_alone=True)
-    run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True,
-               threaded=True)
+    os.environ['KLANGBECKEN_DATA'] = 'data'
+    for path in ['data', pjoin('data', 'music'), pjoin('data', 'jingles')]:
+        if not os.path.isdir(path):
+            os.mkdir(path)
+    for path in [pjoin('data', 'music.m3u'), pjoin('data', 'jingles.m3u')]:
+        if not os.path.isfile(path):
+            open(path, 'a').close()
+
+    application = KlangbeckenAPI(stand_alone=True)
+    run_simple('127.0.0.1', 5000, application, use_debugger=True,
+               use_reloader=True, threaded=False)
 else:
     application = KlangbeckenAPI()
