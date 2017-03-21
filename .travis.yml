@@ -8,7 +8,7 @@ addons:
     packages:
       - liquidsoap
       - liquidsoap-plugin-icecast
-
+      - liquidsoap-plugin-lame
 env:
   global:
     - KLANGBECKEN_DATA=data
