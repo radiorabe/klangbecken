@@ -7,9 +7,11 @@ python:
   - 3.6
 install:
   - pip install tox-travis
-  - pip install coveralls
+  - pip install mutagen werkzeug coveralls
 script:
   - cd backend
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then tox -e coverage; else tox; fi
+  - tox
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coverage run --source=klangbecken_api -m unittest discover; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coverage report -m; fi
 after_success:
-  - echo $PWD && if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coveralls; fi
