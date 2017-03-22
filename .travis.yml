@@ -15,7 +15,8 @@ env:
 
 install:
   - pip install tox
-  - pip install mutagen werkzeug coveralls
+  - pip install .
+  - pip install coverage coveralls
 
 script:
   - tox
