@@ -1,4 +1,5 @@
-from distutils.core import setup
+from setuptools import setup
+
 setup(name='KlangbeckenAPI',
       version='0.0.1',
       description='Klangbecken API',
