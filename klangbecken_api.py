@@ -10,7 +10,7 @@ from os.path import join as pjoin
 import mutagen
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
-    Unauthorized)
+                                 Unauthorized)
 from werkzeug.routing import Map, Rule
 from werkzeug.utils import secure_filename, cached_property
 from werkzeug.wrappers import BaseRequest, Response
@@ -25,8 +25,8 @@ class Request(BaseRequest):
 
     @cached_property
     def client_session(self):
-        return SecureCookie.load_cookie(self,
-            secret_key=os.environ['KLANGBECKEN_API_SECRET'])
+        secret_key = os.environ['KLANGBECKEN_API_SECRET']
+        return SecureCookie.load_cookie(self, secret_key=secret_key)
 
 
 class KlangbeckenAPI:
