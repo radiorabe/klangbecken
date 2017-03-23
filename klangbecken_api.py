@@ -199,7 +199,7 @@ class KlangbeckenAPI:
         elif path.endswith('.js'):
             mimetype = 'text/javascript'
         else:
-            raise NotFound()
+            mimetype = 'text/plain'
 
         if not os.path.isfile(path):
             raise NotFound()
