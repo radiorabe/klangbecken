@@ -188,10 +188,10 @@ class KlangbeckenAPI:
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
     def on_static(self, request, path=''):
-        if path in ['', 'music', 'jinges']:
+        if path in ['', 'music', 'jingles']:
             path = 'index.html'
         path = os.path.join('app', path)
-        print(path)
+
         if path.endswith('.html'):
             mimetype = 'text/html'
         elif path.endswith('.css'):
