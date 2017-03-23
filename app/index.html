@@ -229,6 +229,34 @@
 
 <!-- Templates -->
 <template id="music-tmpl">
+  <!-- Login Form -->
+  <div class="modal fade" tabindex="-1" role="dialog" id="loginModal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Login</h4>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-group">
+              <label for="exampleInputEmail1">Username</label>
+              <input type="text" class="form-control" placeholder="Username" v-model="loginName">
+            </div>
+            <div class="form-group">
+              <label for="exampleInputPassword1">Password</label>
+              <input type="password" class="form-control" placeholder="Password" v-model="password">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" @click="login()">Login</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
   <div class="tab-pane active music-dropzone">
     <div class="row">
       <div class="col-md-4 col-sm-5 col-xs-6 search" style="padding-top: 10px;">
@@ -425,6 +453,8 @@ var Music = Vue.extend({
     search: '',
     loading: true,
     progress: 0,
+    loginName: '',
+    password:'',
   }),
   ready: function() {
     this.loadMusic();
@@ -466,8 +496,32 @@ var Music = Vue.extend({
         }, []);
         this.loading = false;
       }, response => {
-        //FIXME: error handling
+        if (response.status === 401) { // Unauthorized
+          this.$http.get('/api/login/').then(response => {    // Try Kerberos
+            this.loadMusic();
+          }, response => {
+            if (response.status === 401) { // Unauthorized
+              $('#loginModal').modal('show');
+            } else {
+              console.log("Error from Server:", response);
+            }
+          });
+        } else {
+          console.log("Error from Server:", response);
+        }
       });
+    },
+    login: function() {
+      this.$http.post('/api/login/', {'login': this.loginName, password: this.password}, {emulateJSON: true}).then(response => {
+        $('#loginModal').modal('hide');
+        this.loadMusic();
+        this.password = '';
+      }, response => {
+        //FIXME: show message to user
+        console.log(response);
+        this.password = '';
+      });
+
     },
     loadOneMusicFile: function(file) {
       if (this.music.length === 0 || this.music[0].date !== 'just now') {

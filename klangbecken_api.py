@@ -8,11 +8,25 @@ from io import open
 from os.path import join as pjoin
 
 import mutagen
-from werkzeug.exceptions import HTTPException, UnprocessableEntity, NotFound
+from werkzeug.contrib.securecookie import SecureCookie
+from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
+    Unauthorized)
 from werkzeug.routing import Map, Rule
-from werkzeug.utils import secure_filename
-from werkzeug.wrappers import Request, Response
+from werkzeug.utils import secure_filename, cached_property
+from werkzeug.wrappers import BaseRequest, Response
 from werkzeug.wsgi import wrap_file
+
+
+class JSONSecureCookie(SecureCookie):
+    serialization_method = json
+
+
+class Request(BaseRequest):
+
+    @cached_property
+    def client_session(self):
+        return SecureCookie.load_cookie(self,
+            secret_key=os.environ['KLANGBECKEN_API_SECRET'])
 
 
 class KlangbeckenAPI:
@@ -20,26 +34,28 @@ class KlangbeckenAPI:
     def __init__(self, stand_alone=False):
         self.data_dir = os.environ.get('KLANGBECKEN_DATA',
                                        '/var/lib/klangbecken')
-
+        self.secret = os.environ['KLANGBECKEN_API_SECRET']
         self.url_map = Map()
 
         mappings = [
-            ('/<any(music, jingles):category>/', 'GET', 'list'),
-            ('/<any(music, jingles):category>/<filename>', 'GET', 'get'),
-            ('/<any(music, jingles):category>/', 'POST', 'upload'),
-            ('/<any(music, jingles):category>/<filename>', 'PUT', 'update'),
-            ('/<any(music, jingles):category>/<filename>', 'DELETE', 'delete'),
+            ('/login/', ('GET', 'POST'), 'login'),
+            ('/<any(music, jingles):category>/', ('GET',), 'list'),
+            ('/<any(music, jingles):category>/<filename>', ('GET',), 'get'),
+            ('/<any(music, jingles):category>/', ('POST',), 'upload'),
+            ('/<any(music, jingles):category>/<filename>', ('PUT',), 'update'),
+            ('/<any(music, jingles):category>/<filename>', ('DELETE',),
+             'delete'),
         ]
 
         if stand_alone:
             # Serve html and prefix calls to api
-            mappings = [('/api' + path, method, endpoint)
-                        for path, method, endpoint in mappings]
-            mappings.append(('/', 'GET', 'static'))
-            mappings.append(('/<path:path>', 'GET', 'static'))
+            mappings = [('/api' + path, methods, endpoint)
+                        for path, methods, endpoint in mappings]
+            mappings.append(('/', ('GET',), 'static'))
+            mappings.append(('/<path:path>', ('GET',), 'static'))
 
-        for path, method, endpoint in mappings:
-            self.url_map.add(Rule(path, methods=(method,), endpoint=endpoint))
+        for path, methods, endpoint in mappings:
+            self.url_map.add(Rule(path, methods=methods, endpoint=endpoint))
 
     def _full_path(self, path):
         return pjoin(self.data_dir, path)
@@ -47,12 +63,27 @@ class KlangbeckenAPI:
     def __call__(self, environ, start_response):
         request = Request(environ)
         adapter = self.url_map.bind_to_environ(request.environ)
+
+        session = request.client_session
         try:
             endpoint, values = adapter.match()
+            if endpoint not in ['login', 'static'] and (session.new or
+                                                        'user' not in session):
+                raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
             response = e
         return response(environ, start_response)
+
+    def on_login(self, request):
+        if request.remote_user is None:
+            raise Unauthorized()
+
+        response = Response(json.dumps({'status': 'OK'}), mimetype='text/json')
+        session = request.client_session
+        session['user'] = request.environ['REMOTE_USER']
+        session.save_cookie(response)
+        return response
 
     def on_list(self, request, category):
         cat_dir = self._full_path(category)
@@ -180,6 +211,7 @@ class KlangbeckenAPI:
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
     os.environ['KLANGBECKEN_DATA'] = 'data'
+    os.environ['KLANGBECKEN_API_SECRET'] = os.urandom(20)
     for path in ['data', pjoin('data', 'music'), pjoin('data', 'jingles')]:
         if not os.path.isdir(path):
             os.mkdir(path)
@@ -188,7 +220,13 @@ if __name__ == '__main__':
             open(path, 'a').close()
 
     application = KlangbeckenAPI(stand_alone=True)
-    run_simple('127.0.0.1', 5000, application, use_debugger=True,
+
+    # Inject dummy remote user when testing locally
+    def wrapper(environ, start_response):
+        environ['REMOTE_USER'] = 'dummyuser'
+        return application(environ, start_response)
+
+    run_simple('127.0.0.1', 5000, wrapper, use_debugger=True,
                use_reloader=True, threaded=False)
 else:
     application = KlangbeckenAPI()
