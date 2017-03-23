@@ -212,9 +212,12 @@ class KlangbeckenAPI:
 
 
 if __name__ == '__main__':
+    import random
+    import string
     from werkzeug.serving import run_simple
     os.environ['KLANGBECKEN_DATA'] = 'data'
-    os.environ['KLANGBECKEN_API_SECRET'] = os.urandom(20)
+    os.environ['KLANGBECKEN_API_SECRET'] = \
+        ''.join(random.sample(string.lowercase, 20))
     for path in ['data', pjoin('data', 'music'), pjoin('data', 'jingles')]:
         if not os.path.isdir(path):
             os.mkdir(path)
