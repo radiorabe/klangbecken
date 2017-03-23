@@ -53,6 +53,9 @@ class KlangbeckenAPI:
                         for path, methods, endpoint in mappings]
             mappings.append(('/', ('GET',), 'static'))
             mappings.append(('/<path:path>', ('GET',), 'static'))
+            cur_dir = os.path.dirname(os.path.realpath(__file__))
+            dist_dir = open(pjoin(cur_dir, '.dist_dir')).read().strip()
+            self.static_dir = pjoin(cur_dir, dist_dir)
 
         for path, methods, endpoint in mappings:
             self.url_map.add(Rule(path, methods=methods, endpoint=endpoint))
@@ -190,7 +193,7 @@ class KlangbeckenAPI:
     def on_static(self, request, path=''):
         if path in ['', 'music', 'jingles']:
             path = 'index.html'
-        path = os.path.join('app', path)
+        path = os.path.join(self.static_dir, path)
 
         if path.endswith('.html'):
             mimetype = 'text/html'
