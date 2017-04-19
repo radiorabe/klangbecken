@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals, division
 import os
 import socket
 
-KLANGBECKEN_STATUS = 2
+KLANGBECKEN_STATUS = 1
 
 def main():
     host = os.environ.get('SAEMUBOX_HOST', 'localhost')
