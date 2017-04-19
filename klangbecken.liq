@@ -1,11 +1,10 @@
-set("log.file", false)
-#set("log.file.path","/tmp/<script>.log")
+set("log.file", true)
+set("log.file.path","<syslogdir>/<script>.log")
 set("log.stdout", false)
 set("server.telnet", false)
 set("server.telnet.port", 1234)
 set("log.level", 3)
 
-set("log.syslog", true)
 # set("log.syslog.facility","DAEMON")
 # set("log.syslog.program","liquidsoap")
 # set("log.unix_timestamps",false)
