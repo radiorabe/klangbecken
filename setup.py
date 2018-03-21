@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='KlangbeckenAPI',
-    version='0.0.4',
+    version='0.0.5',
     description='Klangbecken API',
     url='https://github.com/radiorabe/klangbecken',
     author='Marco Schmalz',
