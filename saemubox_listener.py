@@ -12,12 +12,14 @@ def main():
     mcast_if = os.environ.get('SAEMUBOX_MCAST_IF', '10.130.36.16')
     mcast_host = os.environ.get('SAEMUBOX_MCAST_GROUP', '239.200.0.1')
     mcast_port = os.environ.get('SAEMUBOX_MCAST_PORT', '48000')
-    liquidsoap_sock = os.environ.get('LIQUIDSOAP_SOCK', '/var/run/klangbecken.sock')
+    liquidsoap_sock = os.environ.get('LIQUIDSOAP_SOCK',
+                                     '/var/run/klangbecken.sock')
 
     valid_ids = set(map(str, range(1, 7)))
 
     print("Starting ...")
-    print("Forwarding changes from {}:{} to {}".format(mcast_host, mcast_port, liquidsoap_sock))
+    print("Forwarding changes from {}:{} to {}".format(mcast_host, mcast_port,
+                                                       liquidsoap_sock))
 
     try:
         sock = None
@@ -33,23 +35,26 @@ def main():
                 try:
                     sock.bind((mcast_host, int(mcast_port)))
                 except socket.error:
-                    print("ERROR: could not connect to {}:{}".format(mcast_host, mcast_port))
+                    print("ERROR: could not connect to {}:{}"\
+                            .format(mcast_host, mcast_port))
                     sock = None
                     time.sleep(10)
                     continue
                 sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF,
                              socket.inet_aton(mcast_if))
                 sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP,
-                             socket.inet_aton(mcast_host) + socket.inet_aton(mcast_if))
+                             socket.inet_aton(mcast_host)\
+                                 + socket.inet_aton(mcast_if))
                 time.sleep(0.1)
 
             try:
                 output = None
 
-                # read from socket while there is something to read (non-blocking)
+                # read from socket while there is something to read
+                # (non-blocking)
                 while select.select([sock], [], [], 0)[0]:
                     data, addr = sock.recvfrom(1024)
-                    ids = data.split()   # several saemubox ids might come in one packet
+                    ids = data.split()   # several ids might come in one packet
                     if ids:
                         if ids[-1] in valid_ids:  # only take last id
                             output = ids[-1]
@@ -65,7 +70,8 @@ def main():
                     if new_status == KLANGBECKEN_STATUS:
                         print('Restarting Klangbecken ...')
                         try:
-                            ls_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                            ls_sock = socket.socket(socket.AF_UNIX,
+                                                    socket.SOCK_STREAM)
                             ls_sock.connect(liquidsoap_sock)
                             ls_sock.sendall(LS_COMMAND)
                             print(ls_sock.recv(1000))
