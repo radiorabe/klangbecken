@@ -8,6 +8,7 @@ import time
 KLANGBECKEN_STATUS = 1
 LS_COMMAND = b'klangbecken.restart\n'
 
+
 def main():
     mcast_if = os.environ.get('SAEMUBOX_MCAST_IF', '10.130.36.16')
     mcast_host = os.environ.get('SAEMUBOX_MCAST_GROUP', '239.200.0.1')
@@ -35,16 +36,16 @@ def main():
                 try:
                     sock.bind((mcast_host, int(mcast_port)))
                 except socket.error:
-                    print("ERROR: could not connect to {}:{}"\
-                            .format(mcast_host, mcast_port))
+                    print("ERROR: could not connect to {}:{}"
+                          .format(mcast_host, mcast_port))
                     sock = None
                     time.sleep(10)
                     continue
                 sock.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_IF,
-                             socket.inet_aton(mcast_if))
+                                socket.inet_aton(mcast_if))
                 sock.setsockopt(socket.SOL_IP, socket.IP_ADD_MEMBERSHIP,
-                             socket.inet_aton(mcast_host)\
-                                 + socket.inet_aton(mcast_if))
+                                socket.inet_aton(mcast_host)
+                                + socket.inet_aton(mcast_if))
                 time.sleep(0.1)
 
             try:
@@ -66,7 +67,8 @@ def main():
 
                 new_status = int(output)
                 if status != new_status:
-                    print('New status: {} (old: {})'.format(new_status, status))
+                    print('New status: {} (old: {})'
+                          .format(new_status, status))
                     if new_status == KLANGBECKEN_STATUS:
                         print('Restarting Klangbecken ...')
                         try:
@@ -83,7 +85,7 @@ def main():
             except socket.error:
                 try:
                     sock.close()
-                except:
+                except:   # noqa: E722
                     pass
                 sock = None
 

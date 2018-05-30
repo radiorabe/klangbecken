@@ -167,7 +167,7 @@ class KlangbeckenAPI:
         path = pjoin(category, secure_filename(filename))
         try:
             repeates = int(json.loads(request.data)['repeate'])
-        except:
+        except:  # noqa: E722
             raise UnprocessableEntity('Cannot parse PUT request')
 
         lines = open(self._full_path(category + '.m3u')).read().split('\n')

@@ -27,7 +27,7 @@ setup(
     extras_require={
         'test': ['tox', 'coverage'],
     },
-    entry_points = {
+    entry_points={
         'console_scripts': ['saemubox-listener=saemubox_listener:main'],
     }
 )
