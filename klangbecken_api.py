@@ -146,6 +146,8 @@ class KlangbeckenAPI:
             print(file_path, file=f)
 
         # FIXME: silan and replaygain
+        # gst-launch-1.0 -t filesrc location=02_Prada.mp3 ! decodebin !
+        #  audioconvert ! audioresample ! rganalysis ! fakesink
 
         mutagenfile = mutagen.File(self._full_path(file_path), easy=True)
         metadata = {
