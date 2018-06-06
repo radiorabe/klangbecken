@@ -75,16 +75,19 @@
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
 
-  <div class="tab-pane active music-dropzone">
-    <div class="row">
+  <div class="tab-pane active music-dropzone main-dropzone">
+      <div class="rapper text-center">
+          <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drop it like it's hot
+      </div>
+  </div>
+  <div class="row">
       <div class="col-md-4 col-sm-5 col-xs-12 search">
         <label>
           <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
           <input type="text" v-model="search" placeholder="Search...">
         </label>
-          
-        <span v-if="search" class="glyphicon glyphicon-remove search_delete" @click="search=''"
-              style="margin-left: -24px;"></span>
+
+        <span v-if="search" class="glyphicon glyphicon-remove search_delete" @click="search=''"></span>
       </div>
       <div class="col-md-6 col-sm-4 col-xs-12 well text-center dropzone" style="margin-bottom:20px;" v-if="!progress">
         <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drag and drop files here
@@ -100,7 +103,7 @@
       </div>
     </div>
 
-    <div class="row">
+  <div class="row">
       <div class="table-responsive">
         <table class="table table-condensed">
           <thead>
@@ -152,20 +155,22 @@
         <div v-if="loading" class="loader"></div>
       </div>
     </div>
-  </div>
   <audio v-if="nowplaying" v-bind:src="'api/' + nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
     <template id="jingles-tmpl">
-  <div class="tab-pane active jingles-dropzone">
-    <div class="row">
+  <div class="tab-pane active jingles-dropzone main-dropzone">
+      <div class="rapper text-center">
+          <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drop it like it's hot
+      </div>
+  </div>
+  <div class="row">
       <div class="col-md-4 col-sm-5 col-xs-6 search">
         <label>
           <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
           <input type="text" v-model="search" placeholder="Search...">
         </label>
-        <span v-if="search" class="glyphicon glyphicon-remove search_delete" @click="search=''"
-              style="margin-left: -24px;"></span>
+        <span v-if="search" class="glyphicon glyphicon-remove search_delete" @click="search=''" ></span>
       </div>
       <div class="col-md-6 col-sm-4 col-xs-3 well text-center dropzone" style="margin-bottom:20px;" v-if="!progress">
         <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drag and drop files here
@@ -181,7 +186,7 @@
       </div>
     </div>
 
-    <div class="row">
+  <div class="row">
       <div class="table-responsive">
         <table class="table table-condensed">
           <thead>
@@ -225,7 +230,6 @@
         <div v-if="loading" class="loader"></div>
       </div>
     </div>
-  </div>
   <audio v-if="nowplaying" v-bind:src="'api/' + nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
@@ -564,6 +568,25 @@
         });
 
         router.start(App, '#app');
+        
+        
+
+        
+        $(document).bind('dragover', function (e) {
+            var dropZone = $('.main-dropzone'),
+            timeout = window.dropZoneTimeout;
+            if (timeout) {
+                clearTimeout(timeout);
+            } else {
+                dropZone.addClass('in');
+            }
+            var hoveredDropZone = $(e.target).closest(dropZone);
+            dropZone.toggleClass('hover', hoveredDropZone.length);
+            window.dropZoneTimeout = setTimeout(function () {
+                window.dropZoneTimeout = null;
+                dropZone.removeClass('in hover');
+            }, 100);
+        });
     </script>
 </body>
 

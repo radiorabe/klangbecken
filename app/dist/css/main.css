@@ -50,10 +50,6 @@ table .btn{
 }
 
 
-.btn:focus {
-    color: white;
-}
-
 table .btn-delete{
     background-color: lightcoral;
     border-color: lightcoral;
@@ -106,6 +102,29 @@ table .btn-delete:hover{
 
 
 
+
+.main-dropzone{
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+.main-dropzone.in{
+    opacity: 0.8;
+    background-color: lightgray;
+    pointer-events: all;
+}
+.main-dropzone .rapper{
+    color: gray;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 50vh;
+    font-size: 200%;
+}
 
 
 
@@ -167,6 +186,13 @@ tr.active td {
 
 .search input[type="text"]:focus::-webkit-input-placeholder{
     color: lightgray;
+}
+
+.search .search_delete{
+    position: absolute;
+    right: 50px;
+    top: 23px;
+    cursor: pointer;
 }
 
 #fileupload-music,
