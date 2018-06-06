@@ -13,8 +13,8 @@
 * gstreamer (for replaygain calculations)
 
 
-Dev dependencies:
+### Development dependencies:
 
-virtualenv/venv
-setuptools
-pip
+ * virtualenv/venv
+ * setuptools
+ * pip
