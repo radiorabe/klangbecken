@@ -177,7 +177,7 @@
       </div>
       <div class="col-md-2 col-sm-3 col-xs-3 text-center well-button" style="padding: 15px;" v-if="!progress">
         <input id="fileupload-jingles" style="margin: auto 0 auto 0" type="file" name="files" accept=".mp3" multiple>
-        <label  class="btn btn-primary"  for="fileupload-music">Select files...</label>
+        <label  class="btn btn-primary"  for="fileupload-jingles">Select files...</label>
       </div>
       <div class="col-md-8 col-sm-7 col-xs-6 well" v-if="!!progress">
         <div class="progress">
@@ -215,13 +215,14 @@
               <td>{{file.length | time}}</td>
               <td>
                 <input class="spinner" type="number" name="Priority" v-model="file.repeate" min="0" max="9"
-                      title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateRepeate(file)">
+                      title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateRepeate(file)"
+                      onClick="this.select();">
                 <button class="btn btn-xs {{file.path === nowplaying ? 'active' : ''}}"
                         title="Play" v-on:click="play(file.path)" data-toggle="tooltip">
                   <span class="glyphicon {{file.path === nowplaying ? 'glyphicon-stop' : 'glyphicon-play'}}"></span>
                 </button>
-                <button class="btn btn-xs" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
-                  <span class="glyphicon glyphicon-remove"></span>
+                <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
+                  <span class="glyphicon glyphicon-trash"></span>
                 </button>
               </td>
             </tr>
