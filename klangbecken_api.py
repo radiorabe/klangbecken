@@ -3,11 +3,13 @@ from __future__ import print_function, unicode_literals, division
 
 import json
 import os
+import subprocess
 from collections import Counter
 from io import open
 from os.path import join as pjoin
 
 import mutagen
+from mutagen.easyid3 import EasyID3
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
                                  Unauthorized)
@@ -36,6 +38,11 @@ class KlangbeckenAPI:
                                        '/var/lib/klangbecken')
         self.secret = os.environ['KLANGBECKEN_API_SECRET']
         self.url_map = Map()
+        
+        # register the TXXX key so that we can access it later as 
+        # mutagenfile['rg_track_gain']
+        EasyID3.RegisterTXXXKey(key='track_gain',
+                                desc='REPLAYGAIN_TRACK_GAIN')
 
         mappings = [
             ('/login/', ('GET', 'POST'), 'login'),
@@ -62,6 +69,25 @@ class KlangbeckenAPI:
 
     def _full_path(self, path):
         return pjoin(self.data_dir, path)
+
+    def _replaygain_analysis(self, mutagenfile):
+        # 1. compute track_gain
+        gstreamer_cmd = [
+            "gst-launch-1.0", "-t", 
+            "filesrc", "location="+mutagenfile.filename, 
+            "!", "decodebin", 
+            "!", "audioconvert", 
+            "!", "audioresample", 
+            "!", "rganalysis", 
+            "!", "fakesink"
+        ]
+        output = str(subprocess.check_output(gstreamer_cmd))
+        search_str = 'replaygain track gain: '
+        start = output.find(search_str) + len(search_str)
+        track_gain = output[start:None].split('\\n')[0]
+        # 2. set TXXX tag
+        mutagenfile['track_gain'] = track_gain + ' db'
+        mutagenfile.save()
 
     def __call__(self, environ, start_response):
         request = Request(environ)
@@ -150,6 +176,7 @@ class KlangbeckenAPI:
         #  audioconvert ! audioresample ! rganalysis ! fakesink
 
         mutagenfile = mutagen.File(self._full_path(file_path), easy=True)
+        self._replaygain_analysis(mutagenfile)
         metadata = {
             'filename': filename,
             'path': file_path,
