@@ -38,8 +38,8 @@ class KlangbeckenAPI:
                                        '/var/lib/klangbecken')
         self.secret = os.environ['KLANGBECKEN_API_SECRET']
         self.url_map = Map()
-        
-        # register the TXXX key so that we can access it later as 
+
+        # register the TXXX key so that we can access it later as
         # mutagenfile['rg_track_gain']
         EasyID3.RegisterTXXXKey(key='track_gain',
                                 desc='REPLAYGAIN_TRACK_GAIN')
@@ -73,12 +73,12 @@ class KlangbeckenAPI:
     def _replaygain_analysis(self, mutagenfile):
         # 1. compute track_gain
         gstreamer_cmd = [
-            "gst-launch-1.0", "-t", 
-            "filesrc", "location="+mutagenfile.filename, 
-            "!", "decodebin", 
-            "!", "audioconvert", 
-            "!", "audioresample", 
-            "!", "rganalysis", 
+            "gst-launch-1.0", "-t",
+            "filesrc", "location="+mutagenfile.filename,
+            "!", "decodebin",
+            "!", "audioconvert",
+            "!", "audioresample",
+            "!", "rganalysis",
             "!", "fakesink"
         ]
         output = str(subprocess.check_output(gstreamer_cmd))
