@@ -9,6 +9,7 @@ addons:
       - liquidsoap
       - liquidsoap-plugin-icecast
       - liquidsoap-plugin-lame
+      - liquidsoap-plugin-alsa
 env:
   global:
     - KLANGBECKEN_DATA=data
