@@ -211,8 +211,8 @@
             <tr v-for="file in jingles | filterBy search | orderBy sortKey sortOrders[sortKey]"
               class="{{file.repeate === 0 || file.repeate === '0' ? 'disabled' : ''}}">
               <td>{{file.filename}}</td>
-              <td>{{file.mtime | date}}</td>
-              <td>{{file.length | time}}</td>
+              <td class="td-date">{{file.mtime | date}}</td>
+              <td class="td-time">{{file.length | time}}</td>
               <td>
                 <input class="spinner" type="number" name="Priority" v-model="file.repeate" min="0" max="9"
                       title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateRepeate(file)"
@@ -262,9 +262,9 @@
         Vue.filter('time', seconds => Math.floor(seconds / 60) + ':' + ('00' + Math.round(seconds % 60)).slice(-2));
         Vue.filter('date', micros => {
             var date = new Date(micros * 1000);
-            return date.getFullYear() + '-' +
-                ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
-                ('00' + date.getDate()).slice(-2)
+            return ('00' + date.getDate()).slice(-2) + '.' +
+                ('00' + (date.getMonth() + 1)).slice(-2) + '.' +
+                date.getFullYear()
         });
 
         var Music = Vue.extend({

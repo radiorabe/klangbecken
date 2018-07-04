@@ -265,7 +265,8 @@ td .btn{
     margin-right: 2px;
 }
 
-.table-condensed > tbody > tr > td.td-time{
+.table-condensed > tbody > tr > td.td-time,
+.table-condensed > tbody > tr > td.td-date{
     text-align: right;
     padding-right: 38px;
 }
