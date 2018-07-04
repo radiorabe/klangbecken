@@ -88,11 +88,4 @@ radio = fallback(track_sensitive=false,
                  transitions=[trans],
                  [radio, blank(id="blank")])
 
-
-output.icecast(
-  %mp3(bitrate=128),
-  mount="/rabe-128.mp3",
-  description="Radio Bern RaBe 95.6",
-  url="http://www.rabe.ch/",
-  host="localhost", port=8000, password="hackme",
-  radio)
+output.alsa(device="default:CARD=Axia", radio)
