@@ -88,4 +88,5 @@ radio = fallback(track_sensitive=false,
                  transitions=[trans],
                  [radio, blank(id="blank")])
 
+radio = amplify(1., override="replaygain_track_gain", radio)
 output.alsa(device="default:CARD=Axia", radio)
