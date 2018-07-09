@@ -6,6 +6,7 @@ python: 3.6
 addons:
   apt:
     packages:
+      - bs1770gain
       - liquidsoap
       - liquidsoap-plugin-icecast
       - liquidsoap-plugin-lame

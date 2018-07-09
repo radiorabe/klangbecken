@@ -7,6 +7,7 @@ import subprocess
 from collections import Counter
 from io import open
 from os.path import join as pjoin
+from xml.etree import ElementTree
 
 import mutagen
 from mutagen.easyid3 import EasyID3
@@ -72,21 +73,16 @@ class KlangbeckenAPI:
         return pjoin(self.data_dir, path)
 
     def _replaygain_analysis(self, mutagenfile):
-        # 1. compute track_gain
-        gstreamer_cmd = [
-            "gst-launch-1.0", "-t",
-            "filesrc", "location="+mutagenfile.filename,
-            "!", "decodebin",
-            "!", "audioconvert",
-            "!", "audioresample",
-            "!", "rganalysis",
-            "!", "fakesink"
+        bs1770gain_cmd = [
+            "/usr/bin/bs1770gain", "--ebu", "--xml", mutagenfile.filename
         ]
-        output = str(subprocess.check_output(gstreamer_cmd))
-        search_str = 'replaygain track gain: '
-        start = output.find(search_str) + len(search_str)
-        track_gain = output[start:None].split('\\n')[0]
-        # 2. set TXXX tag
+        output = subprocess.check_output(bs1770gain_cmd)
+        bs1770gain = ElementTree.fromstring(output)
+        # lu is in bs1770gain > album > track > integrated as an attribute
+        track_gain = bs1770gain.find('album') \
+                               .find('track') \
+                               .find('integrated') \
+                               .attrib['lu']
         mutagenfile['track_gain'] = track_gain + ' db'
         mutagenfile.save()
 
