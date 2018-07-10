@@ -78,10 +78,7 @@ class KlangbeckenAPI:
         output = subprocess.check_output(bs1770gain_cmd)
         bs1770gain = ElementTree.fromstring(output)
         # lu is in bs1770gain > album > track > integrated as an attribute
-        track_gain = bs1770gain.find('album') \
-                               .find('track') \
-                               .find('integrated') \
-                               .attrib['lu']
+        track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
         mutagenfile['track_gain'] = track_gain + ' db'
         mutagenfile.save()
 
