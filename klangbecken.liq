@@ -88,5 +88,15 @@ radio = fallback(track_sensitive=false,
                  transitions=[trans],
                  [radio, blank(id="blank")])
 
+def log_md_func(m) =
+  print("Metadata: ")
+  print(m["replaygain_track_gain"])
+end
+
+#radio = on_metadata(log_md_func, radio)
+
 radio = amplify(1., override="replaygain_track_gain", radio)
+
+radio = amplify(0.5, radio)
+
 output.alsa(device="default:CARD=Axia", radio)
