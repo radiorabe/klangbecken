@@ -46,6 +46,7 @@ class KlangbeckenAPI:
 
         mappings = [
             ('/login/', ('GET', 'POST'), 'login'),
+            ('/logout/', ('POST',), 'logout'),
             ('/<any(music, jingles):category>/', ('GET',), 'list'),
             ('/<any(music, jingles):category>/<filename>', ('GET',), 'get'),
             ('/<any(music, jingles):category>/', ('POST',), 'upload'),
@@ -111,6 +112,13 @@ class KlangbeckenAPI:
         response = Response(json.dumps({'status': 'OK'}), mimetype='text/json')
         session = request.client_session
         session['user'] = request.environ['REMOTE_USER']
+        session.save_cookie(response)
+        return response
+
+    def on_logout(self, request):
+        response = Response(json.dumps({'status': 'OK'}), mimetype='text/json')
+        session = request.client_session
+        del session['user']
         session.save_cookie(response)
         return response
 

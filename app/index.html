@@ -34,6 +34,10 @@
                     <li v-link-active><a v-link="{path: '/jingles'}" data-toggle="tab">Jingles</a></li>
                     <!--li v-link-active><a v-link="{path: '/settings'}" data-toggle="tab">Settings</a></li-->
                 </ul>
+                <ul class="nav navbar-nav pull-right">
+                    <li><button type="submit" class="btn navbar-btn btn-danger" name="logout" id="logout" @click="logout" value="Log Out">Log Out</button></li>
+                </ul>
+
             </div>
         </div>
     </nav>
@@ -360,8 +364,8 @@
                         console.log(response);
                         this.password = '';
                     });
-
                 },
+
                 loadOneMusicFile: function(file) {
                     if (this.music.length === 0 || this.music[0].date !== 'just now') {
                         this.music.unshift({
@@ -544,7 +548,19 @@
         //   template: '#settings-tmpl',
         // });
 
-        var App = Vue.extend({});
+        var App = Vue.extend({
+            methods: {
+                logout: function() {
+                    this.$http.post('/api/logout/').then(response => {
+                        window.location.reload();
+                    }, response => {
+                        //FIXME: show message to user
+                        console.log(response);
+                    });
+
+                },
+            }
+        });
 
         var router = new VueRouter({
             hashbang: false,
@@ -569,10 +585,10 @@
         });
 
         router.start(App, '#app');
-        
-        
 
-        
+
+
+
         $(document).bind('dragover', function (e) {
             var dropZone = $('.main-dropzone'),
             timeout = window.dropZoneTimeout;
