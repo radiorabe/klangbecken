@@ -44,6 +44,10 @@ class KlangbeckenAPI:
         # mutagenfile['rg_track_gain']
         EasyID3.RegisterTXXXKey(key='track_gain',
                                 desc='REPLAYGAIN_TRACK_GAIN')
+        EasyID3.RegisterTXXXKey(key='cue_in',
+                                desc='CUE_IN')
+        EasyID3.RegisterTXXXKey(key='cue_out',
+                                desc='CUE_OUT')
 
         mappings = [
             ('/login/', ('GET', 'POST'), 'login'),
@@ -81,7 +85,13 @@ class KlangbeckenAPI:
         # lu is in bs1770gain > album > track > integrated as an attribute
         track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
         mutagenfile['track_gain'] = track_gain + ' db'
-        mutagenfile.save()
+
+    def _silan_analysis(self, mutagenfile):
+        silan_cmd = ['/usr/bin/silan', '--format', 'json', mutagenfile.filename]
+        output = subprocess.check_output(silan_cmd)
+        cue_points = json.loads(output)['sound'][0]
+        mutagenfile['cue_in'] = str(cue_points[0])
+        mutagenfile['cue_out'] = str(cue_points[1])
 
     def __call__(self, environ, start_response):
         request = Request(environ)
@@ -178,6 +188,8 @@ class KlangbeckenAPI:
 
         mutagenfile = mutagen.File(self._full_path(file_path), easy=True)
         self._replaygain_analysis(mutagenfile)
+        self._silan_analysis(mutagenfile)
+        mutagenfile.save()
         metadata = {
             'filename': filename,
             'path': file_path,
