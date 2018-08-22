@@ -87,7 +87,9 @@ class KlangbeckenAPI:
         mutagenfile['track_gain'] = track_gain + ' db'
 
     def _silan_analysis(self, mutagenfile):
-        silan_cmd = ['/usr/bin/silan', '--format', 'json', mutagenfile.filename]
+        silan_cmd = [
+            '/usr/bin/silan', '--format', 'json', mutagenfile.filename
+        ]
         output = subprocess.check_output(silan_cmd)
         cue_points = json.loads(output)['sound'][0]
         mutagenfile['cue_in'] = str(cue_points[0])
