@@ -84,7 +84,7 @@ class KlangbeckenAPI:
         bs1770gain = ElementTree.fromstring(output)
         # lu is in bs1770gain > album > track > integrated as an attribute
         track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
-        mutagenfile['track_gain'] = track_gain + ' db'
+        mutagenfile['track_gain'] = track_gain + ' dB'
 
     def _silan_analysis(self, mutagenfile):
         silan_cmd = [
