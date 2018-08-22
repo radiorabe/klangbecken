@@ -102,3 +102,11 @@ radio = amplify(1., override="replaygain_track_gain", radio)
 radio = amplify(0.5, radio)
 
 output.alsa(device="default:CARD=Axia", radio)
+
+#output.icecast(
+#  %mp3(bitrate=128),
+#  mount="/rabe-128.mp3",
+#  description="Radio Bern RaBe 95.6",
+#  url="http://www.rabe.ch/",
+#  host="localhost", port=8000, password="hackme",
+#  radio)
