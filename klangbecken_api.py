@@ -223,6 +223,7 @@ class KlangbeckenAPI:
                     print(line, file=f)
             for i in range(repeates):
                 print(path, file=f)
+            del i
 
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
