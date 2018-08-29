@@ -20,6 +20,9 @@ from werkzeug.wrappers import BaseRequest, Response
 from werkzeug.wsgi import wrap_file
 
 
+PLAYLISTS = ['music', 'jingles']
+
+
 class JSONSecureCookie(SecureCookie):
     serialization_method = json
 
@@ -49,15 +52,16 @@ class KlangbeckenAPI:
         EasyID3.RegisterTXXXKey(key='cue_out',
                                 desc='CUE_OUT')
 
+        root_url = '/<any(' + ', '.join(PLAYLISTS) + '):category>/'
+
         mappings = [
             ('/login/', ('GET', 'POST'), 'login'),
             ('/logout/', ('POST',), 'logout'),
-            ('/<any(music, jingles):category>/', ('GET',), 'list'),
-            ('/<any(music, jingles):category>/<filename>', ('GET',), 'get'),
-            ('/<any(music, jingles):category>/', ('POST',), 'upload'),
-            ('/<any(music, jingles):category>/<filename>', ('PUT',), 'update'),
-            ('/<any(music, jingles):category>/<filename>', ('DELETE',),
-             'delete'),
+            (root_url, ('GET',), 'list'),
+            (root_url + '<filename>', ('GET',), 'get'),
+            (root_url, ('POST',), 'upload'),
+            (root_url + '<filename>', ('PUT',), 'update'),
+            (root_url + '<filename>', ('DELETE',), 'delete'),
         ]
 
         if stand_alone:
@@ -219,6 +223,7 @@ class KlangbeckenAPI:
                     print(line, file=f)
             for i in range(repeates):
                 print(path, file=f)
+            del i
 
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
@@ -235,7 +240,7 @@ class KlangbeckenAPI:
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
     def on_static(self, request, path=''):
-        if path in ['', 'music', 'jingles']:
+        if path in [''] + PLAYLISTS:
             path = 'index.html'
         path = os.path.join(self.static_dir, path)
 
@@ -258,13 +263,14 @@ class KlangbeckenAPI:
 if __name__ == '__main__':
     import random
     from werkzeug.serving import run_simple
-    os.environ['KLANGBECKEN_DATA'] = 'data'
+    data_dir = pjoin(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.environ['KLANGBECKEN_DATA'] = data_dir
     os.environ['KLANGBECKEN_API_SECRET'] = \
         ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
-    for path in ['data', pjoin('data', 'music'), pjoin('data', 'jingles')]:
+    for path in [data_dir] + [pjoin(data_dir, d) for d in PLAYLISTS]:
         if not os.path.isdir(path):
             os.mkdir(path)
-    for path in [pjoin('data', 'music.m3u'), pjoin('data', 'jingles.m3u')]:
+    for path in [pjoin(data_dir, d + '.m3u') for d in PLAYLISTS]:
         if not os.path.isfile(path):
             open(path, 'a').close()
 
