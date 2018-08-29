@@ -35,6 +35,11 @@ nav.navbar-default {
     color: #537366;
 }
 
+.glyphicon-share-alt:before{
+    transform: scaleX(-1);
+    display: block;
+}
+
 .btn-primary,
 .btn,
 .btn:hover {
@@ -351,7 +356,7 @@ th.length {
 }
 
 th.actions {
-    width: 130px;
+    width: 150px;
 }
 
 input[type=number].spinner {

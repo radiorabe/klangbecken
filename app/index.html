@@ -133,7 +133,17 @@
               <template v-if="file.edit">
                   <td>{{file.filename}}</td>
                   <td><input v-model="file.artist"></td>
-                  <td><button @click="file.edit = false">Save</button></td>
+                  <td><input v-model="file.title"></td>
+                  <td><input v-model="file.album"></td>
+                  <td class="td-time">{{file.length | time}}</td>
+                  <td>
+                      <button @click="file.edit = false" class="btn btn-xs" title="Save" v-on:click="file.edit = true" data-toggle="tooltip">
+                          <span class="glyphicon glyphicon-floppy-disk"></span>
+                      </button>
+                      <button @click="file.edit = false" class="btn btn-xs" title="Cancel Edit" v-on:click="file.edit = true" data-toggle="tooltip">
+                          <span class="glyphicon glyphicon-share-alt"></span>
+                      </button>
+                  </td>
               </template>
               <template v-else>
               <td v-for="key in ['filename', 'artist', 'title', 'album']" title="{{file[key]}}"
