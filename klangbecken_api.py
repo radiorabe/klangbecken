@@ -263,7 +263,8 @@ class KlangbeckenAPI:
 if __name__ == '__main__':
     import random
     from werkzeug.serving import run_simple
-    os.environ['KLANGBECKEN_DATA'] = 'data'
+    data_dir = pjoin(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.environ['KLANGBECKEN_DATA'] = data_dir
     os.environ['KLANGBECKEN_API_SECRET'] = \
         ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
     for path in [data_dir] + [pjoin(data_dir, d) for d in PLAYLISTS]:
