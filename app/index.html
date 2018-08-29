@@ -142,10 +142,11 @@
                         v-on:click="disableFile(file)" data-toggle="tooltip" >
                   <span class="glyphicon {{file.repeate === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
                 </button>
-                <button class="btn btn-xs btn-heavyRotation {{file.repeate === 5 ? 'active': ''}}" title="Heavy Rotation" data-toggle="tooltip"
-                  v-on:click="heavyRotation(file)" v-if="file.repeate !== 0">
-                  <span class="glyphicon glyphicon-fire"></span>
+                  
+                <button class="btn btn-xs btn-playNext" title="Play Next" data-toggle="tooltip">
+                  <span class="glyphicon glyphicon-open"></span>
                 </button>
+                  
                 <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeate === 0">
                   <span class="glyphicon glyphicon-fire"></span>
                 </button>
