@@ -28,6 +28,9 @@ setup(
         'test': ['tox', 'coverage'],
     },
     entry_points={
-        'console_scripts': ['saemubox-listener=saemubox_listener:main'],
+        'console_scripts': [
+            'saemubox-listener=saemubox_listener:main',
+            'klangbecken-import=klangecken_api:import_files',
+        ],
     }
 )

@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals, division
 import json
 import os
 import subprocess
+import sys
 from collections import Counter
 from io import open
 from os.path import join as pjoin
@@ -260,6 +261,10 @@ class KlangbeckenAPI:
                         mimetype=mimetype)
 
 
+def import_files(playlist, files):
+    pass
+
+
 if __name__ == '__main__':
     import random
     from werkzeug.serving import run_simple
@@ -274,14 +279,25 @@ if __name__ == '__main__':
         if not os.path.isfile(path):
             open(path, 'a').close()
 
-    application = KlangbeckenAPI(stand_alone=True)
+    if (len(sys.argv) > 3 and sys.argv[1] == '--import'
+            and sys.argv[2] in PLAYLISTS):
+        import_files(sys.argv[2], sys.argv[3:])
+    elif len(sys.argv) == 1:
+        application = KlangbeckenAPI(stand_alone=True)
 
-    # Inject dummy remote user when testing locally
-    def wrapper(environ, start_response):
-        environ['REMOTE_USER'] = 'dummyuser'
-        return application(environ, start_response)
+        # Inject dummy remote user when testing locally
+        def wrapper(environ, start_response):
+            environ['REMOTE_USER'] = 'dummyuser'
+            return application(environ, start_response)
 
-    run_simple('127.0.0.1', 5000, wrapper, use_debugger=True,
-               use_reloader=True, threaded=False)
+        run_simple('127.0.0.1', 5000, wrapper, use_debugger=True,
+                   use_reloader=True, threaded=False)
+    else:
+        print("""${0}: Unknown command line arguments
+
+Usage:
+${0}: Run development server
+${0} --import <${1}> FILES: Import files to playlist"""
+              .format(sys.argv[0], '|'.join(PLAYLISTS)))
 else:
     application = KlangbeckenAPI()
