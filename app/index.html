@@ -145,12 +145,15 @@
                       </button>
                   </td>
               </template>
+                
+                
+                
               <template v-else>
               <td v-for="key in ['filename', 'artist', 'title', 'album']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td class="actions">
-                <button class="btn btn-xs   "
+                <button class="btn btn-xs"
                     title="Edit" v-on:click="file.edit = true" data-toggle="tooltip">
                     <span class="glyphicon glyphicon-pencil"></span>
                 </button>
@@ -166,10 +169,7 @@
                 <button class="btn btn-xs btn-playNext" title="Play Next" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-open"></span>
                 </button>
-                  
-                <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeate === 0">
-                  <span class="glyphicon glyphicon-fire"></span>
-                </button>
+
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-trash"></span>
                 </button>
@@ -627,6 +627,7 @@
                 dropZone.removeClass('in hover');
             }, 100);
         });
+
     </script>
 </body>
 

@@ -270,6 +270,15 @@ td .btn{
     margin-right: 2px;
 }
 
+td input{
+    max-height: 24px;
+    border: 1px solid lightgray;
+    margin: 0;
+    margin-top: -2px;
+    margin-left: -5px;
+    padding-left: 4px;
+}
+
 .table-condensed > tbody > tr > td.td-time,
 .table-condensed > tbody > tr > td.td-date{
     text-align: right;
@@ -283,6 +292,10 @@ input{
 
 tr:hover td{
     background-color: #edf2f1;
+}
+
+tbody tr:not(.active) td:not(.actions){
+    padding: 7px 5px 3px 5px;
 }
 
 
