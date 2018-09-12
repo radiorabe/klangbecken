@@ -5,6 +5,18 @@ body {
     background-color: #d8efdb;
 }
 
+.navbar-default .navbar-toggle{
+    border-color: transparent;
+}
+
+.navbar-default .navbar-toggle .icon-bar{
+    background-color: #064c57;
+}
+
+.navbar-default .navbar-toggle:hover{
+    background-color: transparent;
+}
+
 nav.navbar-default {
     font-family: "Fjalla One", sans-serif;
     color: white;
@@ -27,6 +39,10 @@ nav.navbar-default {
 .navbar-default .navbar-nav > .active > a:focus{
     color: #0d4b56;
     background-color: transparent;
+}
+
+.pull-right{
+    margin-right: 5px;
 }
 
 .glyphicon-upload,
@@ -108,8 +124,20 @@ table .btn-delete:hover{
     font-weight: bold;
     color: darkgray;
     cursor: default;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
+
+.well-button{
+    padding: 15px 0;
+}
+
+@media(min-width: 768px){
+    .well-button{
+        padding-left: 15px;
+    }
+}
 
 .well-button .btn{
     padding: 18px;
@@ -179,17 +207,27 @@ tr.active td {
     cursor: pointer;
 }
 
+.search{
+    padding: 0;
+}
+@media(min-width: 768px){
+    .search{
+        padding-right: 15px;
+    }
+}
+
 .search label input[type="text"] {
     font-weight: normal;
 }
 
 
 .search span{
-    margin-left: 5px;
+    position: absolute;
+    margin-left: 15px;
+    margin-top: 23px;
 }
 
 .search input[type="text"]{
-    margin-left: -38px;
     border: 1px solid lightgray;
     padding: 19px;
     padding-left: 40px;
@@ -296,6 +334,10 @@ tr:hover td{
 
 tbody tr:not(.active) td:not(.actions){
     padding: 7px 5px 3px 5px;
+}
+
+tbody tr:not(.active) td:first-child{
+    padding-left: 10px;
 }
 
 
