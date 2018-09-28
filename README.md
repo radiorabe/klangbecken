@@ -33,16 +33,12 @@ To get a working test environment with Docker, you need one container with Iceca
     ```
     sudo docker run --net host moul/icecast
     ```
-3. Build the liquidsoap container 
+3. Execute `klangbecken.liq`
     ```
-    sudo docker build -t liquidsoap https://github.com/radiorabe/docker-liquidsoap.git
+    sudo docker run -ti --rm -v $PWD:/var/lib/liquidsoap -e KLANGBECKEN_DATA=data --net host radiorabe/liquidsoap klangbecken.liq
     ```
-4. Execute `klangbecken.liq`
-    ```
-    sudo docker run -ti --rm -v $PWD:/var/lib/liquidsoap -e KLANGBECKEN_DATA=data --net host liquidsoap klangbecken.liq
-    ```
-5. Also have a look at the logs
+4. Also have a look at the logs
     ```
     sudo docker exec $(sudo docker ps -lq) tail -f /var/log/liquidsoap/klangbecken.log
     ```
-6. Now you can open Klangbecken on http://localhost:5000 and the stream on http://localhost:8000
+5. Now you can open Klangbecken on http://localhost:5000 and the stream on http://localhost:8000
