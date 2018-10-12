@@ -200,7 +200,6 @@ class KlangbeckenAPI:
                     print(line, file=f)
             for i in range(repeates):
                 print(path, file=f)
-            del i
 
         return JSONResponse({'status': 'OK'})
 
