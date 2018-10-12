@@ -31,7 +31,7 @@ jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.con
 music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(data_dir, "music.m3u"))
 
 music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
-music = crossfade(start_next=.25, fade_out=0.5, fade_in=0., music)
+music = crossfade(start_next=.5, fade_out=1., fade_in=0., music)
 
 insert_jingle = ref false
 restart = ref true
