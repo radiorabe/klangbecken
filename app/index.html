@@ -129,7 +129,7 @@
               </td>
             </tr>
             <tr v-for="file in chunk.files | filterBy search | orderBy sortKey sortOrders[sortKey]"
-                class="{{file.repeate === 0 ? 'disabled' : ''}}{{file.repeate === 5 ? 'heavyRotation' : ''}}">
+                class="{{file.repeat === 0 ? 'disabled' : ''}}{{file.repeat === 5 ? 'heavyRotation' : ''}}">
               <template v-if="file.edit">
                   <td>{{file.filename}}</td>
                   <td><input v-model="file.artist"></td>
@@ -161,16 +161,16 @@
                         title="Play" v-on:click="play(file.path)" data-toggle="tooltip">
                   <span class="glyphicon {{file.path === nowplaying ? 'glyphicon-stop' : 'glyphicon-play'}}"></span>
                 </button>
-                <button class="btn btn-xs" title="{{file.repeate === 0 ? 'Enable': 'Disable'}}"
+                <button class="btn btn-xs" title="{{file.repeat === 0 ? 'Enable': 'Disable'}}"
                         v-on:click="disableFile(file)" data-toggle="tooltip" >
-                  <span class="glyphicon {{file.repeate === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
+                  <span class="glyphicon {{file.repeat === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
                 </button>
 
                 <button class="btn btn-xs btn-playNext" title="Play Next" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-open"></span>
                 </button>
 
-                <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeate === 0">
+                <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeat === 0">
                   <span class="glyphicon glyphicon-fire"></span>
                 </button>
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
@@ -238,13 +238,13 @@
           </thead>
           <tbody v-if="!loading">
             <tr v-for="file in jingles | filterBy search | orderBy sortKey sortOrders[sortKey]"
-              class="{{file.repeate === 0 || file.repeate === '0' ? 'disabled' : ''}}">
+              class="{{file.repeat=== 0 || file.repeat === '0' ? 'disabled' : ''}}">
               <td>{{file.filename}}</td>
               <td class="td-date">{{file.mtime | date}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td>
-                <input class="spinner" type="number" name="Priority" v-model="file.repeate" min="0" max="9"
-                      title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateRepeate(file)"
+                <input class="spinner" type="number" name="Priority" v-model="file.repeat" min="0" max="9"
+                      title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateRepeat(file)"
                       onClick="this.select();">
                 <button class="btn btn-xs {{file.path === nowplaying ? 'active' : ''}}"
                         title="Play" v-on:click="play(file.path)" data-toggle="tooltip">
@@ -420,39 +420,39 @@
                     });
                 },
                 disableFile: function(obj) {
-                    var new_repeate = 0;
-                    var old_repeate = obj.repeate;
-                    if (obj.repeate === 0) {
-                        var new_repeate = 1;
+                    var new_repeat = 0;
+                    var old_repeat = obj.repeat;
+                    if (obj.repeat === 0) {
+                        var new_repeat = 1;
                     }
-                    obj.repeate = new_repeate;
+                    obj.repeat = new_repeat;
                     this.$http.put('/api/' + obj.path, {
-                        repeate: new_repeate
+                        repeat: new_repeat
                     }).then(response => {
-                        //obj.repeate = new_repeate;
+                        //obj.repeat = new_repeat;
                     }, response => {
-                        obj.repeate = old_repeate;
+                        obj.repeat = old_repeat;
                         //FIXME: error handling
                         console.error(response);
                     });
                 },
                 heavyRotation: function(obj) {
-                    var new_repeate = 5;
-                    var old_repeate = obj.repeate;
-                    if (obj.repeate === 5) {
-                        new_repeate = 1;
+                    var new_repeat = 5;
+                    var old_repeat = obj.repeat;
+                    if (obj.repeat === 5) {
+                        new_repeat = 1;
                     }
-                    obj.repeate = new_repeate;
+                    obj.repeat = new_repeat;
                     this.$http.put('/api/' + obj.path, {
-                        repeate: new_repeate
+                        repeat: new_repeat
                     }, {
                         headers: {
                             'Content-Type': 'text/json'
                         }
                     }).then(response => {
-                        //obj.repeate = new_repeate;
+                        //obj.repeat = new_repeat;
                     }, response => {
-                        obj.repeate = old_repeate;
+                        obj.repeat = old_repeat;
                         //FIXME: error handling
                         console.error(response);
                     });
@@ -541,9 +541,9 @@
                         //FIXME: error handling
                     });
                 },
-                updateRepeate: function(obj) {
+                updateRepeat: function(obj) {
                     this.$http.put('/api/' + obj.path, {
-                        repeate: obj.repeate
+                        repeat: obj.repeat
                     }).then(response => {}, response => {
                         //FIXME: error handling
                         console.error(response);

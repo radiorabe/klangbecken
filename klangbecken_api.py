@@ -139,7 +139,7 @@ class KlangbeckenAPI:
                 'album': mutagenfile.get('album', [''])[0],
                 'length': float(mutagenfile.info.length),
                 'mtime': os.stat(self._full_path(path)).st_mtime,
-                'repeate': counter[path],
+                'repeat': counter[path],
             } for (filename, path, mutagenfile) in tuples
         ]
 
@@ -179,7 +179,7 @@ class KlangbeckenAPI:
             'artist': mutagenfile.get('artist', [''])[0],
             'title': mutagenfile.get('title', [''])[0],
             'album': mutagenfile.get('album', [''])[0],
-            'repeate': 1,
+            'repeat': 1,
             'length': float(mutagenfile.info.length),
             'mtime': os.stat(self._full_path(file_path)).st_mtime,
         }
@@ -189,7 +189,8 @@ class KlangbeckenAPI:
         # FIXME: other values (artist, title)
         path = pjoin(category, secure_filename(filename))
         try:
-            repeates = int(json.loads(request.data)['repeate'])
+            data = json.loads(request.data)
+            repeats = int(data['repeat'])
         except:  # noqa: E722
             raise UnprocessableEntity('Cannot parse PUT request')
 
@@ -198,7 +199,7 @@ class KlangbeckenAPI:
             for line in lines:
                 if line != path and line:
                     print(line, file=f)
-            for i in range(repeates):
+            for i in range(repeats):
                 print(path, file=f)
 
         return JSONResponse({'status': 'OK'})
