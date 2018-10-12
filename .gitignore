@@ -3,5 +3,6 @@
 /.venv/
 /.vscode/
 /KlangbeckenAPI.egg-info/
+/__pycache__/
 .coverage
 *.pyc
