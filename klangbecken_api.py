@@ -24,6 +24,16 @@ PLAYLISTS = ('music', 'jingles')
 
 
 
+############
+# HTTP API #
+############
+class JSONResponse(Response):
+    """
+    JSON response helper
+    """
+    def __init__(self, data, **json_opts):
+        super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
+                                           mimetype='text/json')
 
 
 class KlangbeckenAPI:
@@ -94,14 +104,14 @@ class KlangbeckenAPI:
         if request.remote_user is None:
             raise Unauthorized()
 
-        response = Response(json.dumps({'status': 'OK'}), mimetype='text/json')
+        response = JSONResponse({'status': 'OK'})
         session = request.client_session
         session['user'] = request.environ['REMOTE_USER']
         session.save_cookie(response)
         return response
 
     def on_logout(self, request):
-        response = Response(json.dumps({'status': 'OK'}), mimetype='text/json')
+        response = JSONResponse({'status': 'OK'})
         session = request.client_session
         del session['user']
         session.save_cookie(response)
@@ -134,9 +144,7 @@ class KlangbeckenAPI:
         ]
 
         data = sorted(dicts, key=lambda v: v['mtime'], reverse=True)
-        return Response(json.dumps(data, indent=2, sort_keys=True,
-                                   ensure_ascii=True), mimetype='text/json')
-
+        return JSONResponse(data, indent=2, sort_keys=True, ensure_ascii=True)
 
     def on_upload(self, request, category):
         file = request.files['files']
@@ -175,7 +183,7 @@ class KlangbeckenAPI:
             'length': float(mutagenfile.info.length),
             'mtime': os.stat(self._full_path(file_path)).st_mtime,
         }
-        return Response(json.dumps(metadata), mimetype='text/json')
+        return JSONResponse(metadata)
 
     def on_update(self, request, category, filename):
         # FIXME: other values (artist, title)
@@ -194,7 +202,7 @@ class KlangbeckenAPI:
                 print(path, file=f)
             del i
 
-        return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
+        return JSONResponse({'status': 'OK'})
 
     def on_delete(self, request, category, filename):
         path = pjoin(category, secure_filename(filename))
@@ -206,7 +214,7 @@ class KlangbeckenAPI:
             for line in lines:
                 if line != path and line:
                     print(line, file=f)
-        return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
+        return JSONResponse({'status': 'OK'})
 
 
 
