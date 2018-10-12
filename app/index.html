@@ -181,7 +181,7 @@
         <div v-if="loading" class="loader"></div>
       </div>
     </div>
-  <audio v-if="nowplaying" v-bind:src="'api/' + nowplaying" v-on:ended="ended" autoplay></audio>
+  <audio v-if="nowplaying" v-bind:src="'data/' + nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
     <template id="jingles-tmpl">
@@ -588,7 +588,7 @@
         var router = new VueRouter({
             hashbang: false,
             linkActiveClass: 'active',
-            history: true,
+            history: false,
         });
 
         router.map({

@@ -16,33 +16,22 @@ from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
                                  Unauthorized)
 from werkzeug.routing import Map, Rule
-from werkzeug.utils import secure_filename, cached_property
-from werkzeug.wrappers import BaseRequest, Response
-from werkzeug.wsgi import wrap_file
+from werkzeug.utils import secure_filename
+from werkzeug.wrappers import Request, Response
 
 
-PLAYLISTS = ['music', 'jingles']
+PLAYLISTS = ('music', 'jingles')
 
 
-class JSONSecureCookie(SecureCookie):
-    serialization_method = json
 
-
-class Request(BaseRequest):
-
-    @cached_property
-    def client_session(self):
-        secret_key = os.environ['KLANGBECKEN_API_SECRET']
-        return SecureCookie.load_cookie(self, secret_key=secret_key)
 
 
 class KlangbeckenAPI:
 
-    def __init__(self, stand_alone=False):
+    def __init__(self):
         self.data_dir = os.environ.get('KLANGBECKEN_DATA',
                                        '/var/lib/klangbecken')
         self.secret = os.environ['KLANGBECKEN_API_SECRET']
-        self.url_map = Map()
 
         # register the TXXX key so that we can access it later as
         # mutagenfile['rg_track_gain']
@@ -55,28 +44,15 @@ class KlangbeckenAPI:
 
         root_url = '/<any(' + ', '.join(PLAYLISTS) + '):category>/'
 
-        mappings = [
-            ('/login/', ('GET', 'POST'), 'login'),
-            ('/logout/', ('POST',), 'logout'),
-            (root_url, ('GET',), 'list'),
-            (root_url + '<filename>', ('GET',), 'get'),
-            (root_url, ('POST',), 'upload'),
-            (root_url + '<filename>', ('PUT',), 'update'),
-            (root_url + '<filename>', ('DELETE',), 'delete'),
-        ]
-
-        if stand_alone:
-            # Serve html and prefix calls to api
-            mappings = [('/api' + path, methods, endpoint)
-                        for path, methods, endpoint in mappings]
-            mappings.append(('/', ('GET',), 'static'))
-            mappings.append(('/<path:path>', ('GET',), 'static'))
-            cur_dir = os.path.dirname(os.path.realpath(__file__))
-            dist_dir = open(pjoin(cur_dir, '.dist_dir')).read().strip()
-            self.static_dir = pjoin(cur_dir, dist_dir)
-
-        for path, methods, endpoint in mappings:
-            self.url_map.add(Rule(path, methods=methods, endpoint=endpoint))
+        self.url_map = Map(rules=(
+            Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
+            Rule('/logout/', methods=('POST',), endpoint='logout'),
+            Rule(root_url, methods=('GET',), endpoint='list'),
+            Rule(root_url, methods=('POST',), endpoint='upload'),
+            Rule(root_url + '<filename>', methods=('PUT',), endpoint='update'),
+            Rule(root_url + '<filename>', methods=('DELETE',),
+                 endpoint='delete'),
+        ))
 
     def _full_path(self, path):
         return pjoin(self.data_dir, path)
@@ -101,14 +77,13 @@ class KlangbeckenAPI:
         mutagenfile['cue_out'] = str(cue_points[1])
 
     def __call__(self, environ, start_response):
+        adapter = self.url_map.bind_to_environ(environ)
         request = Request(environ)
-        adapter = self.url_map.bind_to_environ(request.environ)
-
-        session = request.client_session
+        session = SecureCookie.load_cookie(request, secret_key=self.secret)
+        request.client_session = session
         try:
             endpoint, values = adapter.match()
-            if endpoint not in ['login', 'static'] and (session.new or
-                                                        'user' not in session):
+            if endpoint != 'login' and (session.new or 'user' not in session):
                 raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
@@ -162,13 +137,6 @@ class KlangbeckenAPI:
         return Response(json.dumps(data, indent=2, sort_keys=True,
                                    ensure_ascii=True), mimetype='text/json')
 
-    def on_get(self, request, category, filename):
-        path = pjoin(category, secure_filename(filename))
-        full_path = self._full_path(path)
-        if not os.path.exists(full_path):
-            raise NotFound()
-        return Response(wrap_file(request.environ, open(full_path, 'rb')),
-                        mimetype='audio/mpeg')
 
     def on_upload(self, request, category):
         file = request.files['files']
@@ -240,38 +208,68 @@ class KlangbeckenAPI:
                     print(line, file=f)
         return Response(json.dumps({'status': 'OK'}), mimetype='text/json')
 
-    def on_static(self, request, path=''):
-        if path in [''] + PLAYLISTS:
-            path = 'index.html'
-        path = os.path.join(self.static_dir, path)
-
-        if path.endswith('.html'):
-            mimetype = 'text/html'
-        elif path.endswith('.css'):
-            mimetype = 'text/css'
-        elif path.endswith('.js'):
-            mimetype = 'text/javascript'
-        else:
-            mimetype = 'text/plain'
-
-        if not os.path.isfile(path):
-            raise NotFound()
-
-        return Response(wrap_file(request.environ, open(path, 'rb')),
-                        mimetype=mimetype)
 
 
-def import_files(playlist, files):
-    pass
+
+###########################
+# Stand-alone Application #
+###########################
+class StandaloneKlangbecken:
+    """
+    Stand-alone Klangbecken WSGI application for testing and development.
+
+    * Serves static files from the dist directory
+    * Serves data files from the data directory
+    * Relays API calls to the KlangbeckenAPI instance
+
+    Authentication is simulated.
+    """
+
+    def __init__(self):
+        import random
+        from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
+
+        # Assemble useful paths
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        data_full_path = pjoin(current_path, 'data')
+        dist_dir = open(pjoin(current_path, '.dist_dir')).read().strip()
+        dist_full_path = pjoin(current_path, dist_dir)
+
+        # Set environment variables needed by the KlangbeckenAPI
+        os.environ['KLANGBECKEN_DATA'] = data_full_path
+        os.environ['KLANGBECKEN_API_SECRET'] = \
+            ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
+
+        # Return 404 Not Found by default
+        app = NotFound()
+        # Serve static files from the dist and data directories
+        app = SharedDataMiddleware(app, {'': dist_full_path,
+                                         '/data': data_full_path})
+        # Relay requests to /api to the KlangbeckenAPI instance
+        app = DispatcherMiddleware(app, {'/api': KlangbeckenAPI()})
+
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        # Insert dummy user for authentication
+        # (normally done by the apache auth module)
+        environ['REMOTE_USER'] = 'dummyuser'
+
+        # Send 'index.html' when requesting '/'
+        if environ['PATH_INFO'] == '/':
+            environ['PATH_INFO'] = '/index.html'
+
+        return self.app(environ, start_response)
 
 
-if __name__ == '__main__':
-    import random
-    from werkzeug.serving import run_simple
+###########
+# Helpers #
+###########
+def _check_and_crate_data_dir():
+    """
+    Create local data directory structure for testing and development
+    """
     data_dir = pjoin(os.path.dirname(os.path.abspath(__file__)), 'data')
-    os.environ['KLANGBECKEN_DATA'] = data_dir
-    os.environ['KLANGBECKEN_API_SECRET'] = \
-        ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
     for path in [data_dir] + [pjoin(data_dir, d) for d in PLAYLISTS]:
         if not os.path.isdir(path):
             os.mkdir(path)
@@ -279,25 +277,27 @@ if __name__ == '__main__':
         if not os.path.isfile(path):
             open(path, 'a').close()
 
-    if (len(sys.argv) > 3 and sys.argv[1] == '--import'
-            and sys.argv[2] in PLAYLISTS):
-        import_files(sys.argv[2], sys.argv[3:])
-    elif len(sys.argv) == 1:
-        application = KlangbeckenAPI(stand_alone=True)
 
-        # Inject dummy remote user when testing locally
-        def wrapper(environ, start_response):
-            environ['REMOTE_USER'] = 'dummyuser'
-            return application(environ, start_response)
+def main():
+    """
+    Run server or importer locally
+    """
+    from werkzeug.serving import run_simple
 
-        run_simple('127.0.0.1', 5000, wrapper, use_debugger=True,
+    _check_and_crate_data_dir()
+
+    if len(sys.argv) == 1:
+        application = StandaloneKlangbecken()
+        run_simple('127.0.0.1', 5000, application, use_debugger=True,
                    use_reloader=True, threaded=False)
     else:
-        print("""${0}: Unknown command line arguments
+        print("${0}: No command line arguments allowed".format(sys.argv[0]),
+              file=sys.stderr)
 
-Usage:
-${0}: Run development server
-${0} --import <${1}> FILES: Import files to playlist"""
-              .format(sys.argv[0], '|'.join(PLAYLISTS)))
+
+if __name__ == '__main__':
+    # Run locally in stand-alone development mode
+    main()
 else:
+    # Set up WSGI application
     application = KlangbeckenAPI()
