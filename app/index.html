@@ -145,9 +145,9 @@
                       </button>
                   </td>
               </template>
-                
-                
-                
+
+
+
               <template v-else>
               <td v-for="key in ['filename', 'artist', 'title', 'album']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
@@ -165,11 +165,14 @@
                         v-on:click="disableFile(file)" data-toggle="tooltip" >
                   <span class="glyphicon {{file.repeate === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
                 </button>
-                  
+
                 <button class="btn btn-xs btn-playNext" title="Play Next" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-open"></span>
                 </button>
 
+                <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeate === 0">
+                  <span class="glyphicon glyphicon-fire"></span>
+                </button>
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-trash"></span>
                 </button>
