@@ -27,15 +27,6 @@ PLAYLISTS = ('music', 'jingles')
 ############
 # HTTP API #
 ############
-class JSONResponse(Response):
-    """
-    JSON response helper
-    """
-    def __init__(self, data, **json_opts):
-        super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
-                                           mimetype='text/json')
-
-
 class KlangbeckenAPI:
 
     def __init__(self):
@@ -217,6 +208,13 @@ class KlangbeckenAPI:
         return JSONResponse({'status': 'OK'})
 
 
+class JSONResponse(Response):
+    """
+    JSON response helper
+    """
+    def __init__(self, data, **json_opts):
+        super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
+                                           mimetype='text/json')
 
 
 ###########################
