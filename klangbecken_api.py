@@ -23,7 +23,6 @@ from werkzeug.wrappers import Request, Response
 PLAYLISTS = ('music', 'jingles')
 
 
-
 ############
 # HTTP API #
 ############
