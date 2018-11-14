@@ -131,11 +131,11 @@
             <tr v-for="file in chunk.files | filterBy search | orderBy sortKey sortOrders[sortKey]"
                 class="{{file.repeat === 0 ? 'disabled' : ''}}{{file.repeat === 5 ? 'heavyRotation' : ''}}">
               <template v-if="file.edit">
-                  <td>{{file.filename}}</td>
+                  <td>{{file.original_filename}}</td>
                   <td><input v-model="file.artist"></td>
                   <td><input v-model="file.title"></td>
                   <td><input v-model="file.album"></td>
-                  <td class="td-time">{{file.length | time}}</td>
+                  <td class="td-time">{{file.cue_out - file.cue_in | time}}</td>
                   <td class="actions">
                       <button @click="file.edit = false" class="btn btn-xs" title="Save" v-on:click="file.edit = true" data-toggle="tooltip">
                           <span class="glyphicon glyphicon-floppy-disk"></span>
@@ -149,7 +149,7 @@
 
 
               <template v-else>
-              <td v-for="key in ['filename', 'artist', 'title', 'album']" title="{{file[key]}}"
+              <td v-for="key in ['original_filename', 'artist', 'title', 'album']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td class="actions">
@@ -184,7 +184,7 @@
         <div v-if="loading" class="loader"></div>
       </div>
     </div>
-  <audio v-if="nowplaying" v-bind:src="'data/' + nowplaying" v-on:ended="ended" autoplay></audio>
+  <audio v-if="nowplaying" v-bind:src="nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
     <template id="jingles-tmpl">
@@ -341,12 +341,13 @@
             methods: {
                 loadMusic: function() {
                     this.loading = true;
-                    this.$http.get('/api/music/').then(response => {
+                    this.$http.get('/data/index.json').then(response => {
                         var formatDate = date => date.getFullYear() + '-' +
                             ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
                             ('00' + date.getDate()).slice(-2);
-                        this.music = response.data.reduceRight((groupedList, file) => {
-                            var date = formatDate(new Date(file.mtime * 1000));
+                        this.music = Object.entries(response.data).reduceRight((groupedList, file) => {
+                            var [id, data] = file;
+                            var date = formatDate(new Date(data.import_timestamp * 1000));
                             if (groupedList.length === 0 || groupedList[0].date !== date) {
                                 groupedList.unshift({
                                     date: date,
@@ -354,8 +355,12 @@
                                     files: []
                                 })
                             }
-                            file.edit = false;
-                            groupedList[0].files.push(file);
+
+                            data.edit = false;
+                            data.id = id;
+                            data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                            groupedList[0].files.push(data);
+                            //console.log(data);
                             return groupedList
                         }, []);
                         this.loading = false;
