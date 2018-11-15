@@ -183,7 +183,7 @@ EasyID3.RegisterTXXXKey(key='playlist', desc='PLAYLIST')
 # Analyzers #
 #############
 def raw_file_analyzer(file_):
-    if not file:
+    if not file_:
         raise UnprocessableEntity('No File found')
 
     ext = os.path.splitext(file_.filename)[1].lower()
