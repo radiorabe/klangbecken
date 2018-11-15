@@ -16,8 +16,10 @@ import mutagen
 import mutagen.mp3
 import mutagen.oggvorbis
 import mutagen.flac
-
 from mutagen.easyid3 import EasyID3
+
+from six import text_type
+
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
                                  Unauthorized)
@@ -313,7 +315,7 @@ def file_tag_processor(playlist, fileId, ext, changes):
     for change in changes:
         if isinstance(change, MetadataChange):
             key, value = change
-            mutagenfile[key] = unicode(value)
+            mutagenfile[key] = text_type(value)
             changed = True
 
     if changed:
