@@ -236,8 +236,8 @@
           <tbody v-if="!loading">
             <tr v-for="file in jingles | filterBy search | orderBy sortKey sortOrders[sortKey]"
               class="{{file.count=== 0 || file.count === '0' ? 'disabled' : ''}}">
-              <td>{{file.filename}}</td>
-              <td class="td-date">{{file.mtime | date}}</td>
+              <td>{{file.original_filename}}</td>
+              <td class="td-date">{{file.import_timestamp | date}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td>
                 <input class="spinner" type="number" name="Priority" v-model="file.count" min="0" max="9"
@@ -508,15 +508,50 @@
             methods: {
                 loadJingles: function() {
                     this.loading = true;
-                    this.$http.get('/api/jingles/').then(response => {
-                        this.jingles = response.data;
+                    this.$http.get('/data/index.json').then(response => {
+                        var formatDate = date => date.getFullYear() + '-' +
+                            ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
+                            ('00' + date.getDate()).slice(-2);
+                        this.jingles = Object.entries(response.data).reduceRight((list, file) => {
+                            var [id, data] = file;
+                            if (data.playlist !== 'jingles') {
+                                return list;
+                            }
+
+                            data.edit = false;
+                            data.id = id;
+                            data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                            list.push(data);
+                            console.log(list);
+                            return list
+                        }, []);
                         this.loading = false;
-                    }, response => {
-                        //FIXME: error handling
-                    });
+                    }, this.retry_login(this.loadJingles));
+                },
+                retry_login: function(cb) {
+                    return function(response) {
+                        if (response.status === 401) { // Unauthorized
+                            this.$http.get('/api/login/').then(response => { // Try Kerberos
+                                cb();
+                            }, response => {
+                                if (response.status === 401) { // Unauthorized
+                                    $('#loginModal').modal('show');
+                                } else {
+                                    console.log("Error from Server:", response);
+                                }
+                            });
+                        } else {
+                            console.log("Error from Server:", response);
+                        }
+                    }
                 },
                 loadOneJingleFile: function(file) {
-                    this.jingles.unshift(file);
+                    var id = Object.keys(file)[0];
+                    var data = Object.values(file)[0];
+                    data.edit = false;
+                    data.id = id;
+                    data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                    this.jingles.unshift(data);
                 },
                 deleteFile: function(obj) {
                     this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
