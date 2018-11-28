@@ -405,7 +405,7 @@
                     this.music[0].files.unshift(file);
                 },
                 deleteFile: function(obj) {
-                    this.$http.delete('/api/' + obj.path).then(response => {
+                    this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
                         var found = false;
                         for (var chunk of this.music) {
                             var index = chunk.files.indexOf(obj);
@@ -532,7 +532,7 @@
                     this.jingles.unshift(file);
                 },
                 deleteFile: function(obj) {
-                    this.$http.delete('/api/' + obj.path).then(response => {
+                    this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
                         var index = this.jingles.indexOf(obj);
                         if (index > -1) {
                             this.jingles.splice(index, 1);
@@ -544,8 +544,8 @@
                     });
                 },
                 updateRepeat: function(obj) {
-                    this.$http.put('/api/' + obj.path, {
                         repeat: obj.repeat
+                    this.$http.put('/api/' + obj.playlist + '/' + obj.fileId + obj.ext, {
                     }).then(response => {}, response => {
                         //FIXME: error handling
                         console.error(response);
