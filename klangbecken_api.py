@@ -10,7 +10,6 @@ import subprocess
 import sys
 import time
 import uuid
-# from collections import Counter
 from xml.etree import ElementTree
 
 import mutagen
