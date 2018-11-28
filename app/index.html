@@ -129,7 +129,7 @@
               </td>
             </tr>
             <tr v-for="file in chunk.files | filterBy search | orderBy sortKey sortOrders[sortKey]"
-                class="{{file.repeat === 0 ? 'disabled' : ''}}{{file.repeat === 5 ? 'heavyRotation' : ''}}">
+                class="{{file.count === 0 ? 'disabled' : ''}}">
               <template v-if="file.edit">
                   <td>{{file.original_filename}}</td>
                   <td><input v-model="file.artist"></td>
@@ -170,9 +170,6 @@
                   <span class="glyphicon glyphicon-open"></span>
                 </button>
 
-                <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeat === 0">
-                  <span class="glyphicon glyphicon-fire"></span>
-                </button>
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-trash"></span>
                 </button>
