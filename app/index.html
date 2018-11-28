@@ -405,7 +405,12 @@
                             files: []
                         });
                     }
-                    this.music[0].files.unshift(file);
+                    var id = Object.keys(file)[0];
+                    var data = Object.values(file)[0];
+                    data.edit = false;
+                    data.id = id;
+                    data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                    this.music[0].files.unshift(data);
                 },
                 deleteFile: function(obj) {
                     this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
