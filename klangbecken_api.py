@@ -44,7 +44,7 @@ class WebAPI:
         self.processors = processors or DEFAULT_PROCESSORS
 
         playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
-        file_url = playlist_url + '/<uuid:fileId>.<any(' + \
+        file_url = playlist_url + '<uuid:fileId><any(' + \
             ', '.join(supported_file_types.keys()) + '):ext>'
 
         self.url_map = Map(rules=(
