@@ -352,7 +352,6 @@ def playlist_processor(playlist, fileId, ext, changes):
             lines = [line.strip() for line in lines if fileId not in line]
 
             count = change.value
-            print('count', type(count))
             lines.extend([os.path.join(playlist, fileId + ext)] * count)
             random.shuffle(lines)  # TODO: custom shuffling?
             with open(playlist_path, 'w') as f:
