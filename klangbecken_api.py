@@ -1,23 +1,35 @@
 #!/usr/bin/python3
 from __future__ import print_function, unicode_literals, division
 
+import collections
+import functools
 import json
 import os
+import random
 import subprocess
 import sys
-from collections import Counter
-from io import open
-from os.path import join as pjoin
+import time
+import uuid
 from xml.etree import ElementTree
 
 import mutagen
+import mutagen.mp3
+import mutagen.oggvorbis
+import mutagen.flac
 from mutagen.easyid3 import EasyID3
+
+from six import text_type
+
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
                                  Unauthorized)
 from werkzeug.routing import Map, Rule
-from werkzeug.utils import secure_filename
 from werkzeug.wrappers import Request, Response
+
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
 
 
 PLAYLISTS = ('music', 'jingles')
@@ -26,55 +38,28 @@ PLAYLISTS = ('music', 'jingles')
 ############
 # HTTP API #
 ############
-class KlangbeckenAPI:
+class WebAPI:
 
-    def __init__(self):
+    def __init__(self, analyzers=None, processors=None):
         self.data_dir = os.environ.get('KLANGBECKEN_DATA',
                                        '/var/lib/klangbecken')
         self.secret = os.environ['KLANGBECKEN_API_SECRET']
 
-        # register the TXXX key so that we can access it later as
-        # mutagenfile['rg_track_gain']
-        EasyID3.RegisterTXXXKey(key='track_gain',
-                                desc='REPLAYGAIN_TRACK_GAIN')
-        EasyID3.RegisterTXXXKey(key='cue_in',
-                                desc='CUE_IN')
-        EasyID3.RegisterTXXXKey(key='cue_out',
-                                desc='CUE_OUT')
+        self.analyzers = analyzers or DEFAULT_ANALYZERS
+        self.processors = processors or DEFAULT_PROCESSORS
 
-        root_url = '/<any(' + ', '.join(PLAYLISTS) + '):category>/'
+        playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
+        file_url = playlist_url + '<uuid:fileId><any(' + \
+            ', '.join(supported_file_types.keys()) + '):ext>'
 
         self.url_map = Map(rules=(
             Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
             Rule('/logout/', methods=('POST',), endpoint='logout'),
-            Rule(root_url, methods=('GET',), endpoint='list'),
-            Rule(root_url, methods=('POST',), endpoint='upload'),
-            Rule(root_url + '<filename>', methods=('PUT',), endpoint='update'),
-            Rule(root_url + '<filename>', methods=('DELETE',),
-                 endpoint='delete'),
+
+            Rule(playlist_url, methods=('POST',), endpoint='upload'),
+            Rule(file_url, methods=('PUT',), endpoint='update'),
+            Rule(file_url, methods=('DELETE',), endpoint='delete'),
         ))
-
-    def _full_path(self, path):
-        return pjoin(self.data_dir, path)
-
-    def _replaygain_analysis(self, mutagenfile):
-        bs1770gain_cmd = [
-            "/usr/bin/bs1770gain", "--ebu", "--xml", mutagenfile.filename
-        ]
-        output = subprocess.check_output(bs1770gain_cmd)
-        bs1770gain = ElementTree.fromstring(output)
-        # lu is in bs1770gain > album > track > integrated as an attribute
-        track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
-        mutagenfile['track_gain'] = track_gain + ' dB'
-
-    def _silan_analysis(self, mutagenfile):
-        silan_cmd = [
-            '/usr/bin/silan', '--format', 'json', mutagenfile.filename
-        ]
-        output = subprocess.check_output(silan_cmd)
-        cue_points = json.loads(output)['sound'][0]
-        mutagenfile['cue_in'] = str(cue_points[0])
-        mutagenfile['cue_out'] = str(cue_points[1])
 
     def __call__(self, environ, start_response):
         adapter = self.url_map.bind_to_environ(environ)
@@ -107,103 +92,69 @@ class KlangbeckenAPI:
         session.save_cookie(response)
         return response
 
-    def on_list(self, request, category):
-        cat_dir = self._full_path(category)
-        filenames = os.listdir(cat_dir)
-        tuples = [(filename, os.path.join(category, filename))
-                  for filename in filenames]
-        tuples = [(filename, path,
-                   mutagen.File(self._full_path(path), easy=True))
-                  for (filename, path) in tuples
-                  if os.path.isfile(self._full_path(path))
-                  and path.endswith('.mp3')]
-        counter = Counter(path.strip() for path in
-                          open(self._full_path(category + ".m3u")).readlines())
-        # FIXME: cue-points and replaygain
-        dicts = [
-            {
-                'filename': filename,
-                'path': path,
-                'artist': mutagenfile.get('artist', [''])[0],
-                'title': mutagenfile.get('title', [''])[0],
-                'album': mutagenfile.get('album', [''])[0],
-                'length': float(mutagenfile.info.length),
-                'mtime': os.stat(self._full_path(path)).st_mtime,
-                'repeat': counter[path],
-            } for (filename, path, mutagenfile) in tuples
-        ]
+    def on_upload(self, request, playlist):
+        uploadFile = request.files['files']
 
-        data = sorted(dicts, key=lambda v: v['mtime'], reverse=True)
-        return JSONResponse(data, indent=2, sort_keys=True, ensure_ascii=True)
+        # Generate id
+        ext = os.path.splitext(uploadFile.filename)[1].lower()
+        fileId = text_type(uuid.uuid1())
 
-    def on_upload(self, request, category):
-        file = request.files['files']
+        actions = []
+        for analyzer in self.analyzers:
+            actions += analyzer(uploadFile)
 
-        if not file:
-            raise UnprocessableEntity()
+        actions.append(MetadataChange('playlist', playlist))
 
-        filename = secure_filename(file.filename)
-        # filename = gen_file_name(filename) # FIXME: check duplicate filenames
-        # mimetype = file.content_type
+        for processor in self.processors:
+            processor(playlist, fileId, ext, actions)
 
-        if not file.filename.endswith('.mp3'):
-            raise UnprocessableEntity('Filetype not allowed ')
+        response = {}
+        for change in actions:
+            if isinstance(change, MetadataChange):
+                response[change.key] = change.value
 
-        # save file to disk
-        file_path = pjoin(category, filename)
-        file.save(self._full_path(file_path))
-        with open(self._full_path(category + '.m3u'), 'a') as f:
-            print(file_path, file=f)
+        return JSONResponse({fileId: response})
 
-        # FIXME: silan and replaygain
-        # gst-launch-1.0 -t filesrc location=02_Prada.mp3 ! decodebin !
-        #  audioconvert ! audioresample ! rganalysis ! fakesink
+    def on_update(self, request, playlist, fileId, ext):
+        fileId = text_type(fileId)
+        path = os.path.join(self.data_dir, playlist, fileId + ext)
 
-        mutagenfile = mutagen.File(self._full_path(file_path), easy=True)
-        self._replaygain_analysis(mutagenfile)
-        self._silan_analysis(mutagenfile)
-        mutagenfile.save()
-        metadata = {
-            'filename': filename,
-            'path': file_path,
-            'artist': mutagenfile.get('artist', [''])[0],
-            'title': mutagenfile.get('title', [''])[0],
-            'album': mutagenfile.get('album', [''])[0],
-            'repeat': 1,
-            'length': float(mutagenfile.info.length),
-            'mtime': os.stat(self._full_path(file_path)).st_mtime,
-        }
-        return JSONResponse(metadata)
+        if not os.path.isfile(path):
+            raise NotFound()
 
-    def on_update(self, request, category, filename):
-        # FIXME: other values (artist, title)
-        path = pjoin(category, secure_filename(filename))
+        allowed_changes = ['artist', 'title', 'album', 'count']
+        changes = []
+
         try:
             data = json.loads(request.data)
-            repeats = int(data['repeat'])
-        except:  # noqa: E722
-            raise UnprocessableEntity('Cannot parse PUT request')
+            if not isinstance(data, dict):
+                raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                          'Expected a dict.')
+            for key, value in data.items():
+                if key not in allowed_changes:
+                    raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                              'Key not allowed: ' + key)
+                changes.append(MetadataChange(key, value))
+        except JSONDecodeError:
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid JSON')
 
-        lines = open(self._full_path(category + '.m3u')).read().split('\n')
-        with open(self._full_path(category + '.m3u'), 'w') as f:
-            for line in lines:
-                if line != path and line:
-                    print(line, file=f)
-            for i in range(repeats):
-                print(path, file=f)
+        # typecheck_changes(changes)
+        for processor in self.processors:
+            processor(playlist, fileId, ext, changes)
 
         return JSONResponse({'status': 'OK'})
 
-    def on_delete(self, request, category, filename):
-        path = pjoin(category, secure_filename(filename))
-        if not os.path.exists(self._full_path(path)):
+    def on_delete(self, request, playlist, fileId, ext):
+        fileId = text_type(fileId)
+        path = os.path.join(self.data_dir, playlist, fileId + ext)
+        if not os.path.isfile(path):
             raise NotFound()
-        os.remove(self._full_path(path))
-        lines = open(self._full_path(category + '.m3u')).read().split('\n')
-        with open(self._full_path(category + '.m3u'), 'w') as f:
-            for line in lines:
-                if line != path and line:
-                    print(line, file=f)
+
+        change = [FileDeletion()]
+        for processor in self.processors:
+            processor(playlist, fileId, ext, change)
+
         return JSONResponse({'status': 'OK'})
 
 
@@ -216,10 +167,210 @@ class JSONResponse(Response):
                                            mimetype='text/json')
 
 
+###############
+# Description #
+###############
+FileAddition = collections.namedtuple('FileAddition', ('file'))
+MetadataChange = collections.namedtuple('MetadataChange', ('key', 'value'))
+FileDeletion = collections.namedtuple('FileDeletion', ())
+
+supported_file_types = {
+    '.mp3': mutagen.mp3.MP3,
+    '.ogg': mutagen.oggvorbis.OggVorbis,
+    '.flac': mutagen.flac.FLAC,
+}
+
+# register the TXXX key so that we can access it later as
+EasyID3.RegisterTXXXKey(key='track_gain', desc='REPLAYGAIN_TRACK_GAIN')
+EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
+EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
+EasyID3.RegisterTXXXKey(key='original_filename', desc='ORIGINAL_FILENAME')
+EasyID3.RegisterTXXXKey(key='import_timestamp', desc='IMPORT_TIMESTAMP')
+EasyID3.RegisterTXXXKey(key='playlist', desc='PLAYLIST')
+EasyID3.RegisterTXXXKey(key='count', desc='COUNT')
+
+
+#############
+# Analyzers #
+#############
+def raw_file_analyzer(file_):
+    if not file_:
+        raise UnprocessableEntity('No File found')
+
+    ext = os.path.splitext(file_.filename)[1].lower()
+    if ext not in supported_file_types.keys():
+        raise UnprocessableEntity('Unsupported file extension: %s' % ext)
+
+    return [
+        FileAddition(file_),
+        MetadataChange('original_filename', file_.filename),
+        MetadataChange('import_timestamp', time.time()),
+        MetadataChange('count', 1),
+    ]
+
+
+def file_tag_analyzer(file_):
+    mutagenfile = mutagen.File(file_, easy=True)
+
+    if mutagenfile is None:
+        raise UnprocessableEntity('Cannot read file metadata')
+
+    if not any(isinstance(mutagenfile, file_type)
+               for file_type in supported_file_types.values()):
+        raise UnprocessableEntity('Unsupported file type: %s' %
+                                  type(mutagenfile))
+
+    return [
+        MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
+        MetadataChange('title', mutagenfile.get('title', [''])[0]),
+        MetadataChange('album', mutagenfile.get('album', [''])[0]),
+        MetadataChange('length', mutagenfile.info.length),
+    ]
+
+
+def silan_silence_analyzer(file_):
+    silan_cmd = [
+        '/usr/bin/silan', '--format', 'json', file_.filename
+    ]
+    try:
+        output = subprocess.check_output(silan_cmd)
+        cue_points = json.loads(output)['sound'][0]
+    except:   # noqa: E722
+        raise UnprocessableEntity('Silence analysis failed')
+    return [
+        MetadataChange('cue_in', cue_points[0]),
+        MetadataChange('cue_out', cue_points[0]),
+    ]
+
+
+def noop_silence_analyzer(file_):
+    return [
+        MetadataChange('cue_in', 0.0),
+        MetadataChange('cue_out', 100.0),
+    ]
+
+
+def bs1770gain_loudness_analyzer(file_):
+    bs1770gain_cmd = [
+        "/usr/bin/bs1770gain", "--ebu", "--xml", file_.filename
+    ]
+    output = subprocess.check_output(bs1770gain_cmd)
+    bs1770gain = ElementTree.fromstring(output)
+    # lu is in bs1770gain > album > track > integrated as an attribute
+    track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
+    return [
+        MetadataChange('track_gain', track_gain + ' dB')
+    ]
+
+
+def noop_loudness_analyzer(file_):
+    return [
+        MetadataChange('track_gain', '0 dB')
+    ]
+
+
+DEFAULT_ANALYZERS = [
+    raw_file_analyzer,
+    file_tag_analyzer,
+    silan_silence_analyzer,
+    bs1770gain_loudness_analyzer
+]
+
+
+def __get_path(first, second=None, ext=None):
+    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
+    if second is None:
+        return os.path.join(data_dir, first)
+    elif ext is None:
+        return os.path.join(data_dir, first, second)
+    else:
+        return os.path.join(data_dir, first, second + ext)
+
+
+##############
+# Processors #
+##############
+def raw_file_processor(playlist, fileId, ext, changes):
+    for change in changes:
+        if isinstance(change, FileAddition):
+            file_ = change.file
+            file_.save(__get_path(playlist, fileId, ext))
+        elif isinstance(change, FileDeletion):
+            os.remove(__get_path(playlist, fileId, ext))
+
+
+def index_processor(playlist, fileId, ext, changes, json_opts={}):
+    indexJson = __get_path('index.json')
+    # FIXME: locking
+    data = json.load(open(indexJson))
+    for change in changes:
+        if isinstance(change, FileAddition):
+            data[fileId] = {
+                'fileId': fileId,
+                'ext': ext,
+                'playlist': playlist,
+            }
+        elif isinstance(change, FileDeletion):
+            del data[fileId]
+        elif isinstance(change, MetadataChange):
+            key, value = change
+            data[fileId][key] = value
+        else:
+            assert False  # must not happen
+
+    # FIXME: is this automatic dereferencing thing allowed with files?
+    json.dump(data, open(indexJson, 'w'), **json_opts)
+
+
+def file_tag_processor(playlist, fileId, ext, changes):
+    mutagenfile = None
+    changed = False
+    for change in changes:
+        if isinstance(change, MetadataChange):
+            if mutagenfile is None:
+                path = __get_path(playlist, fileId, ext)
+                mutagenfile = mutagen.File(path, easy=True)
+            key, value = change
+            mutagenfile[key] = text_type(value)
+            changed = True
+
+    if changed:
+        mutagenfile.save()
+
+
+def playlist_processor(playlist, fileId, ext, changes):
+    playlist_path = __get_path(playlist + '.m3u')
+    for change in changes:
+        if isinstance(change, FileDeletion):
+            lines = open(playlist_path).readlines()
+            with open(playlist_path, 'w') as f:
+                for line in lines:
+                    if fileId not in line:
+                        print(line.strip(), file=f)
+        elif isinstance(change, MetadataChange) and change.key == 'count':
+            lines = open(playlist_path).readlines()
+            lines = [line.strip() for line in lines if fileId not in line]
+
+            count = change.value
+            print('count', type(count))
+            lines.extend([os.path.join(playlist, fileId + ext)] * count)
+            random.shuffle(lines)  # TODO: custom shuffling?
+            with open(playlist_path, 'w') as f:
+                print('\n'.join(lines), file=f)
+
+
+DEFAULT_PROCESSORS = [
+    raw_file_processor,
+    index_processor,
+    file_tag_processor,
+    playlist_processor,
+]
+
+
 ###########################
 # Stand-alone Application #
 ###########################
-class StandaloneKlangbecken:
+class StandaloneWebApplication:
     """
     Stand-alone Klangbecken WSGI application for testing and development.
 
@@ -227,18 +378,17 @@ class StandaloneKlangbecken:
     * Serves data files from the data directory
     * Relays API calls to the KlangbeckenAPI instance
 
-    Authentication is simulated.
+    Authentication is simulated. Loudness and silence analysis are mocked.
     """
 
     def __init__(self):
-        import random
         from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
 
         # Assemble useful paths
         current_path = os.path.dirname(os.path.realpath(__file__))
-        data_full_path = pjoin(current_path, 'data')
-        dist_dir = open(pjoin(current_path, '.dist_dir')).read().strip()
-        dist_full_path = pjoin(current_path, dist_dir)
+        data_full_path = os.path.join(current_path, 'data')
+        dist_dir = open(os.path.join(current_path, '.dist_dir')).read().strip()
+        dist_full_path = os.path.join(current_path, dist_dir)
 
         # Set environment variables needed by the KlangbeckenAPI
         os.environ['KLANGBECKEN_DATA'] = data_full_path
@@ -251,7 +401,23 @@ class StandaloneKlangbecken:
         app = SharedDataMiddleware(app, {'': dist_full_path,
                                          '/data': data_full_path})
         # Relay requests to /api to the KlangbeckenAPI instance
-        app = DispatcherMiddleware(app, {'/api': KlangbeckenAPI()})
+        app = DispatcherMiddleware(app, {'/api': WebAPI(
+            analyzers=[
+                raw_file_analyzer,
+                file_tag_analyzer,
+                noop_silence_analyzer,
+                noop_loudness_analyzer
+            ],
+            processors=[
+                raw_file_processor,
+                functools.partial(
+                    index_processor,
+                    json_opts={'indent': 2, 'sort_keys': True}
+                ),
+                file_tag_processor,
+                playlist_processor,
+            ]
+        )})
 
         self.app = app
 
@@ -274,13 +440,15 @@ def _check_and_crate_data_dir():
     """
     Create local data directory structure for testing and development
     """
-    data_dir = pjoin(os.path.dirname(os.path.abspath(__file__)), 'data')
-    for path in [data_dir] + [pjoin(data_dir, d) for d in PLAYLISTS]:
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    for path in [data_dir] + [os.path.join(data_dir, d) for d in PLAYLISTS]:
         if not os.path.isdir(path):
             os.mkdir(path)
-    for path in [pjoin(data_dir, d + '.m3u') for d in PLAYLISTS]:
+    for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
         if not os.path.isfile(path):
             open(path, 'a').close()
+
+    # FIXME: create index.json
 
 
 def main():
@@ -292,7 +460,7 @@ def main():
     _check_and_crate_data_dir()
 
     if len(sys.argv) == 1:
-        application = StandaloneKlangbecken()
+        application = StandaloneWebApplication()
         run_simple('127.0.0.1', 5000, application, use_debugger=True,
                    use_reloader=True, threaded=False)
     else:
@@ -305,4 +473,4 @@ if __name__ == '__main__':
     main()
 else:
     # Set up WSGI application
-    application = KlangbeckenAPI()
+    application = WebAPI()

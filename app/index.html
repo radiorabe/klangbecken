@@ -129,18 +129,18 @@
               </td>
             </tr>
             <tr v-for="file in chunk.files | filterBy search | orderBy sortKey sortOrders[sortKey]"
-                class="{{file.repeat === 0 ? 'disabled' : ''}}{{file.repeat === 5 ? 'heavyRotation' : ''}}">
+                class="{{file.count === 0 ? 'disabled' : ''}}">
               <template v-if="file.edit">
-                  <td>{{file.filename}}</td>
-                  <td><input v-model="file.artist"></td>
-                  <td><input v-model="file.title"></td>
-                  <td><input v-model="file.album"></td>
+                  <td>{{file.original_filename}}</td>
+                  <td><input v-model="file.artist_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
+                  <td><input v-model="file.title_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
+                  <td><input v-model="file.album_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
                   <td class="td-time">{{file.length | time}}</td>
                   <td class="actions">
-                      <button @click="file.edit = false" class="btn btn-xs" title="Save" v-on:click="file.edit = true" data-toggle="tooltip">
+                      <button @click="saveChanges(file)" class="btn btn-xs" title="Save" data-toggle="tooltip">
                           <span class="glyphicon glyphicon-floppy-disk"></span>
                       </button>
-                      <button @click="file.edit = false" class="btn btn-xs" title="Cancel Edit" v-on:click="file.edit = true" data-toggle="tooltip">
+                      <button @click="cancelChanges(file)" class="btn btn-xs" title="Cancel Edit" data-toggle="tooltip">
                           <span class="glyphicon glyphicon-share-alt"></span>
                       </button>
                   </td>
@@ -149,30 +149,27 @@
 
 
               <template v-else>
-              <td v-for="key in ['filename', 'artist', 'title', 'album']" title="{{file[key]}}"
+              <td v-for="key in ['original_filename', 'artist', 'title', 'album']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td class="actions">
                 <button class="btn btn-xs"
-                    title="Edit" v-on:click="file.edit = true" data-toggle="tooltip">
+                    title="Edit" v-on:click="startEdit(file)" data-toggle="tooltip">
                     <span class="glyphicon glyphicon-pencil"></span>
                 </button>
                 <button class="btn btn-xs {{file.path === nowplaying ? 'active' : ''}}"
                         title="Play" v-on:click="play(file.path)" data-toggle="tooltip">
                   <span class="glyphicon {{file.path === nowplaying ? 'glyphicon-stop' : 'glyphicon-play'}}"></span>
                 </button>
-                <button class="btn btn-xs" title="{{file.repeat === 0 ? 'Enable': 'Disable'}}"
+                <button class="btn btn-xs" title="{{file.count === 0 ? 'Enable': 'Disable'}}"
                         v-on:click="disableFile(file)" data-toggle="tooltip" >
-                  <span class="glyphicon {{file.repeat === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
+                  <span class="glyphicon {{file.count === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
                 </button>
 
                 <button class="btn btn-xs btn-playNext" title="Play Next" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-open"></span>
                 </button>
 
-                <button class="btn btn-xs disabled" disabled="disabled" v-if="file.repeat === 0">
-                  <span class="glyphicon glyphicon-fire"></span>
-                </button>
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-trash"></span>
                 </button>
@@ -184,7 +181,7 @@
         <div v-if="loading" class="loader"></div>
       </div>
     </div>
-  <audio v-if="nowplaying" v-bind:src="'data/' + nowplaying" v-on:ended="ended" autoplay></audio>
+  <audio v-if="nowplaying" v-bind:src="nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
     <template id="jingles-tmpl">
@@ -238,13 +235,13 @@
           </thead>
           <tbody v-if="!loading">
             <tr v-for="file in jingles | filterBy search | orderBy sortKey sortOrders[sortKey]"
-              class="{{file.repeat=== 0 || file.repeat === '0' ? 'disabled' : ''}}">
-              <td>{{file.filename}}</td>
-              <td class="td-date">{{file.mtime | date}}</td>
+              class="{{file.count=== 0 || file.count === '0' ? 'disabled' : ''}}">
+              <td>{{file.original_filename}}</td>
+              <td class="td-date">{{file.import_timestamp | date}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td>
-                <input class="spinner" type="number" name="Priority" v-model="file.repeat" min="0" max="9"
-                      title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateRepeat(file)"
+                <input class="spinner" type="number" name="Priority" v-model="file.count" min="0" max="9"
+                      title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateCount(file)"
                       onClick="this.select();">
                 <button class="btn btn-xs {{file.path === nowplaying ? 'active' : ''}}"
                         title="Play" v-on:click="play(file.path)" data-toggle="tooltip">
@@ -341,12 +338,13 @@
             methods: {
                 loadMusic: function() {
                     this.loading = true;
-                    this.$http.get('/api/music/').then(response => {
+                    this.$http.get('/data/index.json').then(response => {
                         var formatDate = date => date.getFullYear() + '-' +
                             ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
                             ('00' + date.getDate()).slice(-2);
-                        this.music = response.data.reduceRight((groupedList, file) => {
-                            var date = formatDate(new Date(file.mtime * 1000));
+                        this.music = Object.entries(response.data).reduceRight((groupedList, file) => {
+                            var [id, data] = file;
+                            var date = formatDate(new Date(data.import_timestamp * 1000));
                             if (groupedList.length === 0 || groupedList[0].date !== date) {
                                 groupedList.unshift({
                                     date: date,
@@ -354,15 +352,22 @@
                                     files: []
                                 })
                             }
-                            file.edit = false;
-                            groupedList[0].files.push(file);
+
+                            data.edit = false;
+                            data.id = id;
+                            data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                            groupedList[0].files.push(data);
+                            //console.log(data);
                             return groupedList
                         }, []);
                         this.loading = false;
-                    }, response => {
+                    }, this.retry_login(this.loadMusic));
+                },
+                retry_login: function(cb) {
+                    return function(response) {
                         if (response.status === 401) { // Unauthorized
                             this.$http.get('/api/login/').then(response => { // Try Kerberos
-                                this.loadMusic();
+                                cb();
                             }, response => {
                                 if (response.status === 401) { // Unauthorized
                                     $('#loginModal').modal('show');
@@ -373,7 +378,7 @@
                         } else {
                             console.log("Error from Server:", response);
                         }
-                    });
+                    }
                 },
                 login: function() {
                     this.$http.post('/api/login/', {
@@ -400,10 +405,15 @@
                             files: []
                         });
                     }
-                    this.music[0].files.unshift(file);
+                    var id = Object.keys(file)[0];
+                    var data = Object.values(file)[0];
+                    data.edit = false;
+                    data.id = id;
+                    data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                    this.music[0].files.unshift(data);
                 },
                 deleteFile: function(obj) {
-                    this.$http.delete('/api/' + obj.path).then(response => {
+                    this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
                         var found = false;
                         for (var chunk of this.music) {
                             var index = chunk.files.indexOf(obj);
@@ -420,42 +430,59 @@
                     });
                 },
                 disableFile: function(obj) {
-                    var new_repeat = 0;
-                    var old_repeat = obj.repeat;
-                    if (obj.repeat === 0) {
-                        var new_repeat = 1;
+                    var new_count = 0;
+                    var old_count = obj.count;
+                    if (obj.count === 0) {
+                        new_count = 1;
                     }
-                    obj.repeat = new_repeat;
-                    this.$http.put('/api/' + obj.path, {
-                        repeat: new_repeat
+                    obj.count = new_count;
+                    this.$http.put('/api/' + obj.playlist + '/' + obj.fileId + obj.ext, {
+                        count: new_count
                     }).then(response => {
-                        //obj.repeat = new_repeat;
+                        // s'all good man
                     }, response => {
-                        obj.repeat = old_repeat;
+                        obj.count = old_count;
                         //FIXME: error handling
                         console.error(response);
                     });
                 },
-                heavyRotation: function(obj) {
-                    var new_repeat = 5;
-                    var old_repeat = obj.repeat;
-                    if (obj.repeat === 5) {
-                        new_repeat = 1;
-                    }
-                    obj.repeat = new_repeat;
-                    this.$http.put('/api/' + obj.path, {
-                        repeat: new_repeat
-                    }, {
-                        headers: {
-                            'Content-Type': 'text/json'
-                        }
+                startEdit: function(file) {
+                    file.edit = true;
+                    file.artist_tmp = file.artist;
+                    file.album_tmp = file.album;
+                    file.title_tmp = file.title;
+                },
+                saveChanges: function(file) {
+                    file.edit = false;
+                    var old_artist = file.artist;
+                    var old_album = file.album;
+                    var old_titel = file.title;
+
+                    file.artist = file.artist_tmp;
+                    file.album = file.album_tmp;
+                    file.title = file.title_tmp;
+
+                    this.$http.put('/api/' + file.playlist + '/' + file.fileId + file.ext, {
+                        artist: file.artist_tmp,
+                        album: file.album_tmp,
+                        title: file.title_tmp,
                     }).then(response => {
-                        //obj.repeat = new_repeat;
+                        // s'all good man
                     }, response => {
-                        obj.repeat = old_repeat;
+                        obj.count = old_count;
                         //FIXME: error handling
                         console.error(response);
+                        file.artist = old_artist;
+                        file.album = old_album;
+                        file.title = old_title;
                     });
+                },
+                cancelChanges: function(file) {
+                    Vue.delete(file, 'artist_tmp');
+                    Vue.delete(file, 'album_tmp');
+                    Vue.delete(file, 'title_tmp');
+
+                    file.edit = false;
                 },
                 play: function(path) {
                     if (this.nowplaying === path) {
@@ -519,18 +546,53 @@
             methods: {
                 loadJingles: function() {
                     this.loading = true;
-                    this.$http.get('/api/jingles/').then(response => {
-                        this.jingles = response.data;
+                    this.$http.get('/data/index.json').then(response => {
+                        var formatDate = date => date.getFullYear() + '-' +
+                            ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
+                            ('00' + date.getDate()).slice(-2);
+                        this.jingles = Object.entries(response.data).reduceRight((list, file) => {
+                            var [id, data] = file;
+                            if (data.playlist !== 'jingles') {
+                                return list;
+                            }
+
+                            data.edit = false;
+                            data.id = id;
+                            data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                            list.push(data);
+                            console.log(list);
+                            return list
+                        }, []);
                         this.loading = false;
-                    }, response => {
-                        //FIXME: error handling
-                    });
+                    }, this.retry_login(this.loadJingles));
+                },
+                retry_login: function(cb) {
+                    return function(response) {
+                        if (response.status === 401) { // Unauthorized
+                            this.$http.get('/api/login/').then(response => { // Try Kerberos
+                                cb();
+                            }, response => {
+                                if (response.status === 401) { // Unauthorized
+                                    $('#loginModal').modal('show');
+                                } else {
+                                    console.log("Error from Server:", response);
+                                }
+                            });
+                        } else {
+                            console.log("Error from Server:", response);
+                        }
+                    }
                 },
                 loadOneJingleFile: function(file) {
-                    this.jingles.unshift(file);
+                    var id = Object.keys(file)[0];
+                    var data = Object.values(file)[0];
+                    data.edit = false;
+                    data.id = id;
+                    data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
+                    this.jingles.unshift(data);
                 },
                 deleteFile: function(obj) {
-                    this.$http.delete('/api/' + obj.path).then(response => {
+                    this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
                         var index = this.jingles.indexOf(obj);
                         if (index > -1) {
                             this.jingles.splice(index, 1);
@@ -541,9 +603,9 @@
                         //FIXME: error handling
                     });
                 },
-                updateRepeat: function(obj) {
-                    this.$http.put('/api/' + obj.path, {
-                        repeat: obj.repeat
+                updateCount: function(obj) {
+                    this.$http.put('/api/' + obj.playlist + '/' + obj.fileId + obj.ext, {
+                        count: parseInt(obj.count)
                     }).then(response => {}, response => {
                         //FIXME: error handling
                         console.error(response);
