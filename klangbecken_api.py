@@ -316,12 +316,13 @@ def index_processor(playlist, fileId, ext, changes):
 
 
 def file_tag_processor(playlist, fileId, ext, changes):
-    path = __get_path(playlist, fileId, ext)
-
-    mutagenfile = mutagen.File(path, easy=True)
+    mutagenfile = None
     changed = False
     for change in changes:
         if isinstance(change, MetadataChange):
+            if mutagenfile is None:
+                path = __get_path(playlist, fileId, ext)
+                mutagenfile = mutagen.File(path, easy=True)
             key, value = change
             mutagenfile[key] = text_type(value)
             changed = True
