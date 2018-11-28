@@ -188,6 +188,7 @@ EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
 EasyID3.RegisterTXXXKey(key='original_filename', desc='ORIGINAL_FILENAME')
 EasyID3.RegisterTXXXKey(key='import_timestamp', desc='IMPORT_TIMESTAMP')
 EasyID3.RegisterTXXXKey(key='playlist', desc='PLAYLIST')
+EasyID3.RegisterTXXXKey(key='count', desc='COUNT')
 
 
 #############
