@@ -221,12 +221,6 @@ def file_tag_analyzer(file_):
         MetadataChange('length', mutagenfile.info.length),
     ]
 
-    # 'title': mutagenfile.get('title', [''])[0],
-    # 'album': mutagenfile.get('album', [''])[0],
-    # 'repeat': 1,
-    # 'length': float(mutagenfile.info.length),
-    # 'mtime': os.stat(self._full_path(file_path)).
-
 
 def silan_silence_analyzer(file_):
     silan_cmd = [
