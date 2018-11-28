@@ -117,7 +117,10 @@ class WebAPI:
         return JSONResponse({fileId: response})
 
     def on_update(self, request, playlist, fileId, ext):
-        if not os.path.isfile(os.path.join(self.data_dir, 'files', fileId)):
+        fileId = text_type(fileId)
+        path = os.path.join(self.data_dir, playlist, fileId + ext)
+
+        if not os.path.isfile(path):
             raise NotFound()
 
         allowed_changes = ['artist', 'title', 'album', 'count']
@@ -127,11 +130,11 @@ class WebAPI:
             data = json.loads(request.data)
             if not isinstance(data, dict):
                 raise UnprocessableEntity('Cannot parse PUT request')
-            for key, value in data:
+            for key, value in data.items():
                 if key not in allowed_changes:
                     raise UnprocessableEntity('Cannot parse PUT request')
-                changes.append(MetadataChange(fileId, key, value))
             raise UnprocessableEntity('Cannot parse PUT request')
+                changes.append(MetadataChange(key, value))
         except JSONDecodeError:
 
         # typecheck_changes(changes)
