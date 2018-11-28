@@ -210,6 +210,7 @@ def file_tag_analyzer(file_):
         MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
         MetadataChange('title', mutagenfile.get('title', [''])[0]),
         MetadataChange('album', mutagenfile.get('album', [''])[0]),
+        MetadataChange('length', mutagenfile.info.length),
     ]
 
     # 'title': mutagenfile.get('title', [''])[0],
