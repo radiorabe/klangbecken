@@ -370,7 +370,7 @@ class StandaloneWebApplication:
     * Serves data files from the data directory
     * Relays API calls to the KlangbeckenAPI instance
 
-    Authentication is simulated.
+    Authentication is simulated. Loudness and silence analysis are mocked.
     """
 
     def __init__(self):
