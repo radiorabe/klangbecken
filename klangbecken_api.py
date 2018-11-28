@@ -344,8 +344,9 @@ def playlist_processor(playlist, fileId, ext, changes):
         elif isinstance(change, MetadataChange) and change.key == 'count':
             lines = open(playlist).readlines()
             lines = [line.strip() for line in lines if fileId not in line]
+
             count = change.value
-            lines.append([os.path.join(playlist, fileId + ext)] * count)
+            lines.extend([os.path.join(playlist, fileId + ext)] * count)
             random.shuffle(lines)  # TODO: custom shuffling?
             with open(playlist, 'w') as f:
                 print('\n'.join(lines), file=f)
