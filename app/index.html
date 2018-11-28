@@ -132,15 +132,15 @@
                 class="{{file.count === 0 ? 'disabled' : ''}}">
               <template v-if="file.edit">
                   <td>{{file.original_filename}}</td>
-                  <td><input v-model="file.artist"></td>
-                  <td><input v-model="file.title"></td>
-                  <td><input v-model="file.album"></td>
+                  <td><input v-model="file.artist_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
+                  <td><input v-model="file.title_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
+                  <td><input v-model="file.album_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
                   <td class="td-time">{{file.length | time}}</td>
                   <td class="actions">
-                      <button @click="file.edit = false" class="btn btn-xs" title="Save" v-on:click="file.edit = true" data-toggle="tooltip">
+                      <button @click="saveChanges(file)" class="btn btn-xs" title="Save" data-toggle="tooltip">
                           <span class="glyphicon glyphicon-floppy-disk"></span>
                       </button>
-                      <button @click="file.edit = false" class="btn btn-xs" title="Cancel Edit" v-on:click="file.edit = true" data-toggle="tooltip">
+                      <button @click="cancelChanges(file)" class="btn btn-xs" title="Cancel Edit" data-toggle="tooltip">
                           <span class="glyphicon glyphicon-share-alt"></span>
                       </button>
                   </td>
@@ -154,7 +154,7 @@
               <td class="td-time">{{file.length | time}}</td>
               <td class="actions">
                 <button class="btn btn-xs"
-                    title="Edit" v-on:click="file.edit = true" data-toggle="tooltip">
+                    title="Edit" v-on:click="startEdit(file)" data-toggle="tooltip">
                     <span class="glyphicon glyphicon-pencil"></span>
                 </button>
                 <button class="btn btn-xs {{file.path === nowplaying ? 'active' : ''}}"
@@ -445,6 +445,44 @@
                         //FIXME: error handling
                         console.error(response);
                     });
+                },
+                startEdit: function(file) {
+                    file.edit = true;
+                    file.artist_tmp = file.artist;
+                    file.album_tmp = file.album;
+                    file.title_tmp = file.title;
+                },
+                saveChanges: function(file) {
+                    file.edit = false;
+                    var old_artist = file.artist;
+                    var old_album = file.album;
+                    var old_titel = file.title;
+
+                    file.artist = file.artist_tmp;
+                    file.album = file.album_tmp;
+                    file.title = file.title_tmp;
+
+                    this.$http.put('/api/' + file.playlist + '/' + file.fileId + file.ext, {
+                        artist: file.artist_tmp,
+                        album: file.album_tmp,
+                        title: file.title_tmp,
+                    }).then(response => {
+                        // s'all good man
+                    }, response => {
+                        obj.count = old_count;
+                        //FIXME: error handling
+                        console.error(response);
+                        file.artist = old_artist;
+                        file.album = old_album;
+                        file.title = old_title;
+                    });
+                },
+                cancelChanges: function(file) {
+                    Vue.delete(file, 'artist_tmp');
+                    Vue.delete(file, 'album_tmp');
+                    Vue.delete(file, 'title_tmp');
+
+                    file.edit = false;
                 },
                 play: function(path) {
                     if (this.nowplaying === path) {
