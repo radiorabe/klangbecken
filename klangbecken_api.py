@@ -137,12 +137,13 @@ class WebAPI:
         return JSONResponse({'status': 'OK'})
 
     def on_delete(self, request, playlist, fileId, ext):
-        if not os.path.isfile(os.path.join(self.data_dir, 'files', fileId)):
+        path = os.path.join(self.data_dir, playlist, text_type(fileId) + ext)
+        if not os.path.isfile(path):
             raise NotFound()
 
-        change = [FileDeletion(fileId)]
+        change = [FileDeletion()]
         for processor in self.processors:
-            processor(playlist, fileId, ext, change)
+            processor(playlist, text_type(fileId), ext, change)
 
         return JSONResponse({'status': 'OK'})
 
