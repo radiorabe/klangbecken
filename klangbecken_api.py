@@ -193,6 +193,7 @@ def raw_file_analyzer(file_):
         FileAddition(file_),
         MetadataChange('original_filename', file_.filename),
         MetadataChange('import_timestamp', time.time()),
+        MetadataChange('count', 1),
     ]
 
 
@@ -302,7 +303,6 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
                 'fileId': fileId,
                 'ext': ext,
                 'playlist': playlist,
-                'count': 1,
             }
         elif isinstance(change, FileDeletion):
             del data[fileId]
@@ -335,9 +335,7 @@ def file_tag_processor(playlist, fileId, ext, changes):
 def playlist_processor(playlist, fileId, ext, changes):
     playlist = __get_path(playlist + '.m3u')
     for change in changes:
-        if isinstance(change, FileAddition):
-            open(playlist, 'a').write(__get_path(playlist, fileId, ext))
-        elif isinstance(change, FileDeletion):
+        if isinstance(change, FileDeletion):
             lines = open(playlist).readlines()
             with open(playlist, 'w') as f:
                 for line in lines:
