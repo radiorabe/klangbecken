@@ -112,7 +112,7 @@ class WebAPI:
 
         return JSONResponse({fileId: response})
 
-    def do_update(self, request, playlist, fileId, ext):
+    def on_update(self, request, playlist, fileId, ext):
         if not os.path.isfile(os.path.join(self.data_dir, 'files', fileId)):
             raise NotFound()
 
@@ -136,7 +136,7 @@ class WebAPI:
 
         return JSONResponse({'status': 'OK'})
 
-    def do_delete(self, request, playlist, fileId, ext):
+    def on_delete(self, request, playlist, fileId, ext):
         if not os.path.isfile(os.path.join(self.data_dir, 'files', fileId)):
             raise NotFound()
 
