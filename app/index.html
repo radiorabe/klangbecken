@@ -135,7 +135,7 @@
                   <td><input v-model="file.artist"></td>
                   <td><input v-model="file.title"></td>
                   <td><input v-model="file.album"></td>
-                  <td class="td-time">{{file.cue_out - file.cue_in | time}}</td>
+                  <td class="td-time">{{file.length | time}}</td>
                   <td class="actions">
                       <button @click="file.edit = false" class="btn btn-xs" title="Save" v-on:click="file.edit = true" data-toggle="tooltip">
                           <span class="glyphicon glyphicon-floppy-disk"></span>
