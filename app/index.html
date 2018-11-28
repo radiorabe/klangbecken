@@ -361,10 +361,13 @@
                             return groupedList
                         }, []);
                         this.loading = false;
-                    }, response => {
+                    }, this.retry_login(this.loadMusic));
+                },
+                retry_login: function(cb) {
+                    return function(response) {
                         if (response.status === 401) { // Unauthorized
                             this.$http.get('/api/login/').then(response => { // Try Kerberos
-                                this.loadMusic();
+                                cb();
                             }, response => {
                                 if (response.status === 401) { // Unauthorized
                                     $('#loginModal').modal('show');
@@ -375,7 +378,7 @@
                         } else {
                             console.log("Error from Server:", response);
                         }
-                    });
+                    }
                 },
                 login: function() {
                     this.$http.post('/api/login/', {
