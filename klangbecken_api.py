@@ -27,6 +27,11 @@ from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
+
 
 PLAYLISTS = ('music', 'jingles')
 
@@ -93,7 +98,7 @@ class WebAPI:
 
         # Generate id
         ext = os.path.splitext(uploadFile.filename)[1].lower()
-        fileId = str(uuid.uuid1())
+        fileId = text_type(uuid.uuid1())
 
         actions = []
         for analyzer in self.analyzers:
@@ -126,8 +131,8 @@ class WebAPI:
                 if key not in allowed_changes:
                     raise UnprocessableEntity('Cannot parse PUT request')
                 changes.append(MetadataChange(fileId, key, value))
-        except json.JSONDecodeError:
             raise UnprocessableEntity('Cannot parse PUT request')
+        except JSONDecodeError:
 
         # typecheck_changes(changes)
         for processor in self.processors:
@@ -136,13 +141,14 @@ class WebAPI:
         return JSONResponse({'status': 'OK'})
 
     def on_delete(self, request, playlist, fileId, ext):
-        path = os.path.join(self.data_dir, playlist, text_type(fileId) + ext)
+        fileId = text_type(fileId)
+        path = os.path.join(self.data_dir, playlist, fileId + ext)
         if not os.path.isfile(path):
             raise NotFound()
 
         change = [FileDeletion()]
         for processor in self.processors:
-            processor(playlist, text_type(fileId), ext, change)
+            processor(playlist, fileId, ext, change)
 
         return JSONResponse({'status': 'OK'})
 
