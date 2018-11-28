@@ -340,22 +340,23 @@ def file_tag_processor(playlist, fileId, ext, changes):
 
 
 def playlist_processor(playlist, fileId, ext, changes):
-    playlist = __get_path(playlist + '.m3u')
+    playlist_path = __get_path(playlist + '.m3u')
     for change in changes:
         if isinstance(change, FileDeletion):
-            lines = open(playlist).readlines()
-            with open(playlist, 'w') as f:
+            lines = open(playlist_path).readlines()
+            with open(playlist_path, 'w') as f:
                 for line in lines:
                     if fileId not in line:
                         print(line.strip(), file=f)
         elif isinstance(change, MetadataChange) and change.key == 'count':
-            lines = open(playlist).readlines()
+            lines = open(playlist_path).readlines()
             lines = [line.strip() for line in lines if fileId not in line]
 
             count = change.value
+            print('count', type(count))
             lines.extend([os.path.join(playlist, fileId + ext)] * count)
             random.shuffle(lines)  # TODO: custom shuffling?
-            with open(playlist, 'w') as f:
+            with open(playlist_path, 'w') as f:
                 print('\n'.join(lines), file=f)
 
 
