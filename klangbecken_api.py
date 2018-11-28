@@ -89,9 +89,6 @@ class WebAPI:
         return response
 
     def on_upload(self, request, playlist):
-        if playlist not in PLAYLISTS:
-            raise NotFound()
-
         print('uploading to', playlist)
         uploadFile = request.files['files']
         actions = []
