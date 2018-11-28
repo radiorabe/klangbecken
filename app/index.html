@@ -567,7 +567,7 @@
                 },
                 updateCount: function(obj) {
                     this.$http.put('/api/' + obj.playlist + '/' + obj.fileId + obj.ext, {
-                        count: obj.count
+                        count: parseInt(obj.count)
                     }).then(response => {}, response => {
                         //FIXME: error handling
                         console.error(response);
