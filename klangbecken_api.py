@@ -129,13 +129,16 @@ class WebAPI:
         try:
             data = json.loads(request.data)
             if not isinstance(data, dict):
-                raise UnprocessableEntity('Cannot parse PUT request')
+                raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                          'Expected a dict.')
             for key, value in data.items():
                 if key not in allowed_changes:
-                    raise UnprocessableEntity('Cannot parse PUT request')
-            raise UnprocessableEntity('Cannot parse PUT request')
+                    raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                              'Key not allowed: ' + key)
                 changes.append(MetadataChange(key, value))
         except JSONDecodeError:
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid JSON')
 
         # typecheck_changes(changes)
         for processor in self.processors:
