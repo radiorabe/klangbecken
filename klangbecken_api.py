@@ -220,8 +220,7 @@ def file_tag_analyzer(file_):
     # 'mtime': os.stat(self._full_path(file_path)).
 
 
-def silence_analyzer(file_):
-    return []
+def silan_silence_analyzer(file_):
     silan_cmd = [
         '/usr/bin/silan', '--format', 'json', file_.filename
     ]
@@ -236,8 +235,14 @@ def silence_analyzer(file_):
     ]
 
 
-def loudness_analyzer(file_):
-    return []
+def noop_silence_analyzer(file_):
+    return [
+        MetadataChange('cue_in', 0.0),
+        MetadataChange('cue_out', 100.0),
+    ]
+
+
+def bs1770gain_loudness_analyzer(file_):
     bs1770gain_cmd = [
         "/usr/bin/bs1770gain", "--ebu", "--xml", file_.filename
     ]
@@ -250,11 +255,17 @@ def loudness_analyzer(file_):
     ]
 
 
+def noop_loudness_analyzer(file_):
+    return [
+        MetadataChange('track_gain', '0 dB')
+    ]
+
+
 DEFAULT_ANALYZERS = [
     raw_file_analyzer,
     file_tag_analyzer,
-    silence_analyzer,
-    loudness_analyzer
+    silan_silence_analyzer,
+    bs1770gain_loudness_analyzer
 ]
 
 
@@ -382,7 +393,14 @@ class StandaloneWebApplication:
         app = SharedDataMiddleware(app, {'': dist_full_path,
                                          '/data': data_full_path})
         # Relay requests to /api to the KlangbeckenAPI instance
-        app = DispatcherMiddleware(app, {'/api': WebAPI()})
+        app = DispatcherMiddleware(app, {'/api': WebAPI(
+            analyzers=[
+                raw_file_analyzer,
+                file_tag_analyzer,
+                noop_silence_analyzer,
+                noop_loudness_analyzer
+            ]
+        )})
 
         self.app = app
 
