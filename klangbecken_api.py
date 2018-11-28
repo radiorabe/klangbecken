@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 
 import collections
+import functools
 import json
 import os
 import random
@@ -291,7 +292,7 @@ def raw_file_processor(playlist, fileId, ext, changes):
             os.remove(__get_path(playlist, fileId, ext))
 
 
-def index_processor(playlist, fileId, ext, changes):
+def index_processor(playlist, fileId, ext, changes, json_opts={}):
     indexJson = __get_path('index.json')
     # FIXME: locking
     data = json.load(open(indexJson))
@@ -312,7 +313,7 @@ def index_processor(playlist, fileId, ext, changes):
             assert False  # must not happen
 
     # FIXME: is this automatic dereferencing thing allowed with files?
-    json.dump(data, open(indexJson, 'w'))
+    json.dump(data, open(indexJson, 'w'), **json_opts)
 
 
 def file_tag_processor(playlist, fileId, ext, changes):
@@ -400,6 +401,15 @@ class StandaloneWebApplication:
                 file_tag_analyzer,
                 noop_silence_analyzer,
                 noop_loudness_analyzer
+            ],
+            processors=[
+                raw_file_processor,
+                functools.partial(
+                    index_processor,
+                    json_opts={'indent': 2, 'sort_keys': True}
+                ),
+                file_tag_processor,
+                playlist_processor,
             ]
         )})
 
