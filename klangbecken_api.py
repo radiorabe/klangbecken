@@ -57,7 +57,6 @@ class WebAPI:
         ))
 
     def __call__(self, environ, start_response):
-        print('call')
         adapter = self.url_map.bind_to_environ(environ)
         request = Request(environ)
         session = SecureCookie.load_cookie(request, secret_key=self.secret)
@@ -89,14 +88,13 @@ class WebAPI:
         return response
 
     def on_upload(self, request, playlist):
-        print('uploading to', playlist)
         uploadFile = request.files['files']
-        actions = []
 
         # Generate id
         ext = os.path.splitext(uploadFile.filename)[1].lower()
         fileId = str(uuid.uuid1())
 
+        actions = []
         for analyzer in self.analyzers:
             actions += analyzer(uploadFile)
 
