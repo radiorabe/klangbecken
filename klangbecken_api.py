@@ -402,18 +402,11 @@ class StandaloneWebApplication:
         os.environ['KLANGBECKEN_API_SECRET'] = \
             ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
 
-        # Return 404 Not Found by default
-        app = NotFound()
-        # Serve static files from the dist and data directories
-        app = SharedDataMiddleware(app, {'': dist_full_path,
-                                         '/data': data_full_path})
-        # Relay requests to /api to the KlangbeckenAPI instance
-        app = DispatcherMiddleware(app, {'/api': WebAPI(
+        # Create slightly customized WebAPI application
+        api = WebAPI(
             analyzers=[
                 raw_file_analyzer,
                 mutagen_tag_analyzer,
-                noop_silence_analyzer,
-                noop_loudness_analyzer
             ],
             processors=[
                 raw_file_processor,
@@ -425,7 +418,15 @@ class StandaloneWebApplication:
                 playlist_processor,
             ],
             disable_auth=True
-        )})
+        )
+
+        # Return 404 Not Found by default
+        app = NotFound()
+        # Serve static files from the dist and data directories
+        app = SharedDataMiddleware(app, {'': dist_full_path,
+                                         '/data': data_full_path})
+        # Relay requests to /api to the WebAPI instance
+        app = DispatcherMiddleware(app, {'/api': api})
 
         self.app = app
 
