@@ -116,10 +116,6 @@ class KlangbeckenAPI:
 
     def on_update(self, request, playlist, fileId, ext):
         fileId = text_type(fileId)
-        path = os.path.join(self.data_dir, playlist, fileId + ext)
-
-        if not os.path.isfile(path):
-            raise NotFound()
 
         allowed_changes = {
             'artist': text_type,
@@ -156,9 +152,6 @@ class KlangbeckenAPI:
 
     def on_delete(self, request, playlist, fileId, ext):
         fileId = text_type(fileId)
-        path = os.path.join(self.data_dir, playlist, fileId + ext)
-        if not os.path.isfile(path):
-            raise NotFound()
 
         change = [FileDeletion()]
         for processor in self.processors:
@@ -309,7 +302,13 @@ def raw_file_processor(playlist, fileId, ext, changes):
             file_ = change.file
             file_.save(__get_path(playlist, fileId, ext))
         elif isinstance(change, FileDeletion):
-            os.remove(__get_path(playlist, fileId, ext))
+            path = __get_path(playlist, fileId, ext)
+            if not os.path.isfile(path):
+                raise NotFound()
+            os.remove()
+        elif isinstance(change, MetadataChange):
+            if not os.path.isfile(path):
+                raise NotFound()
 
 
 def index_processor(playlist, fileId, ext, changes, json_opts={}):
