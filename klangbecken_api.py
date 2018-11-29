@@ -38,7 +38,7 @@ PLAYLISTS = ('music', 'jingles')
 ############
 # HTTP API #
 ############
-class WebAPI:
+class KlangbeckenAPI:
 
     def __init__(self, analyzers=None, processors=None, disable_auth=False):
         self.data_dir = os.environ.get('KLANGBECKEN_DATA',
@@ -324,16 +324,13 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
         elif isinstance(change, MetadataChange):
             key, value = change
             data[fileId][key] = value
-        else:
-            assert False  # must not happen
 
-    # FIXME: is this automatic dereferencing thing allowed with files?
     json.dump(data, open(indexJson, 'w'), **json_opts)
 
 
 def file_tag_processor(playlist, fileId, ext, changes):
     mutagenfile = None
-    changed = False
+    has_changes = False
     for change in changes:
         if isinstance(change, MetadataChange):
             if mutagenfile is None:
@@ -341,9 +338,9 @@ def file_tag_processor(playlist, fileId, ext, changes):
                 mutagenfile = mutagen.File(path, easy=True)
             key, value = change
             mutagenfile[key] = text_type(value)
-            changed = True
+            has_changes = True
 
-    if changed:
+    if has_changes:
         mutagenfile.save()
 
 
@@ -403,8 +400,8 @@ class StandaloneWebApplication:
         os.environ['KLANGBECKEN_API_SECRET'] = \
             ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
 
-        # Create slightly customized WebAPI application
-        api = WebAPI(
+        # Create slightly customized KlangbeckenAPI application
+        api = KlangbeckenAPI(
             analyzers=[
                 raw_file_analyzer,
                 mutagen_tag_analyzer,
@@ -426,7 +423,7 @@ class StandaloneWebApplication:
         # Serve static files from the dist and data directories
         app = SharedDataMiddleware(app, {'': dist_full_path,
                                          '/data': data_full_path})
-        # Relay requests to /api to the WebAPI instance
+        # Relay requests to /api to the KlangbeckenAPI instance
         app = DispatcherMiddleware(app, {'/api': api})
 
         self.app = app
@@ -483,4 +480,4 @@ if __name__ == '__main__':
     main()
 else:
     # Set up WSGI application
-    application = WebAPI()
+    application = KlangbeckenAPI()
