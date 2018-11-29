@@ -95,16 +95,18 @@ class KlangbeckenAPI:
             raise Unauthorized()
 
         response = JSONResponse({'status': 'OK'})
-        session = request.client_session
-        session['user'] = request.environ['REMOTE_USER']
-        session.save_cookie(response)
+        if self.auth:
+            session = request.client_session
+            session['user'] = request.environ['REMOTE_USER']
+            session.save_cookie(response)
         return response
 
     def on_logout(self, request):
         response = JSONResponse({'status': 'OK'})
-        session = request.client_session
-        del session['user']
-        session.save_cookie(response)
+        if self.auth:
+            session = request.client_session
+            del session['user']
+            session.save_cookie(response)
         return response
 
     def on_upload(self, request, playlist):
