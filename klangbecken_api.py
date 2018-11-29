@@ -216,8 +216,8 @@ def raw_file_analyzer(file_):
 
 
 def file_tag_analyzer(file_):
-    mutagenfile = mutagen.File(file_, easy=True)
-
+    tmp_file = os.fdopen(os.dup(file_.stream.fileno()))
+    mutagenfile = mutagen.File(tmp_file, easy=True)
     if mutagenfile is None:
         raise UnprocessableEntity('Cannot read file metadata')
 
@@ -226,12 +226,16 @@ def file_tag_analyzer(file_):
         raise UnprocessableEntity('Unsupported file type: %s' %
                                   type(mutagenfile))
 
-    return [
+    changes = [
         MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
         MetadataChange('title', mutagenfile.get('title', [''])[0]),
         MetadataChange('album', mutagenfile.get('album', [''])[0]),
         MetadataChange('length', mutagenfile.info.length),
     ]
+
+    tmp_file.close()
+    file_.stream.seek(0)
+    return changes
 
 
 def silan_silence_analyzer(file_):
