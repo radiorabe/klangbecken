@@ -103,11 +103,7 @@ class WebAPI:
 
         actions = []
         for analyzer in self.analyzers:
-            actions += analyzer(uploadFile)
-
-        actions.append(MetadataChange('playlist', playlist))
-        actions.append(MetadataChange('id', fileId))
-        actions.append(MetadataChange('ext', ext))
+            actions += analyzer(playlist, fileId, ext, uploadFile)
 
         for processor in self.processors:
             processor(playlist, fileId, ext, actions)
@@ -199,7 +195,7 @@ EasyID3.RegisterTXXXKey(key='id', desc='ID')
 #############
 # Analyzers #
 #############
-def raw_file_analyzer(file_):
+def raw_file_analyzer(playlist, fileId, ext, file_, ):
     if not file_:
         raise UnprocessableEntity('No File found')
 
@@ -209,13 +205,16 @@ def raw_file_analyzer(file_):
 
     return [
         FileAddition(file_),
+        MetadataChange('playlist', playlist),
+        MetadataChange('id', fileId),
+        MetadataChange('ext', ext),
         MetadataChange('original_filename', file_.filename),
         MetadataChange('import_timestamp', time.time()),
         MetadataChange('count', 1),
     ]
 
 
-def file_tag_analyzer(file_):
+def file_tag_analyzer(playlist, fileId, ext, file_):
     tmp_file = os.fdopen(os.dup(file_.stream.fileno()))
     mutagenfile = mutagen.File(tmp_file, easy=True)
     if mutagenfile is None:
@@ -238,7 +237,7 @@ def file_tag_analyzer(file_):
     return changes
 
 
-def silan_silence_analyzer(file_):
+def silan_silence_analyzer(playlist, fileId, ext, file_):
     silan_cmd = [
         '/usr/bin/silan', '--format', 'json', file_.filename
     ]
@@ -253,14 +252,14 @@ def silan_silence_analyzer(file_):
     ]
 
 
-def noop_silence_analyzer(file_):
+def noop_silence_analyzer(playlist, fileId, ext, file_):
     return [
         MetadataChange('cue_in', 0.0),
         MetadataChange('cue_out', 100.0),
     ]
 
 
-def bs1770gain_loudness_analyzer(file_):
+def bs1770gain_loudness_analyzer(playlist, fileId, ext, file_):
     bs1770gain_cmd = [
         "/usr/bin/bs1770gain", "--ebu", "--xml", file_.filename
     ]
@@ -273,7 +272,7 @@ def bs1770gain_loudness_analyzer(file_):
     ]
 
 
-def noop_loudness_analyzer(file_):
+def noop_loudness_analyzer(playlist, fileId, ext, file_):
     return [
         MetadataChange('track_gain', '0 dB')
     ]
