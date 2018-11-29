@@ -344,6 +344,9 @@
                             ('00' + date.getDate()).slice(-2);
                         this.music = Object.entries(response.data).reduceRight((groupedList, file) => {
                             var [id, data] = file;
+                            if (data.playlist !== 'music') {
+                                return groupedList;
+                            }
                             var date = formatDate(new Date(data.import_timestamp * 1000));
                             if (groupedList.length === 0 || groupedList[0].date !== date) {
                                 groupedList.unshift({
