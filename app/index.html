@@ -453,9 +453,9 @@
                 },
                 startEdit: function(file) {
                     file.edit = true;
-                    file.artist_tmp = file.artist;
-                    file.album_tmp = file.album;
-                    file.title_tmp = file.title;
+                    Vue.set(file, 'artist_tmp', file.artist);
+                    Vue.set(file, 'album_tmp', file.album);
+                    Vue.set(file, 'title_tmp', file.title);
                 },
                 saveChanges: function(file) {
                     file.edit = false;
