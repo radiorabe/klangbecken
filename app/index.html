@@ -342,7 +342,9 @@
                         var formatDate = date => date.getFullYear() + '-' +
                             ('00' + (date.getMonth() + 1)).slice(-2) + '-' +
                             ('00' + date.getDate()).slice(-2);
-                        this.music = Object.entries(response.data).reduceRight((groupedList, file) => {
+                        var entries = Object.entries(response.data)
+                        entries.sort((a, b) => a[1].import_timestamp < b[1].import_timestamp);
+                        this.music = entries.reduceRight((groupedList, file) => {
                             var [id, data] = file;
                             if (data.playlist !== 'music') {
                                 return groupedList;
