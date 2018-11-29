@@ -225,6 +225,9 @@ def file_tag_analyzer(playlist, fileId, ext, file_):
         raise UnprocessableEntity('Unsupported file type: %s' %
                                   type(mutagenfile))
 
+    if not isinstance(mutagenfile, supported_file_types[ext]):
+        raise UnprocessableEntity('File type and extension missmatch')
+
     changes = [
         MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
         MetadataChange('title', mutagenfile.get('title', [''])[0]),
