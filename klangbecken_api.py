@@ -305,7 +305,7 @@ def raw_file_processor(playlist, fileId, ext, changes):
             path = __get_path(playlist, fileId, ext)
             if not os.path.isfile(path):
                 raise NotFound()
-            os.remove()
+            os.remove(path)
         elif isinstance(change, MetadataChange):
             if not os.path.isfile(path):
                 raise NotFound()
