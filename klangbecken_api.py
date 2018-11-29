@@ -122,7 +122,13 @@ class WebAPI:
         if not os.path.isfile(path):
             raise NotFound()
 
-        allowed_changes = ['artist', 'title', 'album', 'count']
+        allowed_changes = {
+            'artist': text_type,
+            'title': text_type,
+            'album': text_type,
+            'count': int,
+        }
+
         changes = []
 
         try:
@@ -131,9 +137,15 @@ class WebAPI:
                 raise UnprocessableEntity('Cannot parse PUT request: ' +
                                           'Expected a dict.')
             for key, value in data.items():
-                if key not in allowed_changes:
+                if key not in allowed_changes.keys():
                     raise UnprocessableEntity('Cannot parse PUT request: ' +
                                               'Key not allowed: ' + key)
+                if not isinstance(value, allowed_changes[key]):
+                    raise UnprocessableEntity(
+                        'Cannot parse PUT request: Type error ' +
+                        '(expected %s, got %s).' %
+                        (allowed_changes[key], type(value).__name__)
+                    )
                 changes.append(MetadataChange(key, value))
         except JSONDecodeError:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
