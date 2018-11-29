@@ -34,6 +34,19 @@ except ImportError:
 
 PLAYLISTS = ('music', 'jingles')
 
+SUPPORTED_FILE_TYPES = {
+    '.mp3': mutagen.mp3.EasyMP3,
+    '.ogg': mutagen.oggvorbis.OggVorbis,
+    '.flac': mutagen.flac.FLAC,
+}
+
+ALLOWED_METADATA_CHANGES = {
+    'artist': text_type,
+    'title': text_type,
+    'album': text_type,
+    'count': int,
+}
+
 
 ############
 # HTTP API #
@@ -51,7 +64,7 @@ class KlangbeckenAPI:
 
         playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
         file_url = playlist_url + '<uuid:fileId><any(' + \
-            ', '.join(supported_file_types.keys()) + '):ext>'
+            ', '.join(SUPPORTED_FILE_TYPES.keys()) + '):ext>'
 
         self.url_map = Map(rules=(
             Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
@@ -117,13 +130,6 @@ class KlangbeckenAPI:
     def on_update(self, request, playlist, fileId, ext):
         fileId = text_type(fileId)
 
-        allowed_changes = {
-            'artist': text_type,
-            'title': text_type,
-            'album': text_type,
-            'count': int,
-        }
-
         changes = []
         try:
             data = json.loads(request.data)
@@ -131,14 +137,14 @@ class KlangbeckenAPI:
                 raise UnprocessableEntity('Cannot parse PUT request: ' +
                                           'Expected a dict.')
             for key, value in data.items():
-                if key not in allowed_changes.keys():
+                if key not in ALLOWED_METADATA_CHANGES.keys():
                     raise UnprocessableEntity('Cannot parse PUT request: ' +
                                               'Key not allowed: ' + key)
-                if not isinstance(value, allowed_changes[key]):
+                if not isinstance(value, ALLOWED_METADATA_CHANGES[key]):
                     raise UnprocessableEntity(
                         'Cannot parse PUT request: Type error ' +
                         '(expected %s, got %s).' %
-                        (allowed_changes[key], type(value).__name__)
+                        (ALLOWED_METADATA_CHANGES[key], type(value).__name__)
                     )
                 changes.append(MetadataChange(key, value))
         except JSONDecodeError:
@@ -176,11 +182,6 @@ FileAddition = collections.namedtuple('FileAddition', ('file'))
 MetadataChange = collections.namedtuple('MetadataChange', ('key', 'value'))
 FileDeletion = collections.namedtuple('FileDeletion', ())
 
-supported_file_types = {
-    '.mp3': mutagen.mp3.EasyMP3,
-    '.ogg': mutagen.oggvorbis.OggVorbis,
-    '.flac': mutagen.flac.FLAC,
-}
 
 # register the TXXX key so that we can access it later as
 EasyID3.RegisterTXXXKey(key='track_gain', desc='REPLAYGAIN_TRACK_GAIN')
@@ -201,8 +202,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_, ):
     if not file_:
         raise UnprocessableEntity('No File found')
 
-    ext = os.path.splitext(file_.filename)[1].lower()
-    if ext not in supported_file_types.keys():
+    if ext not in SUPPORTED_FILE_TYPES.keys():
         raise UnprocessableEntity('Unsupported file extension: %s' % ext)
 
     return [
@@ -217,7 +217,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_, ):
 
 
 def mutagen_tag_analyzer(playlist, fileId, ext, file_):
-    MutagenFileType = supported_file_types[ext]
+    MutagenFileType = SUPPORTED_FILE_TYPES[ext]
     try:
         mutagenfile = MutagenFileType(file_)
     except mutagen.MutagenError:
@@ -279,7 +279,7 @@ DEFAULT_ANALYZERS = [
     raw_file_analyzer,
     mutagen_tag_analyzer,
     silan_silence_analyzer,
-    bs1770gain_loudness_analyzer
+    bs1770gain_loudness_analyzer,
 ]
 
 
