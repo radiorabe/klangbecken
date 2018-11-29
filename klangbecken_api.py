@@ -214,7 +214,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_, ):
     ]
 
 
-def file_tag_analyzer(playlist, fileId, ext, file_):
+def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     tmp_file = os.fdopen(os.dup(file_.stream.fileno()))
     mutagenfile = mutagen.File(tmp_file, easy=True)
     if mutagenfile is None:
@@ -283,7 +283,7 @@ def noop_loudness_analyzer(playlist, fileId, ext, file_):
 
 DEFAULT_ANALYZERS = [
     raw_file_analyzer,
-    file_tag_analyzer,
+    mutagen_tag_analyzer,
     silan_silence_analyzer,
     bs1770gain_loudness_analyzer
 ]
@@ -411,7 +411,7 @@ class StandaloneWebApplication:
         app = DispatcherMiddleware(app, {'/api': WebAPI(
             analyzers=[
                 raw_file_analyzer,
-                file_tag_analyzer,
+                mutagen_tag_analyzer,
                 noop_silence_analyzer,
                 noop_loudness_analyzer
             ],
