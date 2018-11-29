@@ -244,8 +244,8 @@ tr.active td {
 
 .search .search_delete{
     position: absolute;
-    right: 50px;
-    top: 23px;
+    right: 30px;
+    top: 0;
     cursor: pointer;
 }
 
