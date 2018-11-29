@@ -187,7 +187,7 @@ MetadataChange = collections.namedtuple('MetadataChange', ('key', 'value'))
 FileDeletion = collections.namedtuple('FileDeletion', ())
 
 supported_file_types = {
-    '.mp3': mutagen.mp3.MP3,
+    '.mp3': mutagen.mp3.EasyMP3,
     '.ogg': mutagen.oggvorbis.OggVorbis,
     '.flac': mutagen.flac.FLAC,
 }
@@ -227,18 +227,12 @@ def raw_file_analyzer(playlist, fileId, ext, file_, ):
 
 
 def mutagen_tag_analyzer(playlist, fileId, ext, file_):
-    tmp_file = os.fdopen(os.dup(file_.stream.fileno()))
-    mutagenfile = mutagen.File(tmp_file, easy=True)
-    if mutagenfile is None:
-        raise UnprocessableEntity('Cannot read file metadata')
-
-    if not any(isinstance(mutagenfile, file_type)
-               for file_type in supported_file_types.values()):
-        raise UnprocessableEntity('Unsupported file type: %s' %
-                                  type(mutagenfile))
-
-    if not isinstance(mutagenfile, supported_file_types[ext]):
-        raise UnprocessableEntity('File type and extension missmatch')
+    MutagenFileType = supported_file_types[ext]
+    try:
+        mutagenfile = MutagenFileType(file_)
+    except mutagen.MutagenError:
+        raise UnprocessableEntity('Unsupported file type: ' +
+                                  'Cannot read metadata.')
 
     changes = [
         MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
@@ -247,7 +241,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
         MetadataChange('length', mutagenfile.info.length),
     ]
 
-    tmp_file.close()
+    # Seek back to the start of the file
     file_.stream.seek(0)
     return changes
 
