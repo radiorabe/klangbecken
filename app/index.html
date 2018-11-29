@@ -257,7 +257,7 @@
         <div v-if="loading" class="loader"></div>
       </div>
     </div>
-  <audio v-if="nowplaying" v-bind:src="'data/' + nowplaying" v-on:ended="ended" autoplay></audio>
+  <audio v-if="nowplaying" v-bind:src="nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
     <!--template id="settings-tmpl">
