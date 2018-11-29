@@ -97,9 +97,8 @@ class WebAPI:
     def on_upload(self, request, playlist):
         uploadFile = request.files['files']
 
-        # Generate id
         ext = os.path.splitext(uploadFile.filename)[1].lower()
-        fileId = text_type(uuid.uuid1())
+        fileId = text_type(uuid.uuid1())   # Generate new file id
 
         actions = []
         for analyzer in self.analyzers:
@@ -130,7 +129,6 @@ class WebAPI:
         }
 
         changes = []
-
         try:
             data = json.loads(request.data)
             if not isinstance(data, dict):
@@ -151,7 +149,6 @@ class WebAPI:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
                                       ' not valid JSON')
 
-        # typecheck_changes(changes)
         for processor in self.processors:
             processor(playlist, fileId, ext, changes)
 
@@ -233,14 +230,12 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     except mutagen.MutagenError:
         raise UnprocessableEntity('Unsupported file type: ' +
                                   'Cannot read metadata.')
-
     changes = [
         MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
         MetadataChange('title', mutagenfile.get('title', [''])[0]),
         MetadataChange('album', mutagenfile.get('album', [''])[0]),
         MetadataChange('length', mutagenfile.info.length),
     ]
-
     # Seek back to the start of the file
     file_.stream.seek(0)
     return changes
