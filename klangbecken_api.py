@@ -40,13 +40,14 @@ PLAYLISTS = ('music', 'jingles')
 ############
 class WebAPI:
 
-    def __init__(self, analyzers=None, processors=None):
+    def __init__(self, analyzers=None, processors=None, disable_auth=False):
         self.data_dir = os.environ.get('KLANGBECKEN_DATA',
                                        '/var/lib/klangbecken')
         self.secret = os.environ['KLANGBECKEN_API_SECRET']
 
         self.analyzers = analyzers or DEFAULT_ANALYZERS
         self.processors = processors or DEFAULT_PROCESSORS
+        self.auth = not disable_auth
 
         playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
         file_url = playlist_url + '<uuid:fileId><any(' + \
@@ -68,7 +69,8 @@ class WebAPI:
         request.client_session = session
         try:
             endpoint, values = adapter.match()
-            if endpoint != 'login' and (session.new or 'user' not in session):
+            if self.auth and endpoint != 'login' and \
+                    (session.new or 'user' not in session):
                 raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
@@ -415,7 +417,8 @@ class StandaloneWebApplication:
                 ),
                 file_tag_processor,
                 playlist_processor,
-            ]
+            ],
+            disable_auth=True
         )})
 
         self.app = app
