@@ -418,7 +418,7 @@
                     this.music[0].files.unshift(data);
                 },
                 deleteFile: function(obj) {
-                    this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
+                    this.$http.delete('/api/' + obj.playlist + '/' + obj.id + obj.ext).then(response => {
                         var found = false;
                         for (var chunk of this.music) {
                             var index = chunk.files.indexOf(obj);
@@ -441,7 +441,7 @@
                         new_count = 1;
                     }
                     obj.count = new_count;
-                    this.$http.put('/api/' + obj.playlist + '/' + obj.fileId + obj.ext, {
+                    this.$http.put('/api/' + obj.playlist + '/' + obj.id + obj.ext, {
                         count: new_count
                     }).then(response => {
                         // s'all good man
@@ -467,7 +467,7 @@
                     file.album = file.album_tmp;
                     file.title = file.title_tmp;
 
-                    this.$http.put('/api/' + file.playlist + '/' + file.fileId + file.ext, {
+                    this.$http.put('/api/' + file.playlist + '/' + file.id + file.ext, {
                         artist: file.artist_tmp,
                         album: file.album_tmp,
                         title: file.title_tmp,
@@ -597,7 +597,7 @@
                     this.jingles.unshift(data);
                 },
                 deleteFile: function(obj) {
-                    this.$http.delete('/api/' + obj.playlist + '/' + obj.fileId + obj.ext).then(response => {
+                    this.$http.delete('/api/' + obj.playlist + '/' + obj.id + obj.ext).then(response => {
                         var index = this.jingles.indexOf(obj);
                         if (index > -1) {
                             this.jingles.splice(index, 1);
@@ -609,7 +609,7 @@
                     });
                 },
                 updateCount: function(obj) {
-                    this.$http.put('/api/' + obj.playlist + '/' + obj.fileId + obj.ext, {
+                    this.$http.put('/api/' + obj.playlist + '/' + obj.id + obj.ext, {
                         count: parseInt(obj.count)
                     }).then(response => {}, response => {
                         //FIXME: error handling

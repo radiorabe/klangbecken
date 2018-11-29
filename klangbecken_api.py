@@ -106,6 +106,8 @@ class WebAPI:
             actions += analyzer(uploadFile)
 
         actions.append(MetadataChange('playlist', playlist))
+        actions.append(MetadataChange('id', fileId))
+        actions.append(MetadataChange('ext', ext))
 
         for processor in self.processors:
             processor(playlist, fileId, ext, actions)
@@ -190,6 +192,8 @@ EasyID3.RegisterTXXXKey(key='original_filename', desc='ORIGINAL_FILENAME')
 EasyID3.RegisterTXXXKey(key='import_timestamp', desc='IMPORT_TIMESTAMP')
 EasyID3.RegisterTXXXKey(key='playlist', desc='PLAYLIST')
 EasyID3.RegisterTXXXKey(key='count', desc='COUNT')
+EasyID3.RegisterTXXXKey(key='ext', desc='EXTENSION')
+EasyID3.RegisterTXXXKey(key='id', desc='ID')
 
 
 #############
@@ -307,11 +311,7 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
     data = json.load(open(indexJson))
     for change in changes:
         if isinstance(change, FileAddition):
-            data[fileId] = {
-                'fileId': fileId,
-                'ext': ext,
-                'playlist': playlist,
-            }
+            data[fileId] = {}
         elif isinstance(change, FileDeletion):
             del data[fileId]
         elif isinstance(change, MetadataChange):
