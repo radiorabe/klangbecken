@@ -134,7 +134,7 @@ class KlangbeckenAPI:
 
         changes = []
         try:
-            data = json.loads(request.data)
+            data = json.loads(text_type(request.data, 'utf-8'))
             if not isinstance(data, dict):
                 raise UnprocessableEntity('Cannot parse PUT request: ' +
                                           'Expected a dict.')
@@ -152,6 +152,9 @@ class KlangbeckenAPI:
         except JSONDecodeError:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
                                       ' not valid JSON')
+        except UnicodeDecodeError:
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid UTF-8 data')
 
         for processor in self.processors:
             processor(playlist, fileId, ext, changes)
