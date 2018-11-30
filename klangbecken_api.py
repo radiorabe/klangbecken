@@ -302,12 +302,12 @@ def __get_path(first, second=None, ext=None):
 # Processors #
 ##############
 def raw_file_processor(playlist, fileId, ext, changes):
+    path = __get_path(playlist, fileId, ext)
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
-            file_.save(__get_path(playlist, fileId, ext))
+            file_.save(path)
         elif isinstance(change, FileDeletion):
-            path = __get_path(playlist, fileId, ext)
             if not os.path.isfile(path):
                 raise NotFound()
             os.remove(path)
