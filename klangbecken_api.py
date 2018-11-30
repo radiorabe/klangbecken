@@ -53,12 +53,14 @@ ALLOWED_METADATA_CHANGES = {
 ############
 class KlangbeckenAPI:
 
-    def __init__(self, analyzers=None, processors=None, disable_auth=False):
+    def __init__(self, upload_analyzers=None, update_analyzers=None,
+                 processors=None, disable_auth=False):
         self.data_dir = os.environ.get('KLANGBECKEN_DATA',
                                        '/var/lib/klangbecken')
         self.secret = os.environ['KLANGBECKEN_API_SECRET']
 
-        self.analyzers = analyzers or DEFAULT_ANALYZERS
+        self.upload_analyzers = upload_analyzers or DEFAULT_UPLOAD_ANALYZERS
+        self.update_analyzers = update_analyzers or DEFAULT_UPDATE_ANALYZERS
         self.processors = processors or DEFAULT_PROCESSORS
         self.auth = not disable_auth
 
@@ -116,7 +118,7 @@ class KlangbeckenAPI:
         fileId = text_type(uuid.uuid1())   # Generate new file id
 
         actions = []
-        for analyzer in self.analyzers:
+        for analyzer in self.upload_analyzers:
             actions += analyzer(playlist, fileId, ext, uploadFile)
 
         for processor in self.processors:
@@ -132,23 +134,12 @@ class KlangbeckenAPI:
     def on_update(self, request, playlist, fileId, ext):
         fileId = text_type(fileId)
 
-        changes = []
+        actions = []
         try:
             data = json.loads(text_type(request.data, 'utf-8'))
-            if not isinstance(data, dict):
-                raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                          'Expected a dict.')
-            for key, value in data.items():
-                if key not in ALLOWED_METADATA_CHANGES.keys():
-                    raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                              'Key not allowed: ' + key)
-                if not isinstance(value, ALLOWED_METADATA_CHANGES[key]):
-                    raise UnprocessableEntity(
-                        'Cannot parse PUT request: Type error ' +
-                        '(expected %s, got %s).' %
-                        (ALLOWED_METADATA_CHANGES[key], type(value).__name__)
-                    )
-                changes.append(MetadataChange(key, value))
+            for analyzer in self.update_analyzers:
+                actions += analyzer(playlist, fileId, ext, data)
+
         except JSONDecodeError:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
                                       ' not valid JSON')
@@ -157,7 +148,7 @@ class KlangbeckenAPI:
                                       ' not valid UTF-8 data')
 
         for processor in self.processors:
-            processor(playlist, fileId, ext, changes)
+            processor(playlist, fileId, ext, actions)
 
         return JSONResponse({'status': 'OK'})
 
@@ -280,12 +271,34 @@ def noop_loudness_analyzer(playlist, fileId, ext, file_):
     ]
 
 
-DEFAULT_ANALYZERS = [
+DEFAULT_UPLOAD_ANALYZERS = [
     raw_file_analyzer,
     mutagen_tag_analyzer,
     silan_silence_analyzer,
     bs1770gain_loudness_analyzer,
 ]
+
+
+def update_analyzer(playlist, fileId, ext, data):
+    changes = []
+    if not isinstance(data, dict):
+        raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                  'Expected a dict.')
+    for key, value in data.items():
+        if key not in ALLOWED_METADATA_CHANGES.keys():
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      'Key not allowed: ' + key)
+        if not isinstance(value, ALLOWED_METADATA_CHANGES[key]):
+            raise UnprocessableEntity(
+                'Cannot parse PUT request: Type error ' +
+                '(expected %s, got %s).' %
+                (ALLOWED_METADATA_CHANGES[key], type(value).__name__)
+            )
+        changes.append(MetadataChange(key, value))
+    return changes
+
+
+DEFAULT_UPDATE_ANALYZERS = [update_analyzer]
 
 
 def __get_path(first, second=None, ext=None):
