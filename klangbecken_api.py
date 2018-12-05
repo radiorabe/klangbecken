@@ -47,6 +47,13 @@ ALLOWED_METADATA_CHANGES = {
     'count': int,
 }
 
+####################
+# Action-"Classes" #
+####################
+FileAddition = collections.namedtuple('FileAddition', ('file'))
+MetadataChange = collections.namedtuple('MetadataChange', ('key', 'value'))
+FileDeletion = collections.namedtuple('FileDeletion', ())
+
 
 ############
 # HTTP API #
@@ -174,14 +181,6 @@ class JSONResponse(Response):
                                            mimetype='text/json')
 
 
-###############
-# Description #
-###############
-FileAddition = collections.namedtuple('FileAddition', ('file'))
-MetadataChange = collections.namedtuple('MetadataChange', ('key', 'value'))
-FileDeletion = collections.namedtuple('FileDeletion', ())
-
-
 # register the TXXX key so that we can access it later as
 EasyID3.RegisterTXXXKey(key='track_gain', desc='REPLAYGAIN_TRACK_GAIN')
 EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
@@ -248,13 +247,6 @@ def silan_silence_analyzer(playlist, fileId, ext, file_):
     ]
 
 
-def noop_silence_analyzer(playlist, fileId, ext, file_):
-    return [
-        MetadataChange('cue_in', 0.0),
-        MetadataChange('cue_out', 100.0),
-    ]
-
-
 def bs1770gain_loudness_analyzer(playlist, fileId, ext, file_):
     bs1770gain_cmd = [
         "/usr/bin/bs1770gain", "--ebu", "--xml", file_.filename
@@ -265,12 +257,6 @@ def bs1770gain_loudness_analyzer(playlist, fileId, ext, file_):
     track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
     return [
         MetadataChange('track_gain', track_gain + ' dB')
-    ]
-
-
-def noop_loudness_analyzer(playlist, fileId, ext, file_):
-    return [
-        MetadataChange('track_gain', '0 dB')
     ]
 
 
@@ -403,7 +389,7 @@ class StandaloneWebApplication:
     * Serves data files from the data directory
     * Relays API calls to the KlangbeckenAPI instance
 
-    Authentication is simulated. Loudness and silence analysis are mocked.
+    Authentication is disabled. Loudness and silence analysis are skipped.
     """
 
     def __init__(self):
