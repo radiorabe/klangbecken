@@ -112,7 +112,10 @@ class KlangbeckenAPI:
         return response
 
     def on_upload(self, request, playlist):
-        uploadFile = request.files['files']
+        if 'file' not in request.files:
+            raise UnprocessableEntity('No attribute named \'file\' found.')
+
+        uploadFile = request.files['file']
 
         ext = os.path.splitext(uploadFile.filename)[1].lower()
         fileId = text_type(uuid.uuid1())   # Generate new file id
