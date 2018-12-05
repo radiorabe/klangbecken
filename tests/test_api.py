@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 import mock
 import unittest
@@ -18,7 +20,7 @@ class BackendTest(unittest.TestCase):
         self.assertTrue(callable(application))
 
 
-class APITest(unittest.TestCase):
+class APITestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import KlangbeckenAPI
         from werkzeug.test import Client
@@ -39,7 +41,7 @@ class APITest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_urls(self):
+    def testUrls(self):
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 404)
 
@@ -55,8 +57,7 @@ class APITest(unittest.TestCase):
         resp = self.client.get('/nonexistant/')
         self.assertEqual(resp.status_code, 404)
 
-
-    def test_update(self):
+    def testUpdate(self):
         # Update count correctly
         fileId = str(uuid.uuid1())
         resp = self.client.put(
@@ -109,6 +110,54 @@ class APITest(unittest.TestCase):
         self.update_analyzer.assert_not_called()
 
 
+class UpdateAnalyzerTestCase(unittest.TestCase):
+    def setUp(self):
+        pass
 
+    def tearDown(self):
+        pass
 
+    def test_update_analyzer(self):
+        from klangbecken_api import update_analyzer, MetadataChange
+        from werkzeug.exceptions import UnprocessableEntity
 
+        # Correct single update
+        self.assertEqual(
+            update_analyzer('playlist', 'id', '.ext', {'artist': 'A'}),
+            [MetadataChange('artist', 'A')]
+        )
+
+        # Correct multiple updates
+        changes = update_analyzer('playlist', 'id', '.ext',
+                                  {'artist': 'A', 'title': 'T'})
+        self.assertEqual(len(changes), 2)
+        self.assertTrue(MetadataChange('artist', 'A') in changes)
+        self.assertTrue(MetadataChange('title', 'T') in changes)
+
+        # Update count with wrong data type
+        self.assertRaises(
+            UnprocessableEntity,
+            update_analyzer,
+            'playlist', 'id', '.ext', {'count': '1'}
+        )
+
+        # Update artist with wrong data type
+        self.assertRaises(
+            UnprocessableEntity,
+            update_analyzer,
+            'playlist', 'id', '.ext', {'artist': []}
+        )
+
+        # Update not allowed property (original_filename)
+        self.assertRaises(
+            UnprocessableEntity,
+            update_analyzer,
+            'playlist', 'id', '.ext', {'original_filename': 'test.mp3'}
+        )
+
+        # Update with wrong data format
+        self.assertRaises(
+            UnprocessableEntity,
+            update_analyzer,
+            'playlist', 'id', '.ext', [['artist', 'A']]
+        )
