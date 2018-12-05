@@ -118,6 +118,7 @@ class APITestCase(unittest.TestCase):
 
     def testUpload(self):
         from klangbecken_api import FileAddition, MetadataChange
+        from werkzeug.datastructures import FileStorage
         from io import BytesIO
 
         resp = self.client.post(
@@ -135,6 +136,7 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(args[0], 'music')
         self.assertEqual(args[1], fileId)
         self.assertEqual(args[2], '.mp3')
+        self.assertTrue(isinstance(args[3], FileStorage))
         self.assertEqual(args[3].filename, 'test.mp3')
         self.assertEqual(args[3].mimetype, 'audio/mpeg')
         self.assertEqual(args[3].read(), b'testcontent')
@@ -243,7 +245,7 @@ class UpdateAnalyzerTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_update_analyzer(self):
+    def testUpdateAnalyzer(self):
         from klangbecken_api import update_analyzer, MetadataChange
         from werkzeug.exceptions import UnprocessableEntity
 
@@ -287,3 +289,30 @@ class UpdateAnalyzerTestCase(unittest.TestCase):
             update_analyzer,
             'playlist', 'id', '.ext', [['artist', 'A']]
         )
+
+    def testRawFileAnalyzer(self):
+        import time
+        from klangbecken_api import (raw_file_analyzer, FileAddition,
+                                     MetadataChange)
+        from werkzeug.datastructures import FileStorage
+        from werkzeug.exceptions import UnprocessableEntity
+
+        self.assertRaises(UnprocessableEntity, raw_file_analyzer, 'music',
+                          'fileId', '.mp3', None)
+
+        self.assertRaises(UnprocessableEntity, raw_file_analyzer,
+                          'music', 'fileId', '.xml', 'file')
+
+        fileStorage = FileStorage(filename='filename')
+        result = raw_file_analyzer('jingles', 'fileId', '.ogg', fileStorage)
+
+        self.assertEqual(result[0], FileAddition(fileStorage))
+        self.assertTrue(MetadataChange('playlist', 'jingles') in result)
+        self.assertTrue(MetadataChange('id', 'fileId') in result)
+        self.assertTrue(MetadataChange('ext', '.ogg') in result)
+        self.assertTrue(MetadataChange('original_filename', 'filename') in
+                        result)
+        t = [ch for ch in result if (isinstance(ch, MetadataChange) and
+                                     ch.key == 'import_timestamp')][0]
+        self.assertTrue(time.time() - t.value < 1)
+        self.assertTrue(MetadataChange('count', 1) in result)
