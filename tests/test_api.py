@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import json
 import mock
+import os
 import six
 import unittest
 import uuid
@@ -316,3 +317,42 @@ class UpdateAnalyzerTestCase(unittest.TestCase):
                                      ch.key == 'import_timestamp')][0]
         self.assertTrue(time.time() - t.value < 1)
         self.assertTrue(MetadataChange('count', 1) in result)
+
+
+class RawFileProcessorTestCase(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.tempdir = tempfile.mkdtemp()
+        os.mkdir(os.path.join(self.tempdir, 'music'))
+        os.environ['KLANGBECKEN_DATA'] = self.tempdir
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tempdir)
+        del os.environ['KLANGBECKEN_DATA']
+        self.tempdir = None
+
+    def testProcessor(self):
+        from klangbecken_api import raw_file_processor
+        from klangbecken_api import FileAddition, FileDeletion, MetadataChange
+        from io import BytesIO
+        from werkzeug.exceptions import NotFound
+        from werkzeug.datastructures import FileStorage
+
+        file_ = FileStorage(BytesIO(b'abc'), 'filename.txt')
+        addition = FileAddition(file_)
+        change = MetadataChange('key', 'value')
+        delete = FileDeletion()
+        raw_file_processor('music', 'id1', '.mp3', [addition])
+        path = os.path.join(self.tempdir, 'music', 'id1.mp3')
+
+        self.assertTrue(os.path.isfile(path))
+        with open(path) as f:
+            self.assertEqual(f.read(), 'abc')
+
+        raw_file_processor('music', 'id1', '.mp3', [change])
+        raw_file_processor('music', 'id1', '.mp3', [delete])
+        self.assertTrue(not os.path.isfile(path))
+
+        self.assertRaises(NotFound, raw_file_processor,
+                          'music', 'id1', '.mp3', [delete])
