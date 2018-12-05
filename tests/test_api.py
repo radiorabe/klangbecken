@@ -23,11 +23,15 @@ class BackendTest(unittest.TestCase):
 
 class APITestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken_api import KlangbeckenAPI
+        from klangbecken_api import (KlangbeckenAPI, FileAddition,
+                                     MetadataChange)
         from werkzeug.test import Client
         from werkzeug.wrappers import BaseResponse
 
-        self.upload_analyzer = mock.Mock(return_value=['UploadChange'])
+        self.upload_analyzer = mock.Mock(return_value=[
+            FileAddition('testfile'),
+            MetadataChange('testkey', 'testvalue')
+        ])
         self.update_analyzer = mock.Mock(return_value=['UpdateChange'])
         self.processor = mock.MagicMock()
 
@@ -57,6 +61,56 @@ class APITestCase(unittest.TestCase):
 
         resp = self.client.get('/nonexistant/')
         self.assertEqual(resp.status_code, 404)
+
+    def testUpload(self):
+        from klangbecken_api import FileAddition, MetadataChange
+        from io import BytesIO
+
+        resp = self.client.post(
+            '/music/',
+            data={'file': (BytesIO(b'testcontent'), 'test.mp3')},
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(six.text_type(resp.data, 'ascii'))
+        fileId = list(data.keys())[0]
+        self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
+        self.assertEqual(list(data.values())[0], {'testkey': 'testvalue'})
+        self.update_analyzer.assert_not_called()
+        self.upload_analyzer.assert_called_once()
+        args = self.upload_analyzer.call_args[0]
+        self.assertEqual(args[0], 'music')
+        self.assertEqual(args[1], fileId)
+        self.assertEqual(args[2], '.mp3')
+        self.assertEqual(args[3].filename, 'test.mp3')
+        self.assertEqual(args[3].mimetype, 'audio/mpeg')
+        self.assertEqual(args[3].read(), b'testcontent')
+
+        self.processor.assert_called_once_with('music', fileId, '.mp3', [
+            FileAddition('testfile'), MetadataChange('testkey', 'testvalue')
+        ])
+
+        self.upload_analyzer.reset_mock()
+        self.processor.reset_mock()
+
+        # wrong attribute name
+        resp = self.client.post(
+            '/music/',
+            data={'not-file': (BytesIO(b'testcontent'), 'test.mp3')},
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.update_analyzer.assert_not_called()
+        self.upload_analyzer.assert_not_called()
+        self.processor.assert_not_called()
+
+        # file as normal text attribute
+        resp = self.client.post(
+            '/music/',
+            data={'file': 'testcontent', 'filename': 'test.mp3'},
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.update_analyzer.assert_not_called()
+        self.upload_analyzer.assert_not_called()
+        self.processor.assert_not_called()
 
     def testUpdate(self):
         # Update count correctly
