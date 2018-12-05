@@ -235,6 +235,7 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
 
+
 class UpdateAnalyzerTestCase(unittest.TestCase):
     def setUp(self):
         pass
