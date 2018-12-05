@@ -422,7 +422,7 @@ class StandaloneWebApplication:
 
         # Create slightly customized KlangbeckenAPI application
         api = KlangbeckenAPI(
-            analyzers=[
+            upload_analyzers=[
                 raw_file_analyzer,
                 mutagen_tag_analyzer,
             ],
