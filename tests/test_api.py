@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import json
 import mock
+import six
 import unittest
 import uuid
 
@@ -71,6 +72,8 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.assert_not_called()
         self.processor.assert_called_once_with('music', fileId, '.mp3',
                                                ['UpdateChange'])
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK'})
         self.update_analyzer.reset_mock()
         self.processor.reset_mock()
 
