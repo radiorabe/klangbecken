@@ -220,6 +220,20 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 422)
         self.update_analyzer.assert_not_called()
 
+    def testDelete(self):
+        from klangbecken_api import FileDeletion
+        fileId = str(uuid.uuid1())
+        resp = self.client.delete('/music/' + fileId + '.mp3',)
+        self.assertEqual(resp.status_code, 200)
+        self.update_analyzer.assert_not_called()
+        self.upload_analyzer.assert_not_called()
+        self.processor.assert_called_once_with('music', fileId, '.mp3',
+                                               [FileDeletion()])
+
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK'})
+        self.upload_analyzer.reset_mock()
+        self.processor.reset_mock()
 
 class UpdateAnalyzerTestCase(unittest.TestCase):
     def setUp(self):
