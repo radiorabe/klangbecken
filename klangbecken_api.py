@@ -321,7 +321,8 @@ def raw_file_processor(playlist, fileId, ext, changes):
 def index_processor(playlist, fileId, ext, changes, json_opts={}):
     indexJson = __get_path('index.json')
     # FIXME: locking
-    data = json.load(open(indexJson))
+    with open(indexJson) as f:
+        data = json.load(f)
     for change in changes:
         if isinstance(change, FileAddition):
             data[fileId] = {}
@@ -331,7 +332,8 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
             key, value = change
             data[fileId][key] = value
 
-    json.dump(data, open(indexJson, 'w'), **json_opts)
+    with open(indexJson, 'w') as f:
+        json.dump(data, f, **json_opts)
 
 
 def file_tag_processor(playlist, fileId, ext, changes):
@@ -354,13 +356,15 @@ def playlist_processor(playlist, fileId, ext, changes):
     playlist_path = __get_path(playlist + '.m3u')
     for change in changes:
         if isinstance(change, FileDeletion):
-            lines = open(playlist_path).readlines()
+            with open(playlist_path) as f:
+                lines = (s.strip() for s in f.readlines() if s != '\n')
             with open(playlist_path, 'w') as f:
                 for line in lines:
                     if fileId not in line:
                         print(line.strip(), file=f)
         elif isinstance(change, MetadataChange) and change.key == 'count':
-            lines = open(playlist_path).readlines()
+            with open(playlist_path) as f:
+                lines = (s.strip() for s in f.readlines() if s != '\n')
             lines = [line.strip() for line in lines if fileId not in line]
 
             count = change.value
@@ -398,7 +402,8 @@ class StandaloneWebApplication:
         # Assemble useful paths
         current_path = os.path.dirname(os.path.realpath(__file__))
         data_full_path = os.path.join(current_path, 'data')
-        dist_dir = open(os.path.join(current_path, '.dist_dir')).read().strip()
+        with open(os.path.join(current_path, '.dist_dir')) as f:
+            dist_dir = f.read().strip()
         dist_full_path = os.path.join(current_path, dist_dir)
 
         # Set environment variables needed by the KlangbeckenAPI
@@ -459,7 +464,8 @@ def _check_and_crate_data_dir():
             os.mkdir(path)
     for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
         if not os.path.isfile(path):
-            open(path, 'a').close()
+            with open(path, 'a') as f:
+                f.close()
 
     # FIXME: create index.json
 
