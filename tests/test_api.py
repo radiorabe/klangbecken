@@ -577,3 +577,80 @@ class ProcessorsTestCase(unittest.TestCase):
         with open(jingles_path) as f:
             data = f.read()
         self.assertEqual(data, '')
+
+
+class StandaloneWebApplicationTestCase(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from klangbecken_api import StandaloneWebApplication
+        from klangbecken_api import _check_and_crate_data_dir
+        from werkzeug.test import Client
+        from werkzeug.wrappers import BaseResponse
+
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+        os.environ['KLANGBECKEN_DATA'] = self.tempdir
+
+        app = StandaloneWebApplication(self.tempdir)
+        self.client = Client(app, BaseResponse)
+
+        _check_and_crate_data_dir(self.tempdir)
+
+    def testDataDir(self):
+        self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
+
+    def testIndexHtml(self):
+        resp = self.client.get('/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.data.startswith(b'<!DOCTYPE html>'))
+        self.assertIn(b'RaBe Klangbecken', resp.data)
+        resp.close()
+
+    def testApi(self):
+        # Upload
+        with open(os.path.join(self.current_path, 'silence.mp3'), 'rb') as f:
+            resp = self.client.post(
+                '/api/music/',
+                data={'file': (f, 'silence.mp3')},
+            )
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(six.text_type(resp.data, 'ascii'))
+        fileId = list(data.keys())[0]
+        self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
+        expected = {
+            'original_filename': 'silence.mp3',
+            'length': 1.0,
+            'album': 'Silence Album',
+            'title': 'Silence Track',
+            'artist': 'Silence Artist',
+            'ext': '.mp3',
+            'count': 1,
+            'playlist': 'music',
+            'id': fileId
+        }
+        self.assertTrue(set(expected.items()) <= set(data[fileId].items()))
+        resp.close()
+
+        # Update
+        resp = self.client.put(
+            '/api/music/' + fileId + '.mp3',
+            data=json.dumps({'count': 4}),
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Get file
+        resp = self.client.get('/data/music/' + fileId + '.mp3')
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Get index.json
+        resp = self.client.get('/data/index.json')
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Delete file
+        resp = self.client.delete('/api/music/' + fileId + '.mp3',)
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
