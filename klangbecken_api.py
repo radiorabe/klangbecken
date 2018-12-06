@@ -325,11 +325,17 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
         data = json.load(f)
     for change in changes:
         if isinstance(change, FileAddition):
+            if fileId in data:
+                raise UnprocessableEntity('Duplicate file ID: ' + fileId)
             data[fileId] = {}
         elif isinstance(change, FileDeletion):
+            if fileId not in data:
+                raise NotFound()
             del data[fileId]
         elif isinstance(change, MetadataChange):
             key, value = change
+            if fileId not in data:
+                raise NotFound()
             data[fileId][key] = value
 
     with open(indexJson, 'w') as f:

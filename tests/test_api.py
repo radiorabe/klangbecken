@@ -369,10 +369,12 @@ class ProcessorsTestCase(unittest.TestCase):
         from klangbecken_api import index_processor
         from klangbecken_api import FileAddition, FileDeletion, MetadataChange
         from werkzeug.datastructures import FileStorage
+        from werkzeug.exceptions import NotFound, UnprocessableEntity
         from io import BytesIO
 
         index_path = os.path.join(self.tempdir, 'index.json')
 
+        # Add two new files
         file_ = FileStorage(BytesIO(b'abc'), 'filename.txt')
         index_processor('music', 'fileId1', '.mp3', [FileAddition(file_)])
         index_processor('music', 'fileId2', '.ogg', [FileAddition(file_)])
@@ -399,6 +401,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('key2' in data['fileId2'])
         self.assertEqual(data['fileId2']['key2'], 'value2')
 
+        # Metadata modification
         index_processor('music', 'fileId1', '.mp3',
                         [MetadataChange('key1', 'value1-1'),
                          MetadataChange('key2', 'value2-1')])
@@ -417,6 +420,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('key2' in data['fileId2'])
         self.assertEqual(data['fileId2']['key2'], 'value2-1')
 
+        # Delete one file
         index_processor('music', 'fileId1', '.mp3', [FileDeletion()])
 
         with open(index_path) as f:
@@ -424,6 +428,30 @@ class ProcessorsTestCase(unittest.TestCase):
 
         self.assertTrue('fileId1' not in data)
         self.assertTrue('fileId2' in data)
+
+        # Try duplicating file ids
+        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+            index_processor('music', 'fileId2', '.ogg', [FileAddition(file_)])
+        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+            index_processor('jingles', 'fileId2', '.mp3',
+                            [FileAddition(file_)])
+        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+            index_processor('music', 'fileId2', '.mp3', [FileAddition(file_)])
+
+        # Try modifying non existent files
+        with self.assertRaises(NotFound):
+            index_processor('music', 'fileIdXY', '.ogg',
+                            [MetadataChange('key', 'val')])
+
+        # Try deleting non existent file ids
+        with self.assertRaises(NotFound):
+            index_processor('music', 'fileIdXY', '.ogg',
+                            [FileDeletion()])
+
+        with open(index_path) as f:
+            data = json.load(f)
+        self.assertTrue('fileId2' in data)
+        self.assertTrue('fileXY' not in data)
 
     def testPlaylistProcessor(self):
         from klangbecken_api import playlist_processor
