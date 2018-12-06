@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 import json
 import mock
@@ -323,11 +323,13 @@ class UpdateAnalyzerTestCase(unittest.TestCase):
         self.assertTrue(MetadataChange('count', 1) in result)
 
 
-class RawFileProcessorTestCase(unittest.TestCase):
+class ProcessorsTestCase(unittest.TestCase):
     def setUp(self):
         import tempfile
         self.tempdir = tempfile.mkdtemp()
         os.mkdir(os.path.join(self.tempdir, 'music'))
+        with open(os.path.join(self.tempdir, 'index.json'), 'w') as f:
+            print('{}', file=f)
         os.environ['KLANGBECKEN_DATA'] = self.tempdir
 
     def tearDown(self):
@@ -336,7 +338,7 @@ class RawFileProcessorTestCase(unittest.TestCase):
         del os.environ['KLANGBECKEN_DATA']
         self.tempdir = None
 
-    def testProcessor(self):
+    def testRawFileProcessor(self):
         from klangbecken_api import raw_file_processor
         from klangbecken_api import FileAddition, FileDeletion, MetadataChange
         from io import BytesIO
@@ -360,3 +362,63 @@ class RawFileProcessorTestCase(unittest.TestCase):
 
         self.assertRaises(NotFound, raw_file_processor,
                           'music', 'id1', '.mp3', [delete])
+
+    def testIndexProcessor(self):
+        from klangbecken_api import index_processor
+        from klangbecken_api import FileAddition, FileDeletion, MetadataChange
+        from werkzeug.datastructures import FileStorage
+        from io import BytesIO
+
+        index_path = os.path.join(self.tempdir, 'index.json')
+
+        file_ = FileStorage(BytesIO(b'abc'), 'filename.txt')
+        index_processor('music', 'fileId1', '.mp3', [FileAddition(file_)])
+        index_processor('music', 'fileId2', '.ogg', [FileAddition(file_)])
+
+        with open(index_path) as f:
+            data = json.load(f)
+
+        self.assertTrue('fileId1' in data)
+        self.assertTrue('fileId2' in data)
+
+        index_processor('music', 'fileId1', '.mp3',
+                        [MetadataChange('key1', 'value1')])
+        index_processor('music', 'fileId2', '.ogg',
+                        [MetadataChange('key1', 'value1'),
+                         MetadataChange('key2', 'value2')])
+
+        with open(index_path) as f:
+            data = json.load(f)
+
+        self.assertTrue('key1' in data['fileId1'])
+        self.assertEqual(data['fileId1']['key1'], 'value1')
+        self.assertTrue('key1' in data['fileId2'])
+        self.assertEqual(data['fileId2']['key1'], 'value1')
+        self.assertTrue('key2' in data['fileId2'])
+        self.assertEqual(data['fileId2']['key2'], 'value2')
+
+        index_processor('music', 'fileId1', '.mp3',
+                        [MetadataChange('key1', 'value1-1'),
+                         MetadataChange('key2', 'value2-1')])
+        index_processor('music', 'fileId2', '.ogg',
+                        [MetadataChange('key2', 'value2-1')])
+
+        with open(index_path) as f:
+            data = json.load(f)
+
+        self.assertTrue('key1' in data['fileId1'])
+        self.assertEqual(data['fileId1']['key1'], 'value1-1')
+        self.assertTrue('key2' in data['fileId1'])
+        self.assertEqual(data['fileId1']['key2'], 'value2-1')
+        self.assertTrue('key1' in data['fileId2'])
+        self.assertEqual(data['fileId2']['key1'], 'value1')
+        self.assertTrue('key2' in data['fileId2'])
+        self.assertEqual(data['fileId2']['key2'], 'value2-1')
+
+        index_processor('music', 'fileId1', '.mp3', [FileDeletion()])
+
+        with open(index_path) as f:
+            data = json.load(f)
+
+        self.assertTrue('fileId1' not in data)
+        self.assertTrue('fileId2' in data)
