@@ -368,6 +368,10 @@ class ProcessorsTestCase(unittest.TestCase):
         raw_file_processor('music', 'id1', '.mp3', [delete])
         self.assertTrue(not os.path.isfile(path))
 
+        # Invalid change (not found)
+        self.assertRaises(NotFound, raw_file_processor,
+                          'music', 'id1', '.mp3', [change])
+
         # Invalid deletion (not found)
         self.assertRaises(NotFound, raw_file_processor,
                           'music', 'id1', '.mp3', [delete])
