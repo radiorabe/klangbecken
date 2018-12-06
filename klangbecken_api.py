@@ -393,12 +393,12 @@ class StandaloneWebApplication:
     Authentication is disabled. Loudness and silence analysis are skipped.
     """
 
-    def __init__(self):
+    def __init__(self, data_path=None):
         from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
 
         # Assemble useful paths
         current_path = os.path.dirname(os.path.realpath(__file__))
-        data_full_path = os.path.join(current_path, 'data')
+        data_full_path = data_path or os.path.join(current_path, 'data')
         with open(os.path.join(current_path, '.dist_dir')) as f:
             dist_dir = f.read().strip()
         dist_full_path = os.path.join(current_path, dist_dir)
@@ -461,20 +461,23 @@ def _get_path(first, second=None, ext=None):
         return os.path.join(data_dir, first, second + ext)
 
 
-def _check_and_crate_data_dir():
+def _check_and_crate_data_dir(data_dir=None):
     """
     Create local data directory structure for testing and development
     """
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    data_dir = data_dir or \
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
     for path in [data_dir] + [os.path.join(data_dir, d) for d in PLAYLISTS]:
         if not os.path.isdir(path):
             os.mkdir(path)
     for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
         if not os.path.isfile(path):
             with open(path, 'a') as f:
-                f.close()
-
-    # FIXME: create index.json
+                pass
+    path = os.path.join(data_dir, 'index.json')
+    if not os.path.isfile(path):
+        with open(path, 'w') as f:
+            f.write('{}')
 
 
 ###############
