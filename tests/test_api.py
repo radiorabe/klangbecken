@@ -330,6 +330,8 @@ class ProcessorsTestCase(unittest.TestCase):
         os.mkdir(os.path.join(self.tempdir, 'music'))
         with open(os.path.join(self.tempdir, 'index.json'), 'w') as f:
             print('{}', file=f)
+        open(os.path.join(self.tempdir, 'music.m3u'), 'w').close()
+        open(os.path.join(self.tempdir, 'jingles.m3u'), 'w').close()
         os.environ['KLANGBECKEN_DATA'] = self.tempdir
 
     def tearDown(self):
@@ -422,3 +424,112 @@ class ProcessorsTestCase(unittest.TestCase):
 
         self.assertTrue('fileId1' not in data)
         self.assertTrue('fileId2' in data)
+
+    def testPlaylistProcessor(self):
+        from klangbecken_api import playlist_processor
+        from klangbecken_api import FileDeletion, MetadataChange
+
+        music_path = os.path.join(self.tempdir, 'music.m3u')
+        jingles_path = os.path.join(self.tempdir, 'jingles.m3u')
+
+        playlist_processor('music', 'fileId1', '.mp3',
+                           [MetadataChange('count', 2)])
+
+        with open(music_path) as f:
+            lines = f.read().split('\n')
+        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        self.assertEqual(len(entries), 2)
+
+        with open(jingles_path) as f:
+            data = f.read()
+        self.assertEqual(data, '')
+
+        playlist_processor('music', 'fileId1', '.mp3',
+                           [MetadataChange('count', 4)])
+
+        with open(music_path) as f:
+            lines = f.read().split('\n')
+        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        self.assertEqual(len(entries), 4)
+
+        with open(jingles_path) as f:
+            data = f.read()
+        self.assertEqual(data, '')
+
+        playlist_processor('music', 'fileId1', '.mp3',
+                           [MetadataChange('count', 0)])
+
+        with open(music_path) as f:
+            data = f.read()
+        self.assertEqual(data, '')
+
+        with open(jingles_path) as f:
+            data = f.read()
+        self.assertEqual(data, '')
+
+        playlist_processor('music', 'fileId1', '.mp3',
+                           [MetadataChange('count', 2)])
+        playlist_processor('music', 'fileId2', '.ogg',
+                           [MetadataChange('count', 1)])
+        playlist_processor('music', 'fileId3', '.flac',
+                           [MetadataChange('count', 3)])
+        playlist_processor('jingles', 'fileId4', '.mp3',
+                           [MetadataChange('count', 2)])
+        playlist_processor('jingles', 'fileId5', '.mp3',
+                           [MetadataChange('count', 3)])
+
+        with open(music_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        self.assertEqual(len(entries), 2)
+        entries = [l for l in lines if l.endswith('music/fileId2.ogg')]
+        self.assertEqual(len(entries), 1)
+        entries = [l for l in lines if l.endswith('music/fileId3.flac')]
+        self.assertEqual(len(entries), 3)
+
+        with open(jingles_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        entries = [l for l in lines if l.endswith('jingles/fileId4.mp3')]
+        self.assertEqual(len(entries), 2)
+        entries = [l for l in lines if l.endswith('jingles/fileId5.mp3')]
+        self.assertEqual(len(entries), 3)
+
+        # Delete non existing file (must be possible)
+        playlist_processor('music', 'fileIdXY', '.ogg', [FileDeletion()])
+        with open(music_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        self.assertEqual(len(lines), 6)
+        self.assertTrue(all(lines))
+
+        with open(jingles_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        self.assertEqual(len(lines), 5)
+        self.assertTrue(all(lines))
+
+        # Delete existing file
+        playlist_processor('music', 'fileId1', '.mp3', [FileDeletion()])
+        with open(music_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        self.assertEqual(len(lines), 4)
+        self.assertTrue(all(lines))
+        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        self.assertListEqual(entries, [])
+
+        with open(jingles_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        self.assertEqual(len(lines), 5)
+        self.assertTrue(all(lines))
+
+        # Multiple deletes
+        playlist_processor('music', 'fileId3', '.flac', [FileDeletion()])
+        playlist_processor('jingles', 'fileId4', '.mp3', [FileDeletion()])
+        playlist_processor('jingles', 'fileId5', '.mp3', [FileDeletion()])
+
+        with open(music_path) as f:
+            lines = [l.strip() for l in f.readlines()]
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].endswith('music/fileId2.ogg'))
+
+        with open(jingles_path) as f:
+            data = f.read()
+        self.assertEqual(data, '')
