@@ -122,6 +122,7 @@ class APITestCase(unittest.TestCase):
         from werkzeug.datastructures import FileStorage
         from io import BytesIO
 
+        # Correct upload
         resp = self.client.post(
             '/music/',
             data={'file': (BytesIO(b'testcontent'), 'test.mp3')},
@@ -149,7 +150,7 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
 
-        # wrong attribute name
+        # Wrong attribute name
         resp = self.client.post(
             '/music/',
             data={'not-file': (BytesIO(b'testcontent'), 'test.mp3')},
@@ -160,7 +161,7 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.assert_not_called()
         self.processor.assert_not_called()
 
-        # file as normal text attribute
+        # File as normal text attribute
         resp = self.client.post(
             '/music/',
             data={'file': 'testcontent', 'filename': 'test.mp3'},
@@ -302,12 +303,15 @@ class UpdateAnalyzerTestCase(unittest.TestCase):
         from werkzeug.datastructures import FileStorage
         from werkzeug.exceptions import UnprocessableEntity
 
+        # Missing file
         self.assertRaises(UnprocessableEntity, raw_file_analyzer, 'music',
                           'fileId', '.mp3', None)
 
+        # Invalid file
         self.assertRaises(UnprocessableEntity, raw_file_analyzer,
                           'music', 'fileId', '.xml', 'file')
 
+        # Correct file
         fileStorage = FileStorage(filename='filename')
         result = raw_file_analyzer('jingles', 'fileId', '.ogg', fileStorage)
 
@@ -351,17 +355,20 @@ class ProcessorsTestCase(unittest.TestCase):
         addition = FileAddition(file_)
         change = MetadataChange('key', 'value')
         delete = FileDeletion()
+
+        # File addition
         raw_file_processor('music', 'id1', '.mp3', [addition])
         path = os.path.join(self.tempdir, 'music', 'id1.mp3')
-
         self.assertTrue(os.path.isfile(path))
         with open(path) as f:
             self.assertEqual(f.read(), 'abc')
 
+        # File change (nothing happens) and deletion
         raw_file_processor('music', 'id1', '.mp3', [change])
         raw_file_processor('music', 'id1', '.mp3', [delete])
         self.assertTrue(not os.path.isfile(path))
 
+        # Invalid deletion (not found)
         self.assertRaises(NotFound, raw_file_processor,
                           'music', 'id1', '.mp3', [delete])
 
@@ -385,6 +392,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('fileId1' in data)
         self.assertTrue('fileId2' in data)
 
+        # Set some initial metadata
         index_processor('music', 'fileId1', '.mp3',
                         [MetadataChange('key1', 'value1')])
         index_processor('music', 'fileId2', '.ogg',
@@ -401,7 +409,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('key2' in data['fileId2'])
         self.assertEqual(data['fileId2']['key2'], 'value2')
 
-        # Metadata modification
+        # Modify metadata
         index_processor('music', 'fileId1', '.mp3',
                         [MetadataChange('key1', 'value1-1'),
                          MetadataChange('key2', 'value2-1')])
@@ -460,6 +468,7 @@ class ProcessorsTestCase(unittest.TestCase):
         music_path = os.path.join(self.tempdir, 'music.m3u')
         jingles_path = os.path.join(self.tempdir, 'jingles.m3u')
 
+        # Update playlist count (initial)
         playlist_processor('music', 'fileId1', '.mp3',
                            [MetadataChange('count', 2)])
 
@@ -472,6 +481,7 @@ class ProcessorsTestCase(unittest.TestCase):
             data = f.read()
         self.assertEqual(data, '')
 
+        # Update playlist count
         playlist_processor('music', 'fileId1', '.mp3',
                            [MetadataChange('count', 4)])
 
@@ -484,6 +494,7 @@ class ProcessorsTestCase(unittest.TestCase):
             data = f.read()
         self.assertEqual(data, '')
 
+        # Set playlist count to zero (same as delete)
         playlist_processor('music', 'fileId1', '.mp3',
                            [MetadataChange('count', 0)])
 
@@ -495,6 +506,7 @@ class ProcessorsTestCase(unittest.TestCase):
             data = f.read()
         self.assertEqual(data, '')
 
+        # Add more files to playlist
         playlist_processor('music', 'fileId1', '.mp3',
                            [MetadataChange('count', 2)])
         playlist_processor('music', 'fileId2', '.ogg',
