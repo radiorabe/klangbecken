@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 
 import collections
+import fcntl
 import functools
 import json
 import os
@@ -320,26 +321,30 @@ def raw_file_processor(playlist, fileId, ext, changes):
 
 def index_processor(playlist, fileId, ext, changes, json_opts={}):
     indexJson = __get_path('index.json')
-    # FIXME: locking
-    with open(indexJson) as f:
-        data = json.load(f)
-    for change in changes:
-        if isinstance(change, FileAddition):
-            if fileId in data:
-                raise UnprocessableEntity('Duplicate file ID: ' + fileId)
-            data[fileId] = {}
-        elif isinstance(change, FileDeletion):
-            if fileId not in data:
-                raise NotFound()
-            del data[fileId]
-        elif isinstance(change, MetadataChange):
-            key, value = change
-            if fileId not in data:
-                raise NotFound()
-            data[fileId][key] = value
-
-    with open(indexJson, 'w') as f:
-        json.dump(data, f, **json_opts)
+    with open(indexJson, 'r+') as f:
+        fcntl.lockf(f, fcntl.LOCK_EX)
+        try:
+            data = json.load(f)
+            for change in changes:
+                if isinstance(change, FileAddition):
+                    if fileId in data:
+                        raise UnprocessableEntity('Duplicate file ID: '
+                                                  + fileId)
+                    data[fileId] = {}
+                elif isinstance(change, FileDeletion):
+                    if fileId not in data:
+                        raise NotFound()
+                    del data[fileId]
+                elif isinstance(change, MetadataChange):
+                    key, value = change
+                    if fileId not in data:
+                        raise NotFound()
+                    data[fileId][key] = value
+            f.seek(0)
+            f.truncate()
+            json.dump(data, f, **json_opts)
+        finally:
+            fcntl.lockf(f, fcntl.LOCK_UN)
 
 
 def file_tag_processor(playlist, fileId, ext, changes):
