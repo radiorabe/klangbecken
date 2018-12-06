@@ -18,7 +18,8 @@ env:
 install:
   - pip install tox
   - pip install .
-  - pip install coverage coveralls
+  - pip install coverage
+  - pip install codecov
 
 script:
   - tox
@@ -27,4 +28,6 @@ script:
   - test -f klangbecken.liq && liquidsoap --check klangbecken.liq
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report -m
-  - coveralls
+
+after_success:
+  - codecov
