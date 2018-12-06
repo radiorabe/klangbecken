@@ -360,18 +360,19 @@ def playlist_processor(playlist, fileId, ext, changes):
                 lines = (s.strip() for s in f.readlines() if s != '\n')
             with open(playlist_path, 'w') as f:
                 for line in lines:
-                    if fileId not in line:
-                        print(line.strip(), file=f)
+                    if not line.endswith(os.path.join(playlist, fileId + ext)):
+                        print(line, file=f)
         elif isinstance(change, MetadataChange) and change.key == 'count':
             with open(playlist_path) as f:
                 lines = (s.strip() for s in f.readlines() if s != '\n')
-            lines = [line.strip() for line in lines if fileId not in line]
+            lines = [s for s in lines if s and not s.endswith(fileId + ext)]
 
             count = change.value
             lines.extend([os.path.join(playlist, fileId + ext)] * count)
             random.shuffle(lines)  # TODO: custom shuffling?
             with open(playlist_path, 'w') as f:
-                print('\n'.join(lines), file=f)
+                for line in lines:
+                    print(line, file=f)
 
 
 DEFAULT_PROCESSORS = [
