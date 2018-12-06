@@ -182,18 +182,6 @@ class JSONResponse(Response):
                                            mimetype='text/json')
 
 
-# register the TXXX key so that we can access it later as
-EasyID3.RegisterTXXXKey(key='track_gain', desc='REPLAYGAIN_TRACK_GAIN')
-EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
-EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
-EasyID3.RegisterTXXXKey(key='original_filename', desc='ORIGINAL_FILENAME')
-EasyID3.RegisterTXXXKey(key='import_timestamp', desc='IMPORT_TIMESTAMP')
-EasyID3.RegisterTXXXKey(key='playlist', desc='PLAYLIST')
-EasyID3.RegisterTXXXKey(key='count', desc='COUNT')
-EasyID3.RegisterTXXXKey(key='ext', desc='EXTENSION')
-EasyID3.RegisterTXXXKey(key='id', desc='ID')
-
-
 #############
 # Analyzers #
 #############
@@ -337,19 +325,26 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
             fcntl.lockf(f, fcntl.LOCK_UN)
 
 
+TAG_KEYS = 'artist title album cue_in cue_out track_gain'.split()
+
+EasyID3.RegisterTXXXKey(key='track_gain', desc='REPLAYGAIN_TRACK_GAIN')
+EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
+EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
+
+
 def file_tag_processor(playlist, fileId, ext, changes):
     mutagenfile = None
-    has_changes = False
     for change in changes:
         if isinstance(change, MetadataChange):
-            if mutagenfile is None:
-                path = _get_path(playlist, fileId, ext)
-                mutagenfile = mutagen.File(path, easy=True)
             key, value = change
-            mutagenfile[key] = text_type(value)
-            has_changes = True
+            if key in TAG_KEYS:
+                if mutagenfile is None:
+                    path = _get_path(playlist, fileId, ext)
+                    mutagenfile = mutagen.File(path, easy=True)
 
-    if has_changes:
+                mutagenfile[key] = text_type(value)
+
+    if mutagenfile:
         mutagenfile.save()
 
 
