@@ -228,7 +228,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
         MetadataChange('album', mutagenfile.get('album', [''])[0]),
         MetadataChange('length', mutagenfile.info.length),
     ]
-    # Seek back to the start of the file
+    # Seek back to the start of the file for whoever comes next
     file_.stream.seek(0)
     return changes
 
@@ -291,21 +291,11 @@ def update_analyzer(playlist, fileId, ext, data):
 DEFAULT_UPDATE_ANALYZERS = [update_analyzer]
 
 
-def __get_path(first, second=None, ext=None):
-    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
-    if second is None:
-        return os.path.join(data_dir, first)
-    elif ext is None:
-        return os.path.join(data_dir, first, second)
-    else:
-        return os.path.join(data_dir, first, second + ext)
-
-
 ##############
 # Processors #
 ##############
 def raw_file_processor(playlist, fileId, ext, changes):
-    path = __get_path(playlist, fileId, ext)
+    path = _get_path(playlist, fileId, ext)
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
@@ -320,7 +310,7 @@ def raw_file_processor(playlist, fileId, ext, changes):
 
 
 def index_processor(playlist, fileId, ext, changes, json_opts={}):
-    indexJson = __get_path('index.json')
+    indexJson = _get_path('index.json')
     with open(indexJson, 'r+') as f:
         fcntl.lockf(f, fcntl.LOCK_EX)
         try:
@@ -353,7 +343,7 @@ def file_tag_processor(playlist, fileId, ext, changes):
     for change in changes:
         if isinstance(change, MetadataChange):
             if mutagenfile is None:
-                path = __get_path(playlist, fileId, ext)
+                path = _get_path(playlist, fileId, ext)
                 mutagenfile = mutagen.File(path, easy=True)
             key, value = change
             mutagenfile[key] = text_type(value)
@@ -364,7 +354,7 @@ def file_tag_processor(playlist, fileId, ext, changes):
 
 
 def playlist_processor(playlist, fileId, ext, changes):
-    playlist_path = __get_path(playlist + '.m3u')
+    playlist_path = _get_path(playlist + '.m3u')
     for change in changes:
         if isinstance(change, FileDeletion):
             with open(playlist_path) as f:
@@ -466,6 +456,16 @@ class StandaloneWebApplication:
 ###########
 # Helpers #
 ###########
+def _get_path(first, second=None, ext=None):
+    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
+    if second is None:
+        return os.path.join(data_dir, first)
+    elif ext is None:
+        return os.path.join(data_dir, first, second)
+    else:
+        return os.path.join(data_dir, first, second + ext)
+
+
 def _check_and_crate_data_dir():
     """
     Create local data directory structure for testing and development
@@ -482,6 +482,9 @@ def _check_and_crate_data_dir():
     # FIXME: create index.json
 
 
+###############
+# Entry pints #
+###############
 def main():
     """
     Run server or importer locally
