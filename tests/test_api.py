@@ -155,6 +155,7 @@ class APITestCase(unittest.TestCase):
             data={'not-file': (BytesIO(b'testcontent'), 'test.mp3')},
         )
         self.assertEqual(resp.status_code, 422)
+        self.assertTrue(b'No attribute named \'file\' found' in resp.data)
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_not_called()
         self.processor.assert_not_called()
@@ -165,6 +166,7 @@ class APITestCase(unittest.TestCase):
             data={'file': 'testcontent', 'filename': 'test.mp3'},
         )
         self.assertEqual(resp.status_code, 422)
+        self.assertTrue(b'No attribute named \'file\' found' in resp.data)
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_not_called()
         self.processor.assert_not_called()
