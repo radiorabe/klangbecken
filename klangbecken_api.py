@@ -150,12 +150,12 @@ class KlangbeckenAPI:
             for analyzer in self.update_analyzers:
                 actions += analyzer(playlist, fileId, ext, data)
 
+        except (UnicodeDecodeError, TypeError):
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid UTF-8 data')
         except JSONDecodeError:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
                                       ' not valid JSON')
-        except UnicodeDecodeError:
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid UTF-8 data')
 
         for processor in self.processors:
             processor(playlist, fileId, ext, actions)
