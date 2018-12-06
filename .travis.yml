@@ -22,11 +22,9 @@ install:
 
 script:
   - tox
-  - coverage run --source=klangbecken_api -m unittest discover
-  - coverage report -m
   - liquidsoap --version
   - test -d $KLANGBECKEN_DATA || mkdir $KLANGBECKEN_DATA
   - test -f klangbecken.liq && liquidsoap --check klangbecken.liq
-
-after_success:
+  - coverage run --source=klangbecken_api -m unittest discover
+  - coverage report -m
   - coveralls
