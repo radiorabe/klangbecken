@@ -379,6 +379,19 @@ DEFAULT_PROCESSORS = [
 ]
 
 
+###########
+# Helpers #
+###########
+def _get_path(first, second=None, ext=None):
+    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
+    if second is None:
+        return os.path.join(data_dir, first)
+    elif ext is None:
+        return os.path.join(data_dir, first, second)
+    else:
+        return os.path.join(data_dir, first, second + ext)
+
+
 ###########################
 # Stand-alone Application #
 ###########################
@@ -465,19 +478,6 @@ class StandaloneWebApplication:
         if not os.path.isfile(path):
             with open(path, 'w') as f:
                 f.write('{}')
-
-
-###########
-# Helpers #
-###########
-def _get_path(first, second=None, ext=None):
-    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
-    if second is None:
-        return os.path.join(data_dir, first)
-    elif ext is None:
-        return os.path.join(data_dir, first, second)
-    else:
-        return os.path.join(data_dir, first, second + ext)
 
 
 if __name__ == '__main__':
