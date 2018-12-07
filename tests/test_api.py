@@ -420,8 +420,17 @@ class AnalyzersTestCase(unittest.TestCase):
 class ProcessorsTestCase(unittest.TestCase):
     def setUp(self):
         import tempfile
+        import shutil
         self.tempdir = tempfile.mkdtemp()
         os.mkdir(os.path.join(self.tempdir, 'music'))
+
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        for ext in '.mp3 -stripped.mp3 .ogg .flac'.split():
+            shutil.copyfile(
+                os.path.join(current_path, 'silence' + ext),
+                os.path.join(self.tempdir, 'music', 'silence' + ext)
+            )
+
         with open(os.path.join(self.tempdir, 'index.json'), 'w') as f:
             print('{}', file=f)
         open(os.path.join(self.tempdir, 'music.m3u'), 'w').close()
@@ -562,6 +571,54 @@ class ProcessorsTestCase(unittest.TestCase):
         # Completely invalid change
         self.assertRaises(ValueError, index_processor,
                           'music', 'id1', '.mp3', ['invalid'])
+
+    def testFileTagProcessor(self):
+        from klangbecken_api import file_tag_processor
+        from klangbecken_api import MetadataChange
+        from klangbecken_api import FileAddition
+        from klangbecken_api import FileDeletion
+        from mutagen import File
+
+        # No-ops
+        file_tag_processor('nonexistant', 'nonexistant', '.mp3', [
+            FileAddition(''),
+            MetadataChange('id', 'abc'),
+            MetadataChange('playlist', 'abc'),
+            MetadataChange('ext', 'abc'),
+            MetadataChange('original_filename', 'abc'),
+            MetadataChange('import_timestamp', 'abc'),
+            MetadataChange('count', 'abc'),
+            MetadataChange('length', 'abc'),
+            MetadataChange('nonexistant', 'abc'),
+            FileDeletion(),
+        ])
+
+        changes = {
+            'artist': 'New Artist',
+            'title': 'New Title',
+            'album': 'New Album',
+            'cue_in': '0.123',
+            'cue_out': '123',
+            'track_gain': '-12 dB',
+        }
+        metadata_changes = [MetadataChange(key, val) for key, val
+                            in changes.items()]
+
+        # Valid files
+        for ext in '.mp3 -stripped.mp3 .ogg .flac'.split():
+            path = os.path.join(self.tempdir, 'music', 'silence' + ext)
+            mutagenfile = File(path, easy=True)
+
+            # Make sure tags are not already the same before updating
+            for key, val in changes.items():
+                self.assertNotEqual(val, mutagenfile.get(key, [''])[0])
+
+            # Update and verify tags
+            file_tag_processor('music', 'silence', ext, metadata_changes)
+            mutagenfile = File(path, easy=True)
+            for key, val in changes.items():
+                self.assertEqual(len(mutagenfile.get(key, [''])), 1)
+                self.assertEqual(val, mutagenfile.get(key, [''])[0])
 
     def testPlaylistProcessor(self):
         from klangbecken_api import playlist_processor
