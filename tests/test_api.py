@@ -602,7 +602,12 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         self.client = Client(app, BaseResponse)
 
     def testDataDir(self):
+        from klangbecken_api import StandaloneWebApplication
+
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
+
+        # Must not fail, even though directory structure already exists.
+        StandaloneWebApplication._check_and_crate_data_dir(self.tempdir)
 
     def testIndexHtml(self):
         resp = self.client.get('/')
