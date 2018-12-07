@@ -8,7 +8,7 @@ import unittest
 import uuid
 
 
-class BackendTest(unittest.TestCase):
+class WSGIAppTest(unittest.TestCase):
     def setUp(self):
         pass
 
@@ -50,70 +50,48 @@ class APITestCase(unittest.TestCase):
     def testUrls(self):
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.get('/music/')
         self.assertEqual(resp.status_code, 405)
-
         resp = self.client.get('/jingles/')
         self.assertEqual(resp.status_code, 405)
-
         resp = self.client.get('/nonexistant/')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.post('/jingles')
         self.assertEqual(resp.status_code, 301)
-
         resp = self.client.post('/music/')
         self.assertEqual(resp.status_code, 422)
-
         resp = self.client.post('/jingles/something')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.put('/music/')
         self.assertEqual(resp.status_code, 405)
-
         resp = self.client.put('/jingles/something')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.put('/jingles/something.mp3')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.put('/music/' + str(uuid.uuid1()))
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.put('/music/' + str(uuid.uuid1()) + '.mp3')
         self.assertEqual(resp.status_code, 422)
-
         resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.ogg')
         self.assertEqual(resp.status_code, 422)
-
         resp = self.client.put('/music/' + str(uuid.uuid1()) + '.flac')
         self.assertEqual(resp.status_code, 422)
-
         resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.ttt')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.delete('/music/')
         self.assertEqual(resp.status_code, 405)
-
         resp = self.client.delete('/jingles/something')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.delete('/jingles/something.mp3')
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.delete('/music/' + str(uuid.uuid1()))
         self.assertEqual(resp.status_code, 404)
-
         resp = self.client.delete('/jingles/' + str(uuid.uuid1()) + '.mp3')
         self.assertEqual(resp.status_code, 200)
-
         resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ogg')
         self.assertEqual(resp.status_code, 200)
-
         resp = self.client.delete('/jingles/' + str(uuid.uuid1()) + '.flac')
         self.assertEqual(resp.status_code, 200)
-
         resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ttt')
         self.assertEqual(resp.status_code, 404)
 
@@ -244,7 +222,7 @@ class APITestCase(unittest.TestCase):
         self.processor.reset_mock()
 
 
-class LoginTestCase(unittest.TestCase):
+class AuthTestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import KlangbeckenAPI
         from werkzeug.test import Client
@@ -319,7 +297,7 @@ class LoginTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
 
-class UpdateAnalyzerTestCase(unittest.TestCase):
+class AnalyzersTestCase(unittest.TestCase):
     def setUp(self):
         pass
 
