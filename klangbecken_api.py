@@ -403,6 +403,8 @@ class StandaloneWebApplication:
             dist_dir = f.read().strip()
         dist_full_path = os.path.join(current_path, dist_dir)
 
+        self._check_and_crate_data_dir(data_full_path)
+
         # Set environment variables needed by the KlangbeckenAPI
         os.environ['KLANGBECKEN_DATA'] = data_full_path
         os.environ['KLANGBECKEN_API_SECRET'] = \
@@ -447,6 +449,23 @@ class StandaloneWebApplication:
 
         return self.app(environ, start_response)
 
+    @staticmethod
+    def _check_and_crate_data_dir(data_dir):
+        """
+        Create local data directory structure for testing and development
+        """
+        for path in [data_dir] + [os.path.join(data_dir, d) for d in PLAYLISTS]:
+            if not os.path.isdir(path):
+                os.mkdir(path)
+        for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
+            if not os.path.isfile(path):
+                with open(path, 'a') as f:
+                    pass
+        path = os.path.join(data_dir, 'index.json')
+        if not os.path.isfile(path):
+            with open(path, 'w') as f:
+                f.write('{}')
+
 
 ###########
 # Helpers #
@@ -459,25 +478,6 @@ def _get_path(first, second=None, ext=None):
         return os.path.join(data_dir, first, second)
     else:
         return os.path.join(data_dir, first, second + ext)
-
-
-def _check_and_crate_data_dir(data_dir=None):
-    """
-    Create local data directory structure for testing and development
-    """
-    data_dir = data_dir or \
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    for path in [data_dir] + [os.path.join(data_dir, d) for d in PLAYLISTS]:
-        if not os.path.isdir(path):
-            os.mkdir(path)
-    for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
-        if not os.path.isfile(path):
-            with open(path, 'a') as f:
-                pass
-    path = os.path.join(data_dir, 'index.json')
-    if not os.path.isfile(path):
-        with open(path, 'w') as f:
-            f.write('{}')
 
 
 ###############
