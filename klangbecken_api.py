@@ -281,8 +281,13 @@ DEFAULT_UPDATE_ANALYZERS = [update_analyzer]
 ##############
 # Processors #
 ##############
+def _get_path(*args):
+    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
+    return os.path.join(data_dir, *args)
+
+
 def raw_file_processor(playlist, fileId, ext, changes):
-    path = _get_path(playlist, fileId, ext)
+    path = _get_path(playlist, fileId + ext)
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
@@ -338,7 +343,7 @@ def file_tag_processor(playlist, fileId, ext, changes):
             key, value = change
             if key in TAG_KEYS:
                 if mutagenfile is None:
-                    path = _get_path(playlist, fileId, ext)
+                    path = _get_path(playlist, fileId + ext)
                     mutagenfile = mutagen.File(path, easy=True)
 
                 mutagenfile[key] = text_type(value)
@@ -376,19 +381,6 @@ DEFAULT_PROCESSORS = [
     file_tag_processor,
     playlist_processor,
 ]
-
-
-###########
-# Helpers #
-###########
-def _get_path(first, second=None, ext=None):
-    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
-    if second is None:
-        return os.path.join(data_dir, first)
-    elif ext is None:
-        return os.path.join(data_dir, first, second)
-    else:
-        return os.path.join(data_dir, first, second + ext)
 
 
 ###########################
