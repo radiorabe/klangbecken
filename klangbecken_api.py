@@ -294,6 +294,8 @@ def raw_file_processor(playlist, fileId, ext, changes):
         elif isinstance(change, MetadataChange):
             if not os.path.isfile(path):
                 raise NotFound()
+        else:
+            raise ValueError('Change not recognized')
 
 
 def index_processor(playlist, fileId, ext, changes, json_opts={}):
@@ -317,6 +319,8 @@ def index_processor(playlist, fileId, ext, changes, json_opts={}):
                     if fileId not in data:
                         raise NotFound()
                     data[fileId][key] = value
+                else:
+                    raise ValueError('Change not recognized')
             f.seek(0)
             f.truncate()
             json.dump(data, f, **json_opts)
