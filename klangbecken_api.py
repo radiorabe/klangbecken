@@ -480,29 +480,12 @@ def _get_path(first, second=None, ext=None):
         return os.path.join(data_dir, first, second + ext)
 
 
-###############
-# Entry pints #
-###############
-def main():
-    """
-    Run server or importer locally
-    """
-    from werkzeug.serving import run_simple
-
-    _check_and_crate_data_dir()
-
-    if len(sys.argv) == 1:
-        application = StandaloneWebApplication()
-        run_simple('127.0.0.1', 5000, application, use_debugger=True,
-                   use_reloader=True, threaded=False)
-    else:
-        print("${0}: No command line arguments allowed".format(sys.argv[0]),
-              file=sys.stderr)
-
-
 if __name__ == '__main__':
     # Run locally in stand-alone development mode
-    main()
+    from werkzeug.serving import run_simple
+    application = StandaloneWebApplication()
+    run_simple('127.0.0.1', 5000, application, use_debugger=True,
+               use_reloader=True, threaded=False)
 else:
     # Set up WSGI application
     application = KlangbeckenAPI()
