@@ -670,6 +670,14 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp.close()
 
     def testApi(self):
+        # Dummy login/logout
+        resp = self.client.get('/api/login/')
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/api/login/')
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/api/logout/')
+        self.assertEqual(resp.status_code, 200)
+
         # Upload
         with open(os.path.join(self.current_path, 'silence.mp3'), 'rb') as f:
             resp = self.client.post(
