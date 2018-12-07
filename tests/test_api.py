@@ -748,6 +748,12 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         app = StandaloneWebApplication(self.tempdir)
         self.client = Client(app, BaseResponse)
 
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tempdir)
+        del os.environ['KLANGBECKEN_DATA']
+        self.tempdir = None
+
     def testDataDir(self):
         from klangbecken_api import StandaloneWebApplication
 
