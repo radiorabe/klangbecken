@@ -474,9 +474,8 @@ class StandaloneWebApplication:
 if __name__ == '__main__':
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
-    application = StandaloneWebApplication()
-    run_simple('127.0.0.1', 5000, application, use_debugger=True,
-               use_reloader=True, threaded=False)
+    run_simple('127.0.0.1', 5000, StandaloneWebApplication(),
+               use_debugger=True, use_reloader=True, threaded=True)
 else:
     # Set up WSGI application
     application = KlangbeckenAPI()
