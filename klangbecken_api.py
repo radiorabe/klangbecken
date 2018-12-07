@@ -26,11 +26,6 @@ from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
-try:
-    from json.decoder import JSONDecodeError
-except ImportError:
-    JSONDecodeError = ValueError
-
 
 PLAYLISTS = ('music', 'jingles')
 
@@ -153,7 +148,7 @@ class KlangbeckenAPI:
         except (UnicodeDecodeError, TypeError):
             raise UnprocessableEntity('Cannot parse PUT request: ' +
                                       ' not valid UTF-8 data')
-        except JSONDecodeError:
+        except ValueError:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
                                       ' not valid JSON')
 
