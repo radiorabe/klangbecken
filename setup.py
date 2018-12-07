@@ -24,7 +24,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Topic :: Internet :: WWW/HTTP :: WSGI',
     ],
-    install_requires=['werkzeug', 'mutagen', 'ffmpeg-normalize', 'six'],
+    install_requires=['werkzeug', 'mutagen', 'six'],
     extras_require={
         'test': ['tox', 'coverage'],
     },
