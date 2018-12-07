@@ -8,7 +8,6 @@ import json
 import os
 import random
 import subprocess
-import sys
 import time
 import uuid
 from xml.etree import ElementTree
@@ -467,7 +466,8 @@ class StandaloneWebApplication:
         """
         Create local data directory structure for testing and development
         """
-        for path in [data_dir] + [os.path.join(data_dir, d) for d in PLAYLISTS]:
+        for path in [data_dir] + \
+                [os.path.join(data_dir, playlist) for playlist in PLAYLISTS]:
             if not os.path.isdir(path):
                 os.mkdir(path)
         for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:

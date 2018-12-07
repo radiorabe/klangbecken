@@ -583,7 +583,6 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
     def setUp(self):
         import tempfile
         from klangbecken_api import StandaloneWebApplication
-        from klangbecken_api import _check_and_crate_data_dir
         from werkzeug.test import Client
         from werkzeug.wrappers import BaseResponse
 
@@ -593,8 +592,6 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
 
         app = StandaloneWebApplication(self.tempdir)
         self.client = Client(app, BaseResponse)
-
-        _check_and_crate_data_dir(self.tempdir)
 
     def testDataDir(self):
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
