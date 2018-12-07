@@ -299,7 +299,7 @@ class AuthTestCase(unittest.TestCase):
 
 class AnalyzersTestCase(unittest.TestCase):
     def setUp(self):
-        pass
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
 
     def tearDown(self):
         pass
@@ -378,6 +378,43 @@ class AnalyzersTestCase(unittest.TestCase):
                                      ch.key == 'import_timestamp')][0]
         self.assertTrue(time.time() - t.value < 1)
         self.assertTrue(MetadataChange('count', 1) in result)
+
+    def testMutagenTagAnalyzer(self):
+        from klangbecken_api import mutagen_tag_analyzer
+        from klangbecken_api import MetadataChange as Change
+        from werkzeug.datastructures import FileStorage
+        from werkzeug.exceptions import UnprocessableEntity
+        from io import BytesIO
+
+        # Test regular files
+        for ext in ['.mp3', '.ogg', '.flac']:
+            path = os.path.join(self.current_path, 'silence' + ext)
+            with open(path, 'rb') as f:
+                fs = FileStorage(f)
+                changes = mutagen_tag_analyzer('music', 'fileId', ext, fs)
+                self.assertEqual(len(changes), 4)
+                self.assertIn(Change('artist', 'Silence Artist'), changes)
+                self.assertIn(Change('title', 'Silence Track'), changes)
+                self.assertIn(Change('album', 'Silence Album'), changes)
+                self.assertIn(Change('length', 1.0), changes)
+
+        # Test MP3 without any tags
+        path = os.path.join(self.current_path, 'silence-stripped.mp3')
+        with open(path, 'rb') as f:
+            fs = FileStorage(f)
+            changes = mutagen_tag_analyzer('music', 'fileId', '.mp3', fs)
+            self.assertEqual(len(changes), 4)
+            self.assertIn(Change('artist', ''), changes)
+            self.assertIn(Change('title', ''), changes)
+            self.assertIn(Change('album', ''), changes)
+            self.assertIn(Change('length', 1.0), changes)
+
+        # Test invalid files
+        for ext in ['.mp3', '.ogg', '.flac']:
+            path = os.path.join(self.current_path, 'silence' + ext)
+            fs = FileStorage(BytesIO(b'\0' * 1024))
+            with self.assertRaises(UnprocessableEntity):
+                mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
 
 class ProcessorsTestCase(unittest.TestCase):
