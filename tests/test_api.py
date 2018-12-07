@@ -244,6 +244,81 @@ class APITestCase(unittest.TestCase):
         self.processor.reset_mock()
 
 
+class LoginTestCase(unittest.TestCase):
+    def setUp(self):
+        from klangbecken_api import KlangbeckenAPI
+        from werkzeug.test import Client
+        from werkzeug.wrappers import BaseResponse
+
+        app = KlangbeckenAPI(
+            upload_analyzers=[lambda *args: []],
+            update_analyzers=[lambda *args: []],
+            processors=[lambda *args: None],
+        )
+        self.client = Client(app, BaseResponse)
+
+    def tearDown(self):
+        pass
+
+    def testFailingAuth(self):
+        resp = self.client.post('/music/')
+        self.assertEqual(resp.status_code, 401)
+        resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.mp3')
+        self.assertEqual(resp.status_code, 401)
+        resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ogg')
+        self.assertEqual(resp.status_code, 401)
+        resp = self.client.post('/logout/')
+        self.assertEqual(resp.status_code, 401)
+
+    def testFailingLogin(self):
+        resp = self.client.get('/login/')
+        self.assertEqual(resp.status_code, 401)
+        self.assertNotIn('Set-Cookie', resp.headers)
+
+        resp = self.client.post('/login/')
+        self.assertEqual(resp.status_code, 401)
+        self.assertNotIn('Set-Cookie', resp.headers)
+
+    def testLoginGet(self):
+        resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'xyz'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('Set-Cookie', resp.headers)
+        self.assertIn('session', resp.headers['Set-Cookie'])
+        self.assertIn('user', resp.headers['Set-Cookie'])
+
+    def testLoginPost(self):
+        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('Set-Cookie', resp.headers)
+        self.assertIn('session', resp.headers['Set-Cookie'])
+        self.assertIn('user', resp.headers['Set-Cookie'])
+
+    def testLogout(self):
+        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/logout/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('Set-Cookie', resp.headers)
+        self.assertIn('session', resp.headers['Set-Cookie'])
+        self.assertNotIn('user', resp.headers['Set-Cookie'])
+
+    def testAuthorization(self):
+        from io import BytesIO
+
+        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/music/',
+                                data={'file': (BytesIO(b'xyz'), 'test.mp3')})
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.mp3',
+                               data=json.dumps({}))
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ogg')
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/logout/')
+        self.assertEqual(resp.status_code, 200)
+
+
 class UpdateAnalyzerTestCase(unittest.TestCase):
     def setUp(self):
         pass
