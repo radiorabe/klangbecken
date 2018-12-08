@@ -10,7 +10,6 @@ import random
 import subprocess
 import time
 import uuid
-from xml.etree import ElementTree
 
 import mutagen
 import mutagen.mp3
@@ -219,39 +218,14 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     return changes
 
 
-def silan_silence_analyzer(playlist, fileId, ext, file_):
-    silan_cmd = [
-        '/usr/bin/silan', '--format', 'json', file_.filename
-    ]
-    try:
-        output = subprocess.check_output(silan_cmd)
-        cue_points = json.loads(output)['sound'][0]
-    except:   # noqa: E722
-        raise UnprocessableEntity('Silence analysis failed')
-    return [
-        MetadataChange('cue_in', cue_points[0]),
-        MetadataChange('cue_out', cue_points[0]),
-    ]
 
 
-def bs1770gain_loudness_analyzer(playlist, fileId, ext, file_):
-    bs1770gain_cmd = [
-        "/usr/bin/bs1770gain", "--ebu", "--xml", file_.filename
-    ]
-    output = subprocess.check_output(bs1770gain_cmd)
-    bs1770gain = ElementTree.fromstring(output)
-    # lu is in bs1770gain > album > track > integrated as an attribute
-    track_gain = bs1770gain.find('./album/track/integrated').attrib['lu']
-    return [
-        MetadataChange('track_gain', track_gain + ' dB')
-    ]
+
 
 
 DEFAULT_UPLOAD_ANALYZERS = [
     raw_file_analyzer,
     mutagen_tag_analyzer,
-    silan_silence_analyzer,
-    bs1770gain_loudness_analyzer,
 ]
 
 

@@ -9,9 +9,6 @@
 
 * werkzeug
 * mutagen
-* silan
-* gstreamer (for replaygain calculations)
-
 
 ### Development dependencies:
 
