@@ -7,6 +7,7 @@ import functools
 import json
 import os
 import random
+import subprocess
 import time
 import uuid
 
@@ -87,9 +88,40 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     return changes
 
 
+def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
+    command = """ffmpeg -hide_banner -i - -af
+        replaygain,apad=pad_len=100000,silencedetect=d=0.1 -f null -""".split()
+
+    try:
+        output = subprocess.check_output(command, stdin=file_,
+                                         stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        raise UnprocessableEntity('Cannot process audio data')
+
+    lines = output.split('\n')
+    rg_line = [line for line in lines if 'track_gain' in line][0]
+
+    changes = [MetadataChange('track_gain', rg_line.split('=')[1].strip())]
+
+    silence_lines = [line for line in lines if 'silencedetect' in line]
+    if 'silence_start: 0' in silence_lines[0]:
+        line = silence_lines[1]
+        cue_in = line.split('silence_end:')[1].strip().split('|')[0].strip()
+        changes.append(MetadataChange('cue_in', cue_in))
+        silence_lines = silence_lines[2:]
+    if len(silence_lines):
+        line = silence_lines[-2]
+        cue_out = line.split('silence_start:')[1].strip()
+        changes.append(MetadataChange('cue_out', cue_out))
+
+    file_.stream.seek(0)
+    return changes
+
+
 DEFAULT_UPLOAD_ANALYZERS = [
     raw_file_analyzer,
     mutagen_tag_analyzer,
+    ffmpeg_audio_analyzer,
 ]
 
 
