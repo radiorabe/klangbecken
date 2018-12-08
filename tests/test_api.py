@@ -294,18 +294,18 @@ class AnalyzersTestCase(unittest.TestCase):
         self.current_path = os.path.dirname(os.path.realpath(__file__))
 
     def testUpdateAnalyzer(self):
-        from klangbecken_api import update_analyzer, MetadataChange
+        from klangbecken_api import update_data_analyzer, MetadataChange
         from werkzeug.exceptions import UnprocessableEntity
 
         # Correct single update
         self.assertEqual(
-            update_analyzer('playlist', 'id', '.ext', {'artist': 'A'}),
+            update_data_analyzer('playlist', 'id', '.ext', {'artist': 'A'}),
             [MetadataChange('artist', 'A')]
         )
 
         # Correct multiple updates
-        changes = update_analyzer('playlist', 'id', '.ext',
-                                  {'artist': 'A', 'title': 'T'})
+        changes = update_data_analyzer('playlist', 'id', '.ext',
+                                       {'artist': 'A', 'title': 'T'})
         self.assertEqual(len(changes), 2)
         self.assertTrue(MetadataChange('artist', 'A') in changes)
         self.assertTrue(MetadataChange('title', 'T') in changes)
@@ -313,28 +313,28 @@ class AnalyzersTestCase(unittest.TestCase):
         # Update count with wrong data type
         self.assertRaises(
             UnprocessableEntity,
-            update_analyzer,
+            update_data_analyzer,
             'playlist', 'id', '.ext', {'count': '1'}
         )
 
         # Update artist with wrong data type
         self.assertRaises(
             UnprocessableEntity,
-            update_analyzer,
+            update_data_analyzer,
             'playlist', 'id', '.ext', {'artist': []}
         )
 
         # Update not allowed property (original_filename)
         self.assertRaises(
             UnprocessableEntity,
-            update_analyzer,
+            update_data_analyzer,
             'playlist', 'id', '.ext', {'original_filename': 'test.mp3'}
         )
 
         # Update with wrong data format
         self.assertRaises(
             UnprocessableEntity,
-            update_analyzer,
+            update_data_analyzer,
             'playlist', 'id', '.ext', [['artist', 'A']]
         )
 
@@ -404,6 +404,48 @@ class AnalyzersTestCase(unittest.TestCase):
             fs = FileStorage(BytesIO(b'\0' * 1024))
             with self.assertRaises(UnprocessableEntity):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
+
+    def testFFMpegAudioAnalyzer(self):
+        return
+        from klangbecken_api import ffmpeg_audio_analyzer
+        from klangbecken_api import MetadataChange
+        from werkzeug.datastructures import FileStorage
+
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        for ext in '.mp3 .ogg .flac'.split():
+            path = os.path.join(current_path, 'padded' + ext)
+            with open(path, 'rb') as f:
+                fs = FileStorage(f)
+                changes = ffmpeg_audio_analyzer('', '', '', fs)
+                print(changes)
+                self.assertEqual(len(changes), 1)
+                change = changes[0]
+                self.assertIsInstance(change, MetadataChange)
+                self.assertEqual(change.key, 'track_gain')
+                self.assertTrue(change.value.endswith(' dB'))
+                gain = float(change.value.split()[0])
+                self.assertGreater(gain, -15)
+                self.assertLess(gain, -10)
+
+    # def testLoudnessAnalyzer(self):
+    #     from klangbecken_api import gstreamer_loudness_analyzer
+    #     from klangbecken_api import MetadataChange
+    #     from werkzeug.datastructures import FileStorage
+
+    #     current_path = os.path.dirname(os.path.realpath(__file__))
+    #     for ext in '.mp3 .ogg .flac'.split():
+    #         path = os.path.join(current_path, 'sine' + ext)
+    #         with open(path, 'rb') as f:
+    #             fs = FileStorage(f)
+    #             changes = gstreamer_loudness_analyzer('', '', '', fs)
+    #             self.assertEqual(len(changes), 1)
+    #             change = changes[0]
+    #             self.assertIsInstance(change, MetadataChange)
+    #             self.assertEqual(change.key, 'track_gain')
+    #             self.assertTrue(change.value.endswith(' dB'))
+    #             gain = float(change.value.split()[0])
+    #             self.assertGreater(gain, -15)
+    #             self.assertLess(gain, -10)
 
 
 class ProcessorsTestCase(unittest.TestCase):
@@ -819,3 +861,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp = self.client.delete('/api/music/' + fileId + '.mp3',)
         self.assertEqual(resp.status_code, 200)
         resp.close()
+
+
+class ImporterTestCase(unittest.TestCase):
+    pass

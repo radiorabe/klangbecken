@@ -11,10 +11,10 @@ import time
 import uuid
 
 import mutagen
+import mutagen.easyid3
+import mutagen.flac
 import mutagen.mp3
 import mutagen.oggvorbis
-import mutagen.flac
-from mutagen.easyid3 import EasyID3
 
 from six import text_type
 
@@ -93,18 +93,18 @@ DEFAULT_UPLOAD_ANALYZERS = [
 ]
 
 
-def update_analyzer(playlist, fileId, ext, data):
+def update_data_analyzer(playlist, fileId, ext, data):
     changes = []
     if not isinstance(data, dict):
-        raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                  'Expected a dict.')
+        raise UnprocessableEntity('Invalid data format: ' +
+                                  'associative array expected')
     for key, value in data.items():
         if key not in ALLOWED_METADATA_CHANGES.keys():
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
+            raise UnprocessableEntity('Invalid data format: ' +
                                       'Key not allowed: ' + key)
         if not isinstance(value, ALLOWED_METADATA_CHANGES[key]):
             raise UnprocessableEntity(
-                'Cannot parse PUT request: Type error ' +
+                'Invalid data format: Type error ' +
                 '(expected %s, got %s).' %
                 (ALLOWED_METADATA_CHANGES[key], type(value).__name__)
             )
@@ -112,7 +112,7 @@ def update_analyzer(playlist, fileId, ext, data):
     return changes
 
 
-DEFAULT_UPDATE_ANALYZERS = [update_analyzer]
+DEFAULT_UPDATE_ANALYZERS = [update_data_analyzer]
 
 
 ##############
@@ -167,9 +167,10 @@ def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
 
 TAG_KEYS = 'artist title album cue_in cue_out track_gain'.split()
 
-EasyID3.RegisterTXXXKey(key='track_gain', desc='REPLAYGAIN_TRACK_GAIN')
-EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
-EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='track_gain',
+                                        desc='REPLAYGAIN_TRACK_GAIN')
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
