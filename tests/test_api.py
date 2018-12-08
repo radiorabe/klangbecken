@@ -432,12 +432,6 @@ class AnalyzersTestCase(unittest.TestCase):
                 for val in changes.values():
                     self.assertIsInstance(float(val), float)
 
-                print('==================')
-                print(ext)
-                for key, val in changes.items():
-                    print(key, ':', val)
-                print('==================')
-
                 # Are values within 10% of the expected range
                 for key, val in (('cue_in', 0.2), ('cue_out', 0.8),
                                  ('track_gain', 17)):
