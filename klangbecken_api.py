@@ -7,7 +7,6 @@ import functools
 import json
 import os
 import random
-import subprocess
 import time
 import uuid
 
@@ -53,7 +52,6 @@ FileDeletion = collections.namedtuple('FileDeletion', ())
 # HTTP API #
 ############
 class KlangbeckenAPI:
-
 
     def __init__(self,
                  data_dir,
@@ -216,11 +214,6 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     # Seek back to the start of the file for whoever comes next
     file_.stream.seek(0)
     return changes
-
-
-
-
-
 
 
 DEFAULT_UPLOAD_ANALYZERS = [
