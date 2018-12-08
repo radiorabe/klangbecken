@@ -411,7 +411,7 @@ class AnalyzersTestCase(unittest.TestCase):
         from werkzeug.datastructures import FileStorage
 
         current_path = os.path.dirname(os.path.realpath(__file__))
-        for ext in '.ogg .flac'.split():
+        for ext in '.mp3 .ogg .flac'.split():
             path = os.path.join(current_path, 'padded' + ext)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
@@ -431,6 +431,12 @@ class AnalyzersTestCase(unittest.TestCase):
 
                 for val in changes.values():
                     self.assertIsInstance(float(val), float)
+
+                print('==================')
+                print(ext)
+                for key, val in changes.items():
+                    print(key, ':', val)
+                print('==================')
 
                 # Are values within 10% of the expected range
                 for key, val in (('cue_in', 0.2), ('cue_out', 0.8),
