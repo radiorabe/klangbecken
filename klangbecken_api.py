@@ -48,135 +48,6 @@ MetadataChange = collections.namedtuple('MetadataChange', ('key', 'value'))
 FileDeletion = collections.namedtuple('FileDeletion', ())
 
 
-############
-# HTTP API #
-############
-class KlangbeckenAPI:
-
-    def __init__(self,
-                 data_dir,
-                 secret,
-                 upload_analyzers=None,
-                 update_analyzers=None,
-                 processors=None,
-                 disable_auth=False):
-        self.data_dir = data_dir
-        self.secret = secret
-        self.upload_analyzers = upload_analyzers or DEFAULT_UPLOAD_ANALYZERS
-        self.update_analyzers = update_analyzers or DEFAULT_UPDATE_ANALYZERS
-        self.processors = processors or DEFAULT_PROCESSORS
-        self.do_auth = not disable_auth
-
-        playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
-        file_url = playlist_url + '<uuid:fileId><any(' + \
-            ', '.join(SUPPORTED_FILE_TYPES.keys()) + '):ext>'
-
-        self.url_map = Map(rules=(
-            Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
-            Rule('/logout/', methods=('POST',), endpoint='logout'),
-
-            Rule(playlist_url, methods=('POST',), endpoint='upload'),
-            Rule(file_url, methods=('PUT',), endpoint='update'),
-            Rule(file_url, methods=('DELETE',), endpoint='delete'),
-        ))
-
-    def __call__(self, environ, start_response):
-        adapter = self.url_map.bind_to_environ(environ)
-        request = Request(environ)
-        session = SecureCookie.load_cookie(request, secret_key=self.secret)
-        request.client_session = session
-        try:
-            endpoint, values = adapter.match()
-            if self.do_auth and endpoint != 'login' and \
-                    (session.new or 'user' not in session):
-                raise Unauthorized()
-            response = getattr(self, 'on_' + endpoint)(request, **values)
-        except HTTPException as e:
-            response = e
-        return response(environ, start_response)
-
-    def on_login(self, request):
-        if request.remote_user is None:
-            raise Unauthorized()
-
-        response = JSONResponse({'status': 'OK'})
-        if self.do_auth:
-            session = request.client_session
-            session['user'] = request.environ['REMOTE_USER']
-            session.save_cookie(response)
-        return response
-
-    def on_logout(self, request):
-        response = JSONResponse({'status': 'OK'})
-        if self.do_auth:
-            session = request.client_session
-            del session['user']
-            session.save_cookie(response)
-        return response
-
-    def on_upload(self, request, playlist):
-        if 'file' not in request.files:
-            raise UnprocessableEntity('No attribute named \'file\' found.')
-
-        uploadFile = request.files['file']
-
-        ext = os.path.splitext(uploadFile.filename)[1].lower()
-        fileId = text_type(uuid.uuid1())   # Generate new file id
-
-        actions = []
-        for analyzer in self.upload_analyzers:
-            actions += analyzer(playlist, fileId, ext, uploadFile)
-
-        for processor in self.processors:
-            processor(self.data_dir, playlist, fileId, ext, actions)
-
-        response = {}
-        for change in actions:
-            if isinstance(change, MetadataChange):
-                response[change.key] = change.value
-
-        return JSONResponse({fileId: response})
-
-    def on_update(self, request, playlist, fileId, ext):
-        fileId = text_type(fileId)
-
-        actions = []
-        try:
-            data = json.loads(text_type(request.data, 'utf-8'))
-            for analyzer in self.update_analyzers:
-                actions += analyzer(playlist, fileId, ext, data)
-
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid UTF-8 data')
-        except ValueError:
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid JSON')
-
-        for processor in self.processors:
-            processor(self.data_dir, playlist, fileId, ext, actions)
-
-        return JSONResponse({'status': 'OK'})
-
-    def on_delete(self, request, playlist, fileId, ext):
-        fileId = text_type(fileId)
-
-        change = [FileDeletion()]
-        for processor in self.processors:
-            processor(self.data_dir, playlist, fileId, ext, change)
-
-        return JSONResponse({'status': 'OK'})
-
-
-class JSONResponse(Response):
-    """
-    JSON response helper
-    """
-    def __init__(self, data, **json_opts):
-        super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
-                                           mimetype='text/json')
-
-
 #############
 # Analyzers #
 #############
@@ -346,6 +217,135 @@ DEFAULT_PROCESSORS = [
     file_tag_processor,
     playlist_processor,
 ]
+
+
+############
+# HTTP API #
+############
+class KlangbeckenAPI:
+
+    def __init__(self,
+                 data_dir,
+                 secret,
+                 upload_analyzers=DEFAULT_UPLOAD_ANALYZERS,
+                 update_analyzers=DEFAULT_UPDATE_ANALYZERS,
+                 processors=DEFAULT_PROCESSORS,
+                 disable_auth=False):
+        self.data_dir = data_dir
+        self.secret = secret
+        self.upload_analyzers = upload_analyzers
+        self.update_analyzers = update_analyzers
+        self.processors = processors
+        self.do_auth = not disable_auth
+
+        playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
+        file_url = playlist_url + '<uuid:fileId><any(' + \
+            ', '.join(SUPPORTED_FILE_TYPES.keys()) + '):ext>'
+
+        self.url_map = Map(rules=(
+            Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
+            Rule('/logout/', methods=('POST',), endpoint='logout'),
+
+            Rule(playlist_url, methods=('POST',), endpoint='upload'),
+            Rule(file_url, methods=('PUT',), endpoint='update'),
+            Rule(file_url, methods=('DELETE',), endpoint='delete'),
+        ))
+
+    def __call__(self, environ, start_response):
+        adapter = self.url_map.bind_to_environ(environ)
+        request = Request(environ)
+        session = SecureCookie.load_cookie(request, secret_key=self.secret)
+        request.client_session = session
+        try:
+            endpoint, values = adapter.match()
+            if self.do_auth and endpoint != 'login' and \
+                    (session.new or 'user' not in session):
+                raise Unauthorized()
+            response = getattr(self, 'on_' + endpoint)(request, **values)
+        except HTTPException as e:
+            response = e
+        return response(environ, start_response)
+
+    def on_login(self, request):
+        if request.remote_user is None:
+            raise Unauthorized()
+
+        response = JSONResponse({'status': 'OK'})
+        if self.do_auth:
+            session = request.client_session
+            session['user'] = request.environ['REMOTE_USER']
+            session.save_cookie(response)
+        return response
+
+    def on_logout(self, request):
+        response = JSONResponse({'status': 'OK'})
+        if self.do_auth:
+            session = request.client_session
+            del session['user']
+            session.save_cookie(response)
+        return response
+
+    def on_upload(self, request, playlist):
+        if 'file' not in request.files:
+            raise UnprocessableEntity('No attribute named \'file\' found.')
+
+        uploadFile = request.files['file']
+
+        ext = os.path.splitext(uploadFile.filename)[1].lower()
+        fileId = text_type(uuid.uuid1())   # Generate new file id
+
+        actions = []
+        for analyzer in self.upload_analyzers:
+            actions += analyzer(playlist, fileId, ext, uploadFile)
+
+        for processor in self.processors:
+            processor(self.data_dir, playlist, fileId, ext, actions)
+
+        response = {}
+        for change in actions:
+            if isinstance(change, MetadataChange):
+                response[change.key] = change.value
+
+        return JSONResponse({fileId: response})
+
+    def on_update(self, request, playlist, fileId, ext):
+        fileId = text_type(fileId)
+
+        actions = []
+        try:
+            data = json.loads(text_type(request.data, 'utf-8'))
+            for analyzer in self.update_analyzers:
+                actions += analyzer(playlist, fileId, ext, data)
+
+        except (UnicodeDecodeError, TypeError):
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid UTF-8 data')
+        except ValueError:
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid JSON')
+
+        for processor in self.processors:
+            processor(self.data_dir, playlist, fileId, ext, actions)
+
+        return JSONResponse({'status': 'OK'})
+
+    def on_delete(self, request, playlist, fileId, ext):
+        fileId = text_type(fileId)
+
+        change = [FileDeletion()]
+        for processor in self.processors:
+            processor(self.data_dir, playlist, fileId, ext, change)
+
+        return JSONResponse({'status': 'OK'})
+
+
+class JSONResponse(Response):
+    """
+    JSON response helper
+    """
+    def __init__(self, data, **json_opts):
+        super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
+                                           mimetype='text/json')
 
 
 ###########################
