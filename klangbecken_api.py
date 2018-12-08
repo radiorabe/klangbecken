@@ -64,7 +64,7 @@ class KlangbeckenAPI:
         self.upload_analyzers = upload_analyzers or DEFAULT_UPLOAD_ANALYZERS
         self.update_analyzers = update_analyzers or DEFAULT_UPDATE_ANALYZERS
         self.processors = processors or DEFAULT_PROCESSORS
-        self.auth = not disable_auth
+        self.do_auth = not disable_auth
 
         playlist_url = '/<any(' + ', '.join(PLAYLISTS) + '):playlist>/'
         file_url = playlist_url + '<uuid:fileId><any(' + \
@@ -86,7 +86,7 @@ class KlangbeckenAPI:
         request.client_session = session
         try:
             endpoint, values = adapter.match()
-            if self.auth and endpoint != 'login' and \
+            if self.do_auth and endpoint != 'login' and \
                     (session.new or 'user' not in session):
                 raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
@@ -99,7 +99,7 @@ class KlangbeckenAPI:
             raise Unauthorized()
 
         response = JSONResponse({'status': 'OK'})
-        if self.auth:
+        if self.do_auth:
             session = request.client_session
             session['user'] = request.environ['REMOTE_USER']
             session.save_cookie(response)
@@ -107,7 +107,7 @@ class KlangbeckenAPI:
 
     def on_logout(self, request):
         response = JSONResponse({'status': 'OK'})
-        if self.auth:
+        if self.do_auth:
             session = request.client_session
             del session['user']
             session.save_cookie(response)
