@@ -415,7 +415,7 @@ class AnalyzersTestCase(unittest.TestCase):
             path = os.path.join(current_path, 'padded' + ext)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
-                changes = ffmpeg_audio_analyzer('', '', '', fs)
+                changes = ffmpeg_audio_analyzer('music', 'id1', ext, fs)
                 self.assertEqual(len(changes), 3)
                 for change in changes:
                     self.assertIsInstance(change, MetadataChange)
