@@ -418,6 +418,8 @@ class StandaloneWebApplication:
             upload_analyzers=[
                 raw_file_analyzer,
                 mutagen_tag_analyzer,
+                # TODO: enable only if ffmpeg binary is present
+                ffmpeg_audio_analyzer,
             ],
             processors=[
                 raw_file_processor,
