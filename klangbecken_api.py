@@ -110,11 +110,15 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
         line = silence_lines[0]
         start = float(line.split('silence_start:')[1].strip())
+        print('start', start)
         if abs(start) < 0.2:
             line = silence_lines[1]
             cue_in = float(line.split('silence_end:')[1].split('|')[0].strip())
+            print('cue_in', cue_in)
+            print(ext)
             if start < 0 and ext in ('.mp3', '.ogg'):
                 cue_in -= start
+            print('cue_in2', cue_in)
             changes.append(MetadataChange('cue_in', text_type(cue_in)))
             silence_lines = silence_lines[2:]
 
