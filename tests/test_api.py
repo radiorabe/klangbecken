@@ -411,7 +411,7 @@ class AnalyzersTestCase(unittest.TestCase):
         from werkzeug.datastructures import FileStorage
 
         current_path = os.path.dirname(os.path.realpath(__file__))
-        for ext in '.mp3 .ogg .flac'.split():
+        for ext in '.ogg .flac'.split():
             path = os.path.join(current_path, 'padded' + ext)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
