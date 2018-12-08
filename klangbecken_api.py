@@ -107,6 +107,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     silence_lines = [line for line in lines if 'silencedetect' in line]
     print('silence lines: **************')
     print('\n'.join(silence_lines))
+    start = 0
     if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
         line = silence_lines[0]
         start = float(line.split('silence_start:')[1].strip())
@@ -125,8 +126,10 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     silence_lines = [l for l in silence_lines if 'silence_start' in l]
     if len(silence_lines):
         line = silence_lines[-1]
-        cue_out = line.split('silence_start:')[1].strip()
-        changes.append(MetadataChange('cue_out', cue_out))
+        cue_out = float(line.split('silence_start:')[1].strip())
+        if start < 0 and ext == '.flac':
+            cue_out -= start
+        changes.append(MetadataChange('cue_out', text_type(cue_out)))
 
     file_.stream.seek(0)
     return changes
