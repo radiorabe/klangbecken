@@ -10,6 +10,7 @@
 * Python >= 2.7
 * werkzeug
 * mutagen
+* ffmpeg
 
 ### Development dependencies:
 
