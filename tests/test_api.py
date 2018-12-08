@@ -405,8 +405,7 @@ class AnalyzersTestCase(unittest.TestCase):
             with self.assertRaises(UnprocessableEntity):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
-    def testFFMpegAudioAnalyzer(self):
-        return
+    def testFFmpegAudioAnalyzer(self):
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
         from werkzeug.datastructures import FileStorage
@@ -417,35 +416,27 @@ class AnalyzersTestCase(unittest.TestCase):
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
                 changes = ffmpeg_audio_analyzer('', '', '', fs)
-                print(changes)
-                self.assertEqual(len(changes), 1)
-                change = changes[0]
-                self.assertIsInstance(change, MetadataChange)
-                self.assertEqual(change.key, 'track_gain')
-                self.assertTrue(change.value.endswith(' dB'))
-                gain = float(change.value.split()[0])
-                self.assertGreater(gain, -15)
-                self.assertLess(gain, -10)
+                self.assertEqual(len(changes), 3)
+                for change in changes:
+                    self.assertIsInstance(change, MetadataChange)
+                changes = {key: val for key, val in changes}
+                self.assertEqual(set(changes.keys()),
+                                 set('track_gain cue_in cue_out'.split()))
 
-    # def testLoudnessAnalyzer(self):
-    #     from klangbecken_api import gstreamer_loudness_analyzer
-    #     from klangbecken_api import MetadataChange
-    #     from werkzeug.datastructures import FileStorage
+                # Track gain negativ and with units
+                self.assertTrue(changes['track_gain'].startswith('-1'))
+                self.assertTrue(changes['track_gain'].endswith(' dB'))
 
-    #     current_path = os.path.dirname(os.path.realpath(__file__))
-    #     for ext in '.mp3 .ogg .flac'.split():
-    #         path = os.path.join(current_path, 'sine' + ext)
-    #         with open(path, 'rb') as f:
-    #             fs = FileStorage(f)
-    #             changes = gstreamer_loudness_analyzer('', '', '', fs)
-    #             self.assertEqual(len(changes), 1)
-    #             change = changes[0]
-    #             self.assertIsInstance(change, MetadataChange)
-    #             self.assertEqual(change.key, 'track_gain')
-    #             self.assertTrue(change.value.endswith(' dB'))
-    #             gain = float(change.value.split()[0])
-    #             self.assertGreater(gain, -15)
-    #             self.assertLess(gain, -10)
+                changes['track_gain'] = changes['track_gain'][:-3]
+
+                for val in changes.values():
+                    self.assertIsInstance(float(val), float)
+
+                # Are values within 10% of the expected range
+                for key, val in (('cue_in', 0.2), ('cue_out', 0.8),
+                                 ('track_gain', 17)):
+                    self.assertGreater(abs(float(changes[key])), val * 0.9)
+                    self.assertLess(abs(float(changes[key])), val * 1.1)
 
 
 class ProcessorsTestCase(unittest.TestCase):
