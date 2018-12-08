@@ -7,14 +7,17 @@
 
 ### Dependencies
 
+* Python >= 2.7
 * werkzeug
 * mutagen
 
 ### Development dependencies:
 
- * virtualenv/venv
- * setuptools
- * pip
+ * virtualenv/venv, setuptools, pip
+ * tox
+ * coverage
+ * mock
+ * flake8
 
 ## Testing environment
 

@@ -26,7 +26,7 @@ setup(
     ],
     install_requires=['werkzeug', 'mutagen', 'six'],
     extras_require={
-        'test': ['tox', 'coverage'],
+        'test': ['tox', 'coverage', 'mock', 'flake8'],
     },
     entry_points={
         'console_scripts': [
