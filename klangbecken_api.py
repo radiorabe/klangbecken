@@ -89,7 +89,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
 
 
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
-    command = """ffmpeg -hide_banner -i - -af
+    command = """ffmpeg -i - -af
         replaygain,apad=pad_len=100000,silencedetect=d=0.1 -f null -""".split()
 
     try:
