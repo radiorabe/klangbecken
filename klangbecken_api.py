@@ -99,12 +99,14 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         raise UnprocessableEntity('Cannot process audio data')
 
     lines = text_type(output, 'utf-8').split('\n')
-    print(lines)
+    print('\n'.join(lines))
     rg_line = [line for line in lines if 'track_gain' in line][0]
 
     changes = [MetadataChange('track_gain', rg_line.split('=')[1].strip())]
 
     silence_lines = [line for line in lines if 'silencedetect' in line]
+    print('silence lines: **************')
+    print('\n'.join(silence_lines))
     if 'silence_start: 0' in silence_lines[0]:
         line = silence_lines[1]
         cue_in = line.split('silence_end:')[1].strip().split('|')[0].strip()
