@@ -109,11 +109,13 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     print('\n'.join(silence_lines))
     if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
         line = silence_lines[0]
-        start = line.split('silence_start:')[1].strip()
-        if abs(float(start)) < 0.2:
+        start = float(line.split('silence_start:')[1].strip())
+        if abs(start) < 0.2:
             line = silence_lines[1]
-            cue_in = line.split('silence_end:')[1].strip().split('|')[0].strip()
-            changes.append(MetadataChange('cue_in', cue_in))
+            cue_in = float(line.split('silence_end:')[1].split('|')[0].strip())
+            if start < 0:
+                cue_in -= start
+            changes.append(MetadataChange('cue_in', text_type(cue_in)))
             silence_lines = silence_lines[2:]
 
     silence_lines = [l for l in silence_lines if 'silence_start' in l]
