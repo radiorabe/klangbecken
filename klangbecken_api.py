@@ -98,7 +98,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
-    lines = output.split('\n')
+    lines = text_type(output, 'utf-8').split('\n')
     rg_line = [line for line in lines if 'track_gain' in line][0]
 
     changes = [MetadataChange('track_gain', rg_line.split('=')[1].strip())]
