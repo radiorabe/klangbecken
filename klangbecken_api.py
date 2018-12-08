@@ -245,10 +245,10 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 
 
 DEFAULT_PROCESSORS = [
-    raw_file_processor,
-    index_processor,
-    file_tag_processor,
-    playlist_processor,
+    raw_file_processor,   # must be first (saving file)
+    file_tag_processor,   # update tags
+    playlist_processor,   # update playlist file
+    index_processor,      # commit file to index at last
 ]
 
 
