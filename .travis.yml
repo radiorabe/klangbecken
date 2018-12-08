@@ -10,6 +10,10 @@ addons:
       - liquidsoap-plugin-lame
       - liquidsoap-plugin-alsa
       - ffmpeg
+env:
+  global:
+    - KLANGBECKEN_DATA=data
+    - KLANGBECKEN_API_SECRET=deadbeef
 
 install:
   - pip install tox
