@@ -13,7 +13,6 @@ addons:
 env:
   global:
     - KLANGBECKEN_DATA=data
-    - KLANGBECKEN_API_SECRET=deadbeef
 
 install:
   - pip install tox
