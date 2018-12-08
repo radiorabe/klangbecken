@@ -55,12 +55,16 @@ FileDeletion = collections.namedtuple('FileDeletion', ())
 ############
 class KlangbeckenAPI:
 
-    def __init__(self, upload_analyzers=None, update_analyzers=None,
-                 processors=None, disable_auth=False):
-        self.data_dir = os.environ.get('KLANGBECKEN_DATA',
-                                       '/var/lib/klangbecken')
-        self.secret = os.environ['KLANGBECKEN_API_SECRET']
 
+    def __init__(self,
+                 data_dir,
+                 secret,
+                 upload_analyzers=None,
+                 update_analyzers=None,
+                 processors=None,
+                 disable_auth=False):
+        self.data_dir = data_dir
+        self.secret = secret
         self.upload_analyzers = upload_analyzers or DEFAULT_UPLOAD_ANALYZERS
         self.update_analyzers = update_analyzers or DEFAULT_UPDATE_ANALYZERS
         self.processors = processors or DEFAULT_PROCESSORS
@@ -127,7 +131,7 @@ class KlangbeckenAPI:
             actions += analyzer(playlist, fileId, ext, uploadFile)
 
         for processor in self.processors:
-            processor(playlist, fileId, ext, actions)
+            processor(self.data_dir, playlist, fileId, ext, actions)
 
         response = {}
         for change in actions:
@@ -153,7 +157,7 @@ class KlangbeckenAPI:
                                       ' not valid JSON')
 
         for processor in self.processors:
-            processor(playlist, fileId, ext, actions)
+            processor(self.data_dir, playlist, fileId, ext, actions)
 
         return JSONResponse({'status': 'OK'})
 
@@ -162,7 +166,7 @@ class KlangbeckenAPI:
 
         change = [FileDeletion()]
         for processor in self.processors:
-            processor(playlist, fileId, ext, change)
+            processor(self.data_dir, playlist, fileId, ext, change)
 
         return JSONResponse({'status': 'OK'})
 
@@ -276,13 +280,8 @@ DEFAULT_UPDATE_ANALYZERS = [update_analyzer]
 ##############
 # Processors #
 ##############
-def _get_path(*args):
-    data_dir = os.environ.get('KLANGBECKEN_DATA', '/var/lib/klangbecken')
-    return os.path.join(data_dir, *args)
-
-
-def raw_file_processor(playlist, fileId, ext, changes):
-    path = _get_path(playlist, fileId + ext)
+def raw_file_processor(data_dir, playlist, fileId, ext, changes):
+    path = os.path.join(data_dir, playlist, fileId + ext)
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
@@ -298,8 +297,8 @@ def raw_file_processor(playlist, fileId, ext, changes):
             raise ValueError('Change not recognized')
 
 
-def index_processor(playlist, fileId, ext, changes, json_opts={}):
-    indexJson = _get_path('index.json')
+def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
+    indexJson = os.path.join(data_dir, 'index.json')
     with open(indexJson, 'r+') as f:
         fcntl.lockf(f, fcntl.LOCK_EX)
         try:
@@ -335,14 +334,14 @@ EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
 EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
 
 
-def file_tag_processor(playlist, fileId, ext, changes):
+def file_tag_processor(data_dir, playlist, fileId, ext, changes):
     mutagenfile = None
     for change in changes:
         if isinstance(change, MetadataChange):
             key, value = change
             if key in TAG_KEYS:
                 if mutagenfile is None:
-                    path = _get_path(playlist, fileId + ext)
+                    path = os.path.join(data_dir, playlist, fileId + ext)
                     mutagenfile = mutagen.File(path, easy=True)
 
                 mutagenfile[key] = text_type(value)
@@ -351,8 +350,8 @@ def file_tag_processor(playlist, fileId, ext, changes):
         mutagenfile.save()
 
 
-def playlist_processor(playlist, fileId, ext, changes):
-    playlist_path = _get_path(playlist + '.m3u')
+def playlist_processor(data_dir, playlist, fileId, ext, changes):
+    playlist_path = os.path.join(data_dir, playlist + '.m3u')
     for change in changes:
         if isinstance(change, FileDeletion):
             with open(playlist_path) as f:
@@ -406,15 +405,16 @@ class StandaloneWebApplication:
             dist_dir = f.read().strip()
         dist_full_path = os.path.join(current_path, dist_dir)
 
+        # Create dir structure if needed
         self._check_and_crate_data_dir(data_full_path)
 
-        # Set environment variables needed by the KlangbeckenAPI
-        os.environ['KLANGBECKEN_DATA'] = data_full_path
-        os.environ['KLANGBECKEN_API_SECRET'] = \
-            ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
+        # Application session cookie secret
+        secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
 
         # Create slightly customized KlangbeckenAPI application
         api = KlangbeckenAPI(
+            data_full_path,
+            secret,
             upload_analyzers=[
                 raw_file_analyzer,
                 mutagen_tag_analyzer,

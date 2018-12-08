@@ -9,16 +9,9 @@ import uuid
 
 
 class WSGIAppTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_application(self):
-        from klangbecken_api import application, KlangbeckenAPI
-
-        self.assertTrue(isinstance(application, KlangbeckenAPI))
+        from klangbecken_api import KlangbeckenAPI
+        application = KlangbeckenAPI('inexistent_dir', 'secret')
         self.assertTrue(callable(application))
 
 
@@ -37,15 +30,14 @@ class APITestCase(unittest.TestCase):
         self.processor = mock.MagicMock()
 
         app = KlangbeckenAPI(
+            'data_dir',
+            'secret',
             upload_analyzers=[self.upload_analyzer],
             update_analyzers=[self.update_analyzer],
             processors=[self.processor],
             disable_auth=True,
         )
         self.client = Client(app, BaseResponse)
-
-    def tearDown(self):
-        pass
 
     def testUrls(self):
         resp = self.client.get('/')
@@ -121,9 +113,10 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(args[3].mimetype, 'audio/mpeg')
         self.assertEqual(args[3].read(), b'testcontent')
 
-        self.processor.assert_called_once_with('music', fileId, '.mp3', [
-            FileAddition('testfile'), MetadataChange('testkey', 'testvalue')
-        ])
+        self.processor.assert_called_once_with(
+            'data_dir', 'music', fileId, '.mp3',
+            [FileAddition('testfile'), MetadataChange('testkey', 'testvalue')]
+        )
 
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
@@ -162,8 +155,8 @@ class APITestCase(unittest.TestCase):
         self.update_analyzer.assert_called_once_with('music', fileId, '.mp3',
                                                      {'count': 4})
         self.upload_analyzer.assert_not_called()
-        self.processor.assert_called_once_with('music', fileId, '.mp3',
-                                               ['UpdateChange'])
+        self.processor.assert_called_once_with('data_dir', 'music', fileId,
+                                               '.mp3', ['UpdateChange'])
         self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
                          {'status': 'OK'})
         self.update_analyzer.reset_mock()
@@ -180,7 +173,7 @@ class APITestCase(unittest.TestCase):
             'music', fileId, '.mp3', {'artist': 'A', 'title': 'B'}
         )
         self.processor.assert_called_once_with(
-            'music', fileId, '.mp3',
+            'data_dir', 'music', fileId, '.mp3',
             ['UpdateChange']
         )
         self.update_analyzer.reset_mock()
@@ -213,8 +206,8 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_not_called()
-        self.processor.assert_called_once_with('music', fileId, '.mp3',
-                                               [FileDeletion()])
+        self.processor.assert_called_once_with('data_dir', 'music', fileId,
+                                               '.mp3', [FileDeletion()])
 
         self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
                          {'status': 'OK'})
@@ -229,14 +222,13 @@ class AuthTestCase(unittest.TestCase):
         from werkzeug.wrappers import BaseResponse
 
         app = KlangbeckenAPI(
+            'inexistent_dir',
+            'secret',
             upload_analyzers=[lambda *args: []],
             update_analyzers=[lambda *args: []],
             processors=[lambda *args: None],
         )
         self.client = Client(app, BaseResponse)
-
-    def tearDown(self):
-        pass
 
     def testFailingAuth(self):
         resp = self.client.post('/music/')
@@ -300,9 +292,6 @@ class AuthTestCase(unittest.TestCase):
 class AnalyzersTestCase(unittest.TestCase):
     def setUp(self):
         self.current_path = os.path.dirname(os.path.realpath(__file__))
-
-    def tearDown(self):
-        pass
 
     def testUpdateAnalyzer(self):
         from klangbecken_api import update_analyzer, MetadataChange
@@ -435,13 +424,10 @@ class ProcessorsTestCase(unittest.TestCase):
             print('{}', file=f)
         open(os.path.join(self.tempdir, 'music.m3u'), 'w').close()
         open(os.path.join(self.tempdir, 'jingles.m3u'), 'w').close()
-        os.environ['KLANGBECKEN_DATA'] = self.tempdir
 
     def tearDown(self):
         import shutil
         shutil.rmtree(self.tempdir)
-        del os.environ['KLANGBECKEN_DATA']
-        self.tempdir = None
 
     def testRawFileProcessor(self):
         from klangbecken_api import raw_file_processor
@@ -456,28 +442,28 @@ class ProcessorsTestCase(unittest.TestCase):
         delete = FileDeletion()
 
         # File addition
-        raw_file_processor('music', 'id1', '.mp3', [addition])
+        raw_file_processor(self.tempdir, 'music', 'id1', '.mp3', [addition])
         path = os.path.join(self.tempdir, 'music', 'id1.mp3')
         self.assertTrue(os.path.isfile(path))
         with open(path) as f:
             self.assertEqual(f.read(), 'abc')
 
         # File change (nothing happens) and deletion
-        raw_file_processor('music', 'id1', '.mp3', [change])
-        raw_file_processor('music', 'id1', '.mp3', [delete])
+        raw_file_processor(self.tempdir, 'music', 'id1', '.mp3', [change])
+        raw_file_processor(self.tempdir, 'music', 'id1', '.mp3', [delete])
         self.assertTrue(not os.path.isfile(path))
 
         # Invalid change (not found)
         self.assertRaises(NotFound, raw_file_processor,
-                          'music', 'id1', '.mp3', [change])
+                          self.tempdir, 'music', 'id1', '.mp3', [change])
 
         # Invalid deletion (not found)
         self.assertRaises(NotFound, raw_file_processor,
-                          'music', 'id1', '.mp3', [delete])
+                          self.tempdir, 'music', 'id1', '.mp3', [delete])
 
         # Completely invalid change
         self.assertRaises(ValueError, raw_file_processor,
-                          'music', 'id1', '.mp3', ['invalid'])
+                          self.tempdir, 'music', 'id1', '.mp3', ['invalid'])
 
     def testIndexProcessor(self):
         from klangbecken_api import index_processor
@@ -490,8 +476,10 @@ class ProcessorsTestCase(unittest.TestCase):
 
         # Add two new files
         file_ = FileStorage(BytesIO(b'abc'), 'filename.txt')
-        index_processor('music', 'fileId1', '.mp3', [FileAddition(file_)])
-        index_processor('music', 'fileId2', '.ogg', [FileAddition(file_)])
+        index_processor(self.tempdir, 'music', 'fileId1', '.mp3',
+                        [FileAddition(file_)])
+        index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
+                        [FileAddition(file_)])
 
         with open(index_path) as f:
             data = json.load(f)
@@ -500,9 +488,9 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('fileId2' in data)
 
         # Set some initial metadata
-        index_processor('music', 'fileId1', '.mp3',
+        index_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                         [MetadataChange('key1', 'value1')])
-        index_processor('music', 'fileId2', '.ogg',
+        index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
                         [MetadataChange('key1', 'value1'),
                          MetadataChange('key2', 'value2')])
 
@@ -517,10 +505,10 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data['fileId2']['key2'], 'value2')
 
         # Modify metadata
-        index_processor('music', 'fileId1', '.mp3',
+        index_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                         [MetadataChange('key1', 'value1-1'),
                          MetadataChange('key2', 'value2-1')])
-        index_processor('music', 'fileId2', '.ogg',
+        index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
                         [MetadataChange('key2', 'value2-1')])
 
         with open(index_path) as f:
@@ -536,7 +524,8 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data['fileId2']['key2'], 'value2-1')
 
         # Delete one file
-        index_processor('music', 'fileId1', '.mp3', [FileDeletion()])
+        index_processor(self.tempdir, 'music', 'fileId1', '.mp3',
+                        [FileDeletion()])
 
         with open(index_path) as f:
             data = json.load(f)
@@ -546,21 +535,23 @@ class ProcessorsTestCase(unittest.TestCase):
 
         # Try duplicating file ids
         with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
-            index_processor('music', 'fileId2', '.ogg', [FileAddition(file_)])
-        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
-            index_processor('jingles', 'fileId2', '.mp3',
+            index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
                             [FileAddition(file_)])
         with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
-            index_processor('music', 'fileId2', '.mp3', [FileAddition(file_)])
+            index_processor(self.tempdir, 'jingles', 'fileId2', '.mp3',
+                            [FileAddition(file_)])
+        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+            index_processor(self.tempdir, 'music', 'fileId2', '.mp3',
+                            [FileAddition(file_)])
 
         # Try modifying non existent files
         with self.assertRaises(NotFound):
-            index_processor('music', 'fileIdXY', '.ogg',
+            index_processor(self.tempdir, 'music', 'fileIdXY', '.ogg',
                             [MetadataChange('key', 'val')])
 
         # Try deleting non existent file ids
         with self.assertRaises(NotFound):
-            index_processor('music', 'fileIdXY', '.ogg',
+            index_processor(self.tempdir, 'music', 'fileIdXY', '.ogg',
                             [FileDeletion()])
 
         with open(index_path) as f:
@@ -570,7 +561,7 @@ class ProcessorsTestCase(unittest.TestCase):
 
         # Completely invalid change
         self.assertRaises(ValueError, index_processor,
-                          'music', 'id1', '.mp3', ['invalid'])
+                          self.tempdir, 'music', 'id1', '.mp3', ['invalid'])
 
     def testFileTagProcessor(self):
         from klangbecken_api import file_tag_processor
@@ -580,7 +571,7 @@ class ProcessorsTestCase(unittest.TestCase):
         from mutagen import File
 
         # No-ops
-        file_tag_processor('nonexistant', 'nonexistant', '.mp3', [
+        file_tag_processor(self.tempdir, 'nonexistant', 'fileIdZZ', '.mp3', [
             FileAddition(''),
             MetadataChange('id', 'abc'),
             MetadataChange('playlist', 'abc'),
@@ -614,7 +605,8 @@ class ProcessorsTestCase(unittest.TestCase):
                 self.assertNotEqual(val, mutagenfile.get(key, [''])[0])
 
             # Update and verify tags
-            file_tag_processor('music', 'silence', ext, metadata_changes)
+            file_tag_processor(self.tempdir, 'music', 'silence', ext,
+                               metadata_changes)
             mutagenfile = File(path, easy=True)
             for key, val in changes.items():
                 self.assertEqual(len(mutagenfile.get(key, [''])), 1)
@@ -628,7 +620,7 @@ class ProcessorsTestCase(unittest.TestCase):
         jingles_path = os.path.join(self.tempdir, 'jingles.m3u')
 
         # Update playlist count (initial)
-        playlist_processor('music', 'fileId1', '.mp3',
+        playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                            [MetadataChange('count', 2)])
 
         with open(music_path) as f:
@@ -641,7 +633,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data, '')
 
         # Update playlist count
-        playlist_processor('music', 'fileId1', '.mp3',
+        playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                            [MetadataChange('count', 4)])
 
         with open(music_path) as f:
@@ -654,7 +646,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data, '')
 
         # Set playlist count to zero (same as delete)
-        playlist_processor('music', 'fileId1', '.mp3',
+        playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                            [MetadataChange('count', 0)])
 
         with open(music_path) as f:
@@ -666,15 +658,15 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data, '')
 
         # Add more files to playlist
-        playlist_processor('music', 'fileId1', '.mp3',
+        playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                            [MetadataChange('count', 2)])
-        playlist_processor('music', 'fileId2', '.ogg',
+        playlist_processor(self.tempdir, 'music', 'fileId2', '.ogg',
                            [MetadataChange('count', 1)])
-        playlist_processor('music', 'fileId3', '.flac',
+        playlist_processor(self.tempdir, 'music', 'fileId3', '.flac',
                            [MetadataChange('count', 3)])
-        playlist_processor('jingles', 'fileId4', '.mp3',
+        playlist_processor(self.tempdir, 'jingles', 'fileId4', '.mp3',
                            [MetadataChange('count', 2)])
-        playlist_processor('jingles', 'fileId5', '.mp3',
+        playlist_processor(self.tempdir, 'jingles', 'fileId5', '.mp3',
                            [MetadataChange('count', 3)])
 
         with open(music_path) as f:
@@ -694,7 +686,8 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(len(entries), 3)
 
         # Delete non existing file (must be possible)
-        playlist_processor('music', 'fileIdXY', '.ogg', [FileDeletion()])
+        playlist_processor(self.tempdir, 'music', 'fileIdXY', '.ogg',
+                           [FileDeletion()])
         with open(music_path) as f:
             lines = [l.strip() for l in f.readlines()]
         self.assertEqual(len(lines), 6)
@@ -706,7 +699,8 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue(all(lines))
 
         # Delete existing file
-        playlist_processor('music', 'fileId1', '.mp3', [FileDeletion()])
+        playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
+                           [FileDeletion()])
         with open(music_path) as f:
             lines = [l.strip() for l in f.readlines()]
         self.assertEqual(len(lines), 4)
@@ -720,9 +714,12 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue(all(lines))
 
         # Multiple deletes
-        playlist_processor('music', 'fileId3', '.flac', [FileDeletion()])
-        playlist_processor('jingles', 'fileId4', '.mp3', [FileDeletion()])
-        playlist_processor('jingles', 'fileId5', '.mp3', [FileDeletion()])
+        playlist_processor(self.tempdir, 'music', 'fileId3', '.flac',
+                           [FileDeletion()])
+        playlist_processor(self.tempdir, 'jingles', 'fileId4', '.mp3',
+                           [FileDeletion()])
+        playlist_processor(self.tempdir, 'jingles', 'fileId5', '.mp3',
+                           [FileDeletion()])
 
         with open(music_path) as f:
             lines = [l.strip() for l in f.readlines()]
@@ -743,7 +740,6 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
-        os.environ['KLANGBECKEN_DATA'] = self.tempdir
 
         app = StandaloneWebApplication(self.tempdir)
         self.client = Client(app, BaseResponse)
@@ -751,8 +747,6 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
     def tearDown(self):
         import shutil
         shutil.rmtree(self.tempdir)
-        del os.environ['KLANGBECKEN_DATA']
-        self.tempdir = None
 
     def testDataDir(self):
         from klangbecken_api import StandaloneWebApplication
