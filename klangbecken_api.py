@@ -89,7 +89,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
 
 
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
-    command = """ffmpeg -hide_banner -i - -af
+    command = """ffmpeg -i - -af
         replaygain,apad=pad_len=100000,silencedetect=d=0.1 -f null -""".split()
 
     try:
@@ -104,15 +104,25 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     changes = [MetadataChange('track_gain', rg_line.split('=')[1].strip())]
 
     silence_lines = [line for line in lines if 'silencedetect' in line]
-    if 'silence_start: 0' in silence_lines[0]:
-        line = silence_lines[1]
-        cue_in = line.split('silence_end:')[1].strip().split('|')[0].strip()
-        changes.append(MetadataChange('cue_in', cue_in))
-        silence_lines = silence_lines[2:]
+    start = 0
+    if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
+        line = silence_lines[0]
+        start = float(line.split('silence_start:')[1].strip())
+        if abs(start) < 0.2:
+            line = silence_lines[1]
+            cue_in = float(line.split('silence_end:')[1].split('|')[0].strip())
+            if start < 0 and ext in ('.mp3', '.ogg'):
+                cue_in -= start
+            changes.append(MetadataChange('cue_in', text_type(cue_in)))
+            silence_lines = silence_lines[2:]
+
+    silence_lines = [l for l in silence_lines if 'silence_start' in l]
     if len(silence_lines):
-        line = silence_lines[-2]
-        cue_out = line.split('silence_start:')[1].strip()
-        changes.append(MetadataChange('cue_out', cue_out))
+        line = silence_lines[-1]
+        cue_out = float(line.split('silence_start:')[1].strip())
+        if start < 0 and ext == '.flac':
+            cue_out -= start
+        changes.append(MetadataChange('cue_out', text_type(cue_out)))
 
     file_.stream.seek(0)
     return changes

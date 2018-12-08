@@ -291,7 +291,15 @@ class AuthTestCase(unittest.TestCase):
 
 class AnalyzersTestCase(unittest.TestCase):
     def setUp(self):
+        import tempfile
         self.current_path = os.path.dirname(os.path.realpath(__file__))
+        fd, name = tempfile.mkstemp()
+        os.write(fd, b'\0' * 1024)
+        os.close(fd)
+        self.invalid_file = name
+
+    def tearDown(self):
+        os.remove(self.invalid_file)
 
     def testUpdateAnalyzer(self):
         from klangbecken_api import update_data_analyzer, MetadataChange
@@ -409,13 +417,14 @@ class AnalyzersTestCase(unittest.TestCase):
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
         from werkzeug.datastructures import FileStorage
+        from werkzeug.exceptions import UnprocessableEntity
 
         current_path = os.path.dirname(os.path.realpath(__file__))
         for ext in '.mp3 .ogg .flac'.split():
             path = os.path.join(current_path, 'padded' + ext)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
-                changes = ffmpeg_audio_analyzer('', '', '', fs)
+                changes = ffmpeg_audio_analyzer('music', 'id1', ext, fs)
                 self.assertEqual(len(changes), 3)
                 for change in changes:
                     self.assertIsInstance(change, MetadataChange)
@@ -437,6 +446,12 @@ class AnalyzersTestCase(unittest.TestCase):
                                  ('track_gain', 17)):
                     self.assertGreater(abs(float(changes[key])), val * 0.9)
                     self.assertLess(abs(float(changes[key])), val * 1.1)
+
+        # invalid file
+        with self.assertRaises(UnprocessableEntity):
+            with open(self.invalid_file, 'rb') as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer('music', 'id1', '.mp3', fs)
 
 
 class ProcessorsTestCase(unittest.TestCase):
