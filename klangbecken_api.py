@@ -443,13 +443,9 @@ class StandaloneWebApplication:
         ]
 
         # Create customized KlangbeckenAPI application
-        api = KlangbeckenAPI(
-            data_full_path,
-            secret,
-            upload_analyzers=upload_analyzers,
-            processors=processors,
-            disable_auth=True
-        )
+        api = KlangbeckenAPI(data_full_path, secret,
+                             upload_analyzers=upload_analyzers,
+                             processors=processors)
 
         # Return 404 Not Found by default
         app = NotFound()

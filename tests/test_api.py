@@ -871,13 +871,11 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp.close()
 
     def testApi(self):
-        # Dummy login/logout
+        # Login
         resp = self.client.get('/api/login/')
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/api/login/')
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/api/logout/')
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK', 'user': 'dummyuser'})
 
         # Upload
         path = os.path.join(self.current_path, 'silence-unicode.mp3')
@@ -927,6 +925,14 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp = self.client.delete('/api/music/' + fileId + '.mp3',)
         self.assertEqual(resp.status_code, 200)
         resp.close()
+
+        # Logout
+        resp = self.client.post('/api/logout/')
+        self.assertEqual(resp.status_code, 200)
+
+        # Verify that we are logged out
+        resp = self.client.post('/api/music/')
+        self.assertEqual(resp.status_code, 401)
 
 
 class ImporterTestCase(unittest.TestCase):
