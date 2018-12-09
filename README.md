@@ -7,10 +7,11 @@
 
 ### Dependencies
 
-* Python >= 2.7
-* werkzeug
-* mutagen
-* ffmpeg
+* Unix-like operating system environment
+* **Python** >= 2.7
+* **Werkzeug** library for the WSGI application
+* **mutagen** library for audio tag editing
+* **ffmpeg** binary for audio analysis
 
 ### Development dependencies:
 
