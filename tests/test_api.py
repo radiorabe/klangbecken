@@ -458,19 +458,15 @@ class AnalyzersTestCase(unittest.TestCase):
                                  set('track_gain cue_in cue_out'.split()))
 
                 # Track gain negativ and with units
-                self.assertTrue(changes['track_gain'].startswith('-1'))
-                self.assertTrue(changes['track_gain'].endswith(' dB'))
+                gain = changes['track_gain']
+                self.assertTrue(gain.startswith('-1'))
+                self.assertTrue(gain.endswith(' dB'))
+                # Be within ±0.5 dB of expected gain value (-17 dB)
+                self.assertLess(abs(float(gain[:-3]) - (-17)), 0.5)
 
-                changes['track_gain'] = changes['track_gain'][:-3]
-
-                for val in changes.values():
-                    self.assertIsInstance(float(val), float)
-
-                # Are values within 10% of the expected range
-                for key, val in (('cue_in', 0.2), ('cue_out', 0.8),
-                                 ('track_gain', 17)):
-                    self.assertGreater(abs(float(changes[key])), val * 0.9)
-                    self.assertLess(abs(float(changes[key])), val * 1.1)
+                for key, expected in (('cue_in', 0.2), ('cue_out', 0.8)):
+                    # Be within ±50ms of expected values for cue points
+                    self.assertLess(abs(float(changes[key]) - expected), 0.05)
 
         # invalid file
         with self.assertRaises(UnprocessableEntity):
