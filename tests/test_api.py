@@ -49,6 +49,8 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 405)
         resp = self.client.get('/nonexistant/')
         self.assertEqual(resp.status_code, 404)
+        resp = self.client.get('/öäü/')
+        self.assertEqual(resp.status_code, 404)
         resp = self.client.post('/jingles')
         self.assertEqual(resp.status_code, 301)
         resp = self.client.post('/music/')
@@ -322,10 +324,10 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # Correct multiple updates
         changes = update_data_analyzer('playlist', 'id', '.ext',
-                                       {'artist': 'A', 'title': 'T'})
+                                       {'artist': 'A', 'title': 'Ø'})
         self.assertEqual(len(changes), 2)
         self.assertTrue(MetadataChange('artist', 'A') in changes)
-        self.assertTrue(MetadataChange('title', 'T') in changes)
+        self.assertTrue(MetadataChange('title', 'Ø') in changes)
 
         # Update count with wrong data type
         self.assertRaises(
@@ -371,14 +373,14 @@ class AnalyzersTestCase(unittest.TestCase):
                           'music', 'fileId', '.xml', 'file')
 
         # Correct file
-        fileStorage = FileStorage(filename='filename')
+        fileStorage = FileStorage(filename='filename-äöü')
         result = raw_file_analyzer('jingles', 'fileId', '.ogg', fileStorage)
 
         self.assertEqual(result[0], FileAddition(fileStorage))
         self.assertTrue(MetadataChange('playlist', 'jingles') in result)
         self.assertTrue(MetadataChange('id', 'fileId') in result)
         self.assertTrue(MetadataChange('ext', '.ogg') in result)
-        self.assertTrue(MetadataChange('original_filename', 'filename') in
+        self.assertTrue(MetadataChange('original_filename', 'filename-äöü') in
                         result)
         t = [ch for ch in result if (isinstance(ch, MetadataChange) and
                                      ch.key == 'import_timestamp')][0]
@@ -404,6 +406,18 @@ class AnalyzersTestCase(unittest.TestCase):
                 self.assertIn(Change('album', 'Silence Album'), changes)
                 self.assertIn(Change('length', 1.0), changes)
 
+        # Test regular files with unicode tags
+        for ext in ['.mp3', '.ogg', '.flac']:
+            path = os.path.join(self.current_path, 'silence-unicode' + ext)
+            with open(path, 'rb') as f:
+                fs = FileStorage(f)
+                changes = mutagen_tag_analyzer('music', 'fileId', ext, fs)
+                self.assertEqual(len(changes), 4)
+                self.assertIn(Change('artist', 'ÀÉÈ'), changes)
+                self.assertIn(Change('title', 'ÄÖÜ'), changes)
+                self.assertIn(Change('album', '☀⚛♬'), changes)
+                self.assertIn(Change('length', 1.0), changes)
+
         # Test MP3 without any tags
         path = os.path.join(self.current_path, 'silence-stripped.mp3')
         with open(path, 'rb') as f:
@@ -423,6 +437,8 @@ class AnalyzersTestCase(unittest.TestCase):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
     def testFFmpegAudioAnalyzer(self):
+        # TODO: maybe test different loudness files?
+
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
         from werkzeug.datastructures import FileStorage
@@ -493,7 +509,7 @@ class ProcessorsTestCase(unittest.TestCase):
         from werkzeug.exceptions import NotFound
         from werkzeug.datastructures import FileStorage
 
-        file_ = FileStorage(BytesIO(b'abc'), 'filename.txt')
+        file_ = FileStorage(BytesIO(b'abc'), 'filename-éàè.txt')
         addition = FileAddition(file_)
         change = MetadataChange('key', 'value')
         delete = FileDeletion()
@@ -566,7 +582,7 @@ class ProcessorsTestCase(unittest.TestCase):
                         [MetadataChange('key1', 'value1-1'),
                          MetadataChange('key2', 'value2-1')])
         index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
-                        [MetadataChange('key2', 'value2-1')])
+                        [MetadataChange('key2', 'value2-1-œ')])
 
         with open(index_path) as f:
             data = json.load(f)
@@ -578,7 +594,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('key1' in data['fileId2'])
         self.assertEqual(data['fileId2']['key1'], 'value1')
         self.assertTrue('key2' in data['fileId2'])
-        self.assertEqual(data['fileId2']['key2'], 'value2-1')
+        self.assertEqual(data['fileId2']['key2'], 'value2-1-œ')
 
         # Delete one file
         index_processor(self.tempdir, 'music', 'fileId1', '.mp3',
@@ -642,9 +658,9 @@ class ProcessorsTestCase(unittest.TestCase):
         ])
 
         changes = {
-            'artist': 'New Artist',
-            'title': 'New Title',
-            'album': 'New Album',
+            'artist': 'New Artist (๛)',
+            'title': 'New Title (᛭)',
+            'album': 'New Album (٭)',
             'cue_in': '0.123',
             'cue_out': '123',
             'track_gain': '-12 dB',
@@ -830,21 +846,22 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # Upload
-        with open(os.path.join(self.current_path, 'silence.mp3'), 'rb') as f:
+        path = os.path.join(self.current_path, 'silence-unicode.mp3')
+        with open(path, 'rb') as f:
             resp = self.client.post(
                 '/api/music/',
-                data={'file': (f, 'silence.mp3')},
+                data={'file': (f, 'silence-unicode.mp3')},
             )
         self.assertEqual(resp.status_code, 200)
         data = json.loads(six.text_type(resp.data, 'ascii'))
         fileId = list(data.keys())[0]
         self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
         expected = {
-            'original_filename': 'silence.mp3',
+            'original_filename': 'silence-unicode.mp3',
             'length': 1.0,
-            'album': 'Silence Album',
-            'title': 'Silence Track',
-            'artist': 'Silence Artist',
+            'album': '☀⚛♬',
+            'title': 'ÄÖÜ',
+            'artist': 'ÀÉÈ',
             'ext': '.mp3',
             'count': 1,
             'playlist': 'music',
