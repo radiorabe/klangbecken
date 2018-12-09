@@ -111,7 +111,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         if abs(start) < 0.2:
             line = silence_lines[1]
             cue_in = float(line.split('silence_end:')[1].split('|')[0].strip())
-            if start < 0 and ext in ('.mp3', '.ogg'):
+            if start < 0 and ext in ('.mp3', '.ogg'):  # pragma: no cover
                 cue_in -= start
             changes.append(MetadataChange('cue_in', text_type(cue_in)))
             silence_lines = silence_lines[2:]
@@ -120,7 +120,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     if len(silence_lines):
         line = silence_lines[-1]
         cue_out = float(line.split('silence_start:')[1].strip())
-        if start < 0 and ext == '.flac':
+        if start < 0 and ext == '.flac':  # pragma: no cover
             cue_out -= start
         changes.append(MetadataChange('cue_out', text_type(cue_out)))
 
