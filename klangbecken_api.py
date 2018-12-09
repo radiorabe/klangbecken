@@ -89,7 +89,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
 
 
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
-    command = """ffmpeg -i - -af
+    command = """ffmpeg -hide_banner -i - -af
         replaygain,apad=pad_len=100000,silencedetect=d=0.1 -f null -""".split()
 
     try:
@@ -424,25 +424,30 @@ class StandaloneWebApplication:
         # Application session cookie secret
         secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
 
-        # Create slightly customized KlangbeckenAPI application
+        # Only add ffmpeg_audio_analyzer to analyzers if binary is present
+        upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
+        try:
+            subprocess.check_output('ffmpeg -version'.split())
+            upload_analyzers.append(ffmpeg_audio_analyzer)
+        except (OSError, subprocess.CalledProcessError):  # pragma: no cover
+            print('WARNING: ffmpeg binary not found. ' +
+                  'No audio analysis is performed.')
+
+        # Slightly modify processors, such that index.json is pretty printed
+        processors = [
+            raw_file_processor,
+            functools.partial(index_processor,
+                              json_opts={'indent': 2, 'sort_keys': True}),
+            file_tag_processor,
+            playlist_processor,
+        ]
+
+        # Create customized KlangbeckenAPI application
         api = KlangbeckenAPI(
             data_full_path,
             secret,
-            upload_analyzers=[
-                raw_file_analyzer,
-                mutagen_tag_analyzer,
-                # TODO: enable only if ffmpeg binary is present
-                ffmpeg_audio_analyzer,
-            ],
-            processors=[
-                raw_file_processor,
-                functools.partial(
-                    index_processor,
-                    json_opts={'indent': 2, 'sort_keys': True}
-                ),
-                file_tag_processor,
-                playlist_processor,
-            ],
+            upload_analyzers=upload_analyzers,
+            processors=processors,
             disable_auth=True
         )
 

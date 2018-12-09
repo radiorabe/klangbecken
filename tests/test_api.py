@@ -800,6 +800,52 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data, '')
 
 
+class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tempdir)
+
+    def testNoWarning(self):
+        import contextlib
+        import io
+        import sys
+        from klangbecken_api import StandaloneWebApplication
+
+        @contextlib.contextmanager
+        def capture(command, *args, **kwargs):
+
+            out, sys.stdout = sys.stdout, io.StringIO()
+            try:
+                command(*args, **kwargs)
+                sys.stdout.seek(0)
+                yield sys.stdout.read()
+            finally:
+                sys.stdout = out
+
+        with capture(StandaloneWebApplication, self.tempdir) as output:
+            self.assertNotIn("WARNING", output)
+
+    def testDirStructure(self):
+        from klangbecken_api import StandaloneWebApplication
+        self.assertFalse(os.path.isdir(os.path.join(self.tempdir, 'music')))
+
+        StandaloneWebApplication(self.tempdir)
+        self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
+
+        with open(os.path.join(self.tempdir, 'music', 'abc.txt'), 'w'):
+            pass
+
+        StandaloneWebApplication(self.tempdir)
+        self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
+        self.assertTrue(os.path.isfile(os.path.join(self.tempdir, 'music',
+                                                    'abc.txt')))
+
+
 class StandaloneWebApplicationTestCase(unittest.TestCase):
     def setUp(self):
         import tempfile
@@ -816,14 +862,6 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
     def tearDown(self):
         import shutil
         shutil.rmtree(self.tempdir)
-
-    def testDataDir(self):
-        from klangbecken_api import StandaloneWebApplication
-
-        self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
-
-        # Must not fail, even though directory structure already exists.
-        StandaloneWebApplication._check_and_crate_data_dir(self.tempdir)
 
     def testIndexHtml(self):
         resp = self.client.get('/')
