@@ -1,12 +1,34 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
 
+import contextlib
+import io
 import json
 import mock
 import os
+import shutil
 import six
+import sys
+import tempfile
 import unittest
 import uuid
+
+from werkzeug.datastructures import FileStorage
+from werkzeug.exceptions import NotFound, UnprocessableEntity
+from werkzeug.test import Client
+from werkzeug.wrappers import BaseResponse
+
+
+@contextlib.contextmanager
+def capture(command, *args, **kwargs):
+
+    out, sys.stdout = sys.stdout, io.StringIO()
+    try:
+        command(*args, **kwargs)
+        sys.stdout.seek(0)
+        yield sys.stdout.read()
+    finally:
+        sys.stdout = out
 
 
 class WSGIAppTest(unittest.TestCase):
@@ -20,8 +42,6 @@ class APITestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import (KlangbeckenAPI, FileAddition,
                                      MetadataChange)
-        from werkzeug.test import Client
-        from werkzeug.wrappers import BaseResponse
 
         self.upload_analyzer = mock.Mock(return_value=[
             FileAddition('testfile'),
@@ -92,13 +112,11 @@ class APITestCase(unittest.TestCase):
 
     def testUpload(self):
         from klangbecken_api import FileAddition, MetadataChange
-        from werkzeug.datastructures import FileStorage
-        from io import BytesIO
 
         # Correct upload
         resp = self.client.post(
             '/music/',
-            data={'file': (BytesIO(b'testcontent'), 'test.mp3')},
+            data={'file': (io.BytesIO(b'testcontent'), 'test.mp3')},
         )
         self.assertEqual(resp.status_code, 200)
         data = json.loads(six.text_type(resp.data, 'ascii'))
@@ -127,7 +145,7 @@ class APITestCase(unittest.TestCase):
         # Wrong attribute name
         resp = self.client.post(
             '/music/',
-            data={'not-file': (BytesIO(b'testcontent'), 'test.mp3')},
+            data={'not-file': (io.BytesIO(b'testcontent'), 'test.mp3')},
         )
         self.assertEqual(resp.status_code, 422)
         self.assertTrue(b'No attribute named \'file\' found' in resp.data)
@@ -221,8 +239,6 @@ class APITestCase(unittest.TestCase):
 class AuthTestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import KlangbeckenAPI
-        from werkzeug.test import Client
-        from werkzeug.wrappers import BaseResponse
 
         app = KlangbeckenAPI(
             'inexistent_dir',
@@ -284,12 +300,11 @@ class AuthTestCase(unittest.TestCase):
         self.assertNotIn('user', resp.headers['Set-Cookie'])
 
     def testAuthorization(self):
-        from io import BytesIO
-
         resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
         self.assertEqual(resp.status_code, 200)
         resp = self.client.post('/music/',
-                                data={'file': (BytesIO(b'xyz'), 'test.mp3')})
+                                data={'file': (io.BytesIO(b'xyz'),
+                                               'test.mp3')})
         self.assertEqual(resp.status_code, 200)
         resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.mp3',
                                data=json.dumps({}))
@@ -302,7 +317,6 @@ class AuthTestCase(unittest.TestCase):
 
 class AnalyzersTestCase(unittest.TestCase):
     def setUp(self):
-        import tempfile
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         fd, name = tempfile.mkstemp()
         os.write(fd, b'\0' * 1024)
@@ -314,7 +328,6 @@ class AnalyzersTestCase(unittest.TestCase):
 
     def testUpdateAnalyzer(self):
         from klangbecken_api import update_data_analyzer, MetadataChange
-        from werkzeug.exceptions import UnprocessableEntity
 
         # Correct single update
         self.assertEqual(
@@ -361,8 +374,6 @@ class AnalyzersTestCase(unittest.TestCase):
         import time
         from klangbecken_api import (raw_file_analyzer, FileAddition,
                                      MetadataChange)
-        from werkzeug.datastructures import FileStorage
-        from werkzeug.exceptions import UnprocessableEntity
 
         # Missing file
         self.assertRaises(UnprocessableEntity, raw_file_analyzer, 'music',
@@ -390,9 +401,6 @@ class AnalyzersTestCase(unittest.TestCase):
     def testMutagenTagAnalyzer(self):
         from klangbecken_api import mutagen_tag_analyzer
         from klangbecken_api import MetadataChange as Change
-        from werkzeug.datastructures import FileStorage
-        from werkzeug.exceptions import UnprocessableEntity
-        from io import BytesIO
 
         # Test regular files
         for ext in ['.mp3', '.ogg', '.flac']:
@@ -432,7 +440,7 @@ class AnalyzersTestCase(unittest.TestCase):
         # Test invalid files
         for ext in ['.mp3', '.ogg', '.flac']:
             path = os.path.join(self.current_path, 'silence' + ext)
-            fs = FileStorage(BytesIO(b'\0' * 1024))
+            fs = FileStorage(io.BytesIO(b'\0' * 1024))
             with self.assertRaises(UnprocessableEntity):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
@@ -441,8 +449,6 @@ class AnalyzersTestCase(unittest.TestCase):
 
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
-        from werkzeug.datastructures import FileStorage
-        from werkzeug.exceptions import UnprocessableEntity
 
         current_path = os.path.dirname(os.path.realpath(__file__))
         for ext in '.mp3 .ogg .flac'.split():
@@ -477,8 +483,6 @@ class AnalyzersTestCase(unittest.TestCase):
 
 class ProcessorsTestCase(unittest.TestCase):
     def setUp(self):
-        import tempfile
-        import shutil
         self.tempdir = tempfile.mkdtemp()
         os.mkdir(os.path.join(self.tempdir, 'music'))
 
@@ -495,17 +499,13 @@ class ProcessorsTestCase(unittest.TestCase):
         open(os.path.join(self.tempdir, 'jingles.m3u'), 'w').close()
 
     def tearDown(self):
-        import shutil
         shutil.rmtree(self.tempdir)
 
     def testRawFileProcessor(self):
         from klangbecken_api import raw_file_processor
         from klangbecken_api import FileAddition, FileDeletion, MetadataChange
-        from io import BytesIO
-        from werkzeug.exceptions import NotFound
-        from werkzeug.datastructures import FileStorage
 
-        file_ = FileStorage(BytesIO(b'abc'), 'filename-éàè.txt')
+        file_ = FileStorage(io.BytesIO(b'abc'), 'filename-éàè.txt')
         addition = FileAddition(file_)
         change = MetadataChange('key', 'value')
         delete = FileDeletion()
@@ -537,14 +537,11 @@ class ProcessorsTestCase(unittest.TestCase):
     def testIndexProcessor(self):
         from klangbecken_api import index_processor
         from klangbecken_api import FileAddition, FileDeletion, MetadataChange
-        from werkzeug.datastructures import FileStorage
-        from werkzeug.exceptions import NotFound, UnprocessableEntity
-        from io import BytesIO
 
         index_path = os.path.join(self.tempdir, 'index.json')
 
         # Add two new files
-        file_ = FileStorage(BytesIO(b'abc'), 'filename.txt')
+        file_ = FileStorage(io.BytesIO(b'abc'), 'filename.txt')
         index_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                         [FileAddition(file_)])
         index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
@@ -802,30 +799,14 @@ class ProcessorsTestCase(unittest.TestCase):
 
 class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
     def setUp(self):
-        import tempfile
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
-        import shutil
         shutil.rmtree(self.tempdir)
 
-    def testNoWarning(self):
-        import contextlib
-        import io
-        import sys
+    def testNoFFmpegWarning(self):
         from klangbecken_api import StandaloneWebApplication
-
-        @contextlib.contextmanager
-        def capture(command, *args, **kwargs):
-
-            out, sys.stdout = sys.stdout, io.StringIO()
-            try:
-                command(*args, **kwargs)
-                sys.stdout.seek(0)
-                yield sys.stdout.read()
-            finally:
-                sys.stdout = out
 
         with capture(StandaloneWebApplication, self.tempdir) as output:
             self.assertNotIn("WARNING", output)
@@ -848,10 +829,7 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
 
 class StandaloneWebApplicationTestCase(unittest.TestCase):
     def setUp(self):
-        import tempfile
         from klangbecken_api import StandaloneWebApplication
-        from werkzeug.test import Client
-        from werkzeug.wrappers import BaseResponse
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
@@ -860,7 +838,6 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         self.client = Client(app, BaseResponse)
 
     def tearDown(self):
-        import shutil
         shutil.rmtree(self.tempdir)
 
     def testIndexHtml(self):
