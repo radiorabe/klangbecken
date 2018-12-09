@@ -84,7 +84,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
         MetadataChange('length', mutagenfile.info.length),
     ]
     # Seek back to the start of the file for whoever comes next
-    file_.stream.seek(0)
+    file_.seek(0)
     return changes
 
 
@@ -124,7 +124,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
             cue_out -= start
         changes.append(MetadataChange('cue_out', text_type(cue_out)))
 
-    file_.stream.seek(0)
+    file_.seek(0)
     return changes
 
 
