@@ -23,5 +23,6 @@ exclude_lines =
 omit =
     */tests/*
     */test*py
+    */.venv/*
 
 ignore_errors = True
