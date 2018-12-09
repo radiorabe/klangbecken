@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals, print_function
 
 import json
@@ -249,19 +250,27 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         self.assertNotIn('Set-Cookie', resp.headers)
 
-    def testLoginGet(self):
-        resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'xyz'})
+    def _testLogin(self, method):
+        method_func = getattr(self.client, method.lower())
+        resp = method_func('/login/', environ_base={'REMOTE_USER': 'xyz'})
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK', 'user': 'xyz'})
         self.assertIn('Set-Cookie', resp.headers)
         self.assertIn('session', resp.headers['Set-Cookie'])
         self.assertIn('user', resp.headers['Set-Cookie'])
 
-    def testLoginPost(self):
-        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
+        # Funny user name
+        resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'äöü'})
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('Set-Cookie', resp.headers)
-        self.assertIn('session', resp.headers['Set-Cookie'])
-        self.assertIn('user', resp.headers['Set-Cookie'])
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK', 'user': 'äöü'})
+
+    def testLoginGet(self):
+        self._testLogin('get')
+
+    def testLoginPost(self):
+        self._testLogin('post')
 
     def testLogout(self):
         resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})

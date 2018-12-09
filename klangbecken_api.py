@@ -313,11 +313,14 @@ class KlangbeckenAPI:
         if request.remote_user is None:
             raise Unauthorized()
 
-        response = JSONResponse({'status': 'OK'})
         if self.do_auth:
+            user = request.environ['REMOTE_USER']
             session = request.client_session
-            session['user'] = request.environ['REMOTE_USER']
+            session['user'] = user
+            response = JSONResponse({'status': 'OK', 'user': user})
             session.save_cookie(response)
+        else:
+            response = JSONResponse({'status': 'OK'})
         return response
 
     def on_logout(self, request):
