@@ -96,7 +96,8 @@ def _fix_silence_times(times, ffmpeg_version, ext):
         tmp = []
         if ext == '.flac':
             # add 0.05s to first (always a start) time measurement
-            times[0][1] += 0.05
+            #times[0][1] += 0.05
+            pass
         elif ext in ('.mp3', '.ogg'):
 
             pass
@@ -135,7 +136,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     silence_times = _fix_silence_times(silence_times, version, ext)
     print('silence times', )
     for name, val in silence_times:
-        print(name, val)
+        print('\t', name, val)
 
 
 
