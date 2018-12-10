@@ -474,7 +474,7 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.1)
 
             print('*' * 20, prefix+ext)
-            for key, val in changes:
+            for key, val in changes.items():
                 print(key, ':', val)
 
     def testFFmpegAudioAnalyzer(self):
