@@ -473,6 +473,10 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.1)
             self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.1)
 
+            print('*' * 20, prefix+ext)
+            for key, val in changes:
+                print(key, ':', val)
+
     def testFFmpegAudioAnalyzer(self):
         from klangbecken_api import ffmpeg_audio_analyzer
 
