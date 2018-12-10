@@ -7,6 +7,7 @@ import functools
 import json
 import os
 import random
+import re
 import subprocess
 import time
 import uuid
@@ -88,24 +89,64 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     return changes
 
 
+def _fix_silence_times(times, ffmpeg_version, ext):
+    major, minor, patch = ffmpeg_version.split('.', 2)
+
+    if major == '2':
+        tmp = []
+        if ext == '.flac':
+            # add 0.05s to first (always a start) time measurement
+            times[0][1] += 0.05
+        elif ext in ('.mp3', '.ogg'):
+
+            pass
+        else:
+            raise NotImplementedError()
+
+    return times
+
+
+version_re = re.compile(r'^ffmpeg version (\d+\.\d+\.\S*) Copyright')
+silence_re = re.compile(r'silencedetect.*silence_(start|end):\s*(\S*)')
+trackgain_re = re.compile(r'replaygain.*track_gain = (\S* dB)')
+
+
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
-    command = """ffmpeg -hide_banner -i - -af
-        replaygain,apad=pad_len=100000,silencedetect=d=0.1 -f null -""".split()
+    command = """ffmpeg -i - -af
+    replaygain,apad=pad_len=100000,silencedetect=d=0.001 -f null -""".split()
 
     try:
         output = subprocess.check_output(command, stdin=file_,
                                          stderr=subprocess.STDOUT)
+        # TODO: encoding?
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
     lines = text_type(output, 'utf-8').split('\n')
-    rg_line = [line for line in lines if 'track_gain' in line][0]
 
-    changes = [MetadataChange('track_gain', rg_line.split('=')[1].strip())]
+    version = version_re.search(output).groups()[0]
+    print('version', version)
+    gain = trackgain_re.search(output).groups()[0]
+    changes = [MetadataChange('track_gain', gain)]
+    print('gain', gain)
+
+    silence_times = re.findall(silence_re, output)
+    silence_times = [(name, float(value)) for name, value in silence_times]
+    silence_times = _fix_silence_times(silence_times, version, ext)
+    print('silence times', )
+    for name, val in silence_times:
+        print(name, val)
+
+
+
+    silence_times = (silence_re.match(line) for line in lines)
+    silence_times = (match.groups() for match in silence_times if match)
+    silence_times = [(name, float(value)) for name, value in silence_times]
+    print(silence_times)
+
+
 
     silence_lines = [line for line in lines if 'silencedetect' in line]
-    print("*"*20, fileId, ext)
-    print('\n'.join(silence_lines))
     start = 0
     if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
         line = silence_lines[0]
