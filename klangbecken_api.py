@@ -119,6 +119,8 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
             silence_lines = silence_lines[2:]
         else:
             changes.append(MetadataChange('cue_in', '0'))
+    else:
+        changes.append(MetadataChange('cue_in', 0))
 
     silence_lines = [l for l in silence_lines if 'silence_start' in l]
     if len(silence_lines):
