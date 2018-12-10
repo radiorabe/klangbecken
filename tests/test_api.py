@@ -404,7 +404,7 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # Test regular files
         for ext in ['.mp3', '.ogg', '.flac']:
-            path = os.path.join(self.current_path, 'silence' + ext)
+            path = os.path.join(self.current_path, 'audio', 'silence' + ext)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
                 changes = mutagen_tag_analyzer('music', 'fileId', ext, fs)
@@ -416,7 +416,8 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # Test regular files with unicode tags
         for ext in ['.mp3', '.ogg', '.flac']:
-            path = os.path.join(self.current_path, 'silence-unicode' + ext)
+            path = os.path.join(self.current_path, 'audio',
+                                'silence-unicode' + ext)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
                 changes = mutagen_tag_analyzer('music', 'fileId', ext, fs)
@@ -427,7 +428,7 @@ class AnalyzersTestCase(unittest.TestCase):
                 self.assertIn(Change('length', 1.0), changes)
 
         # Test MP3 without any tags
-        path = os.path.join(self.current_path, 'silence-stripped.mp3')
+        path = os.path.join(self.current_path, 'audio', 'silence-stripped.mp3')
         with open(path, 'rb') as f:
             fs = FileStorage(f)
             changes = mutagen_tag_analyzer('music', 'fileId', '.mp3', fs)
@@ -439,40 +440,66 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # Test invalid files
         for ext in ['.mp3', '.ogg', '.flac']:
-            path = os.path.join(self.current_path, 'silence' + ext)
+            path = os.path.join(self.current_path, 'audio', 'silence' + ext)
             fs = FileStorage(io.BytesIO(b'\0' * 1024))
             with self.assertRaises(UnprocessableEntity):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
-    def testFFmpegAudioAnalyzer(self):
-        # TODO: maybe test different loudness files?
-
+    def _analyzeOneFile(self, prefix, ext, gain, cue_in, cue_out):
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
 
         current_path = os.path.dirname(os.path.realpath(__file__))
-        for ext in '.mp3 .ogg .flac'.split():
-            path = os.path.join(current_path, 'padded' + ext)
-            with open(path, 'rb') as f:
-                fs = FileStorage(f)
-                changes = ffmpeg_audio_analyzer('music', 'id1', ext, fs)
-                self.assertEqual(len(changes), 3)
-                for change in changes:
-                    self.assertIsInstance(change, MetadataChange)
-                changes = {key: val for key, val in changes}
-                self.assertEqual(set(changes.keys()),
-                                 set('track_gain cue_in cue_out'.split()))
+        path = os.path.join(current_path, 'audio', prefix + ext)
+        with open(path, 'rb') as f:
+            fs = FileStorage(f)
+            changes = ffmpeg_audio_analyzer('music', prefix, ext, fs)
+            self.assertEqual(len(changes), 3)
+            for change in changes:
+                self.assertIsInstance(change, MetadataChange)
+            changes = {key: val for key, val in changes}
+            self.assertEqual(set(changes.keys()),
+                             set('track_gain cue_in cue_out'.split()))
 
-                # Track gain negativ and with units
-                gain = changes['track_gain']
-                self.assertTrue(gain.startswith('-1'))
-                self.assertTrue(gain.endswith(' dB'))
-                # Be within ±0.5 dB of expected gain value (-17 dB)
-                self.assertLess(abs(float(gain[:-3]) - (-17)), 0.5)
+            # Track gain negativ and with units
+            measured_gain = changes['track_gain']
+            self.assertTrue(measured_gain.startswith('-'))
+            self.assertTrue(measured_gain.endswith(' dB'))
 
-                for key, expected in (('cue_in', 0.2), ('cue_out', 0.8)):
-                    # Be within ±50ms of expected values for cue points
-                    self.assertLess(abs(float(changes[key]) - expected), 0.05)
+            # Be within ±0.5 dB of expected gain value
+            self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
+
+            # Be within ±50ms of expected values for cue points
+            self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.05)
+            self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.05)
+
+    def testFFmpegAudioAnalyzer(self):
+        from klangbecken_api import ffmpeg_audio_analyzer
+
+        test_data = [
+            {
+                'prefix': 'padded',
+                'gain': -17,
+                'cue_in': 0.2,
+                'cue_out': 0.8,
+            },
+            {
+                'prefix': 'padded-start',
+                'gain': -3.33,
+                'cue_in': 1,
+                'cue_out': 2,
+            },
+            {
+                'prefix': 'padded-end',
+                'gain': -3.55,
+                'cue_in': 0,
+                'cue_out': 1,
+            },
+        ]
+
+        for data in test_data:
+            for ext in '-jointstereo.mp3 -stereo.mp3 .ogg .flac'.split():
+                self._analyzeOneFile(ext=ext, **data)
 
         # invalid file
         with self.assertRaises(UnprocessableEntity):
@@ -489,7 +516,7 @@ class ProcessorsTestCase(unittest.TestCase):
         current_path = os.path.dirname(os.path.realpath(__file__))
         for ext in '.mp3 -stripped.mp3 .ogg .flac'.split():
             shutil.copyfile(
-                os.path.join(current_path, 'silence' + ext),
+                os.path.join(current_path, 'audio', 'silence' + ext),
                 os.path.join(self.tempdir, 'music', 'silence' + ext)
             )
 
@@ -855,7 +882,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
                          {'status': 'OK', 'user': 'dummyuser'})
 
         # Upload
-        path = os.path.join(self.current_path, 'silence-unicode.mp3')
+        path = os.path.join(self.current_path, 'audio', 'silence-unicode.mp3')
         with open(path, 'rb') as f:
             resp = self.client.post(
                 '/api/music/',
