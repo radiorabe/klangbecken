@@ -507,7 +507,7 @@ class AnalyzersTestCase(unittest.TestCase):
 
         for data in test_data:
             for ext in '-jointstereo.mp3 -stereo.mp3 .ogg .flac'.split():
-                self._analyzeOneFile(ext=ext, **data)
+                self._analyzeOneFile(postfix=ext, **data)
 
         # invalid file
         with self.assertRaises(UnprocessableEntity):
