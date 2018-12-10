@@ -445,15 +445,19 @@ class AnalyzersTestCase(unittest.TestCase):
             with self.assertRaises(UnprocessableEntity):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
-    def _analyzeOneFile(self, prefix, ext, gain, cue_in, cue_out):
+    def _analyzeOneFile(self, prefix, postfix, gain, cue_in, cue_out):
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
 
+        name = prefix + postfix.split('.')[0]
+        ext = postfix.split('.')[1]
+
         current_path = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(current_path, 'audio', prefix + ext)
+        path = os.path.join(current_path, 'audio', name + ext)
         with open(path, 'rb') as f:
             fs = FileStorage(f)
-            changes = ffmpeg_audio_analyzer('music', prefix, ext, fs)
+
+            changes = ffmpeg_audio_analyzer('music', name, ext, fs)
             self.assertEqual(len(changes), 3)
             for change in changes:
                 self.assertIsInstance(change, MetadataChange)
@@ -470,10 +474,10 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
 
             # Be within ±50ms of expected values for cue points
-            self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.1)
-            self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.1)
+            self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.05)
+            self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.05)
 
-            print('*' * 20, prefix+ext)
+            print('*' * 20, name+ext)
             for key, val in changes.items():
                 print(key, ':', val)
 
