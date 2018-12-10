@@ -470,8 +470,8 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
 
             # Be within ±50ms of expected values for cue points
-            self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.05)
-            self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.05)
+            self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.1)
+            self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.1)
 
     def testFFmpegAudioAnalyzer(self):
         from klangbecken_api import ffmpeg_audio_analyzer
