@@ -204,7 +204,6 @@ tr.active td {
     color: white;
     font-weight: 700;
     font-size: 11px;
-    cursor: pointer;
 }
 
 .search{
@@ -278,7 +277,6 @@ table td {
 th {
 /*    background-color: #537366 !important;*/
     color: white;
-    cursor: pointer;
     -webkit-user-select: none;
     -moz-user-select: none;
     -user-select: none;
