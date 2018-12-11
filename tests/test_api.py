@@ -414,7 +414,6 @@ class AnalyzersTestCase(unittest.TestCase):
                 self.assertIn(Change('album', 'Silence Album'), changes)
                 self.assertIn(Change('length', 1.0), changes)
 
-
         # Test regular files with unicode tags
         for suffix in ['-jointstereo.mp3', '-stereo.mp3', '.ogg', '.flac']:
             extra, ext = suffix.split('.')
@@ -481,7 +480,6 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertLess(float(changes['cue_in']), cue_in + 0.01)
             self.assertGreater(float(changes['cue_out']), cue_out - 0.01)
             self.assertLess(float(changes['cue_out']), cue_out + 0.1)
-
 
     def testFFmpegAudioAnalyzer(self):
         from klangbecken_api import ffmpeg_audio_analyzer
