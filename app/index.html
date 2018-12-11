@@ -313,7 +313,7 @@
                 password: '',
             }),
             ready: function() {
-                this.loadMusic();
+                this.tryLogin();
 
                 // FIXME: bind jquery-ui/fileupload events natively to vue methods
                 $('#fileupload-music').fileupload({
@@ -366,24 +366,20 @@
                             return groupedList
                         }, []);
                         this.loading = false;
-                    }, this.retry_login(this.loadMusic));
+                    }, response => {
+                        console.log("Error")
+                    });
                 },
-                retry_login: function(cb) {
-                    return function(response) {
+                tryLogin: function() {
+                    this.$http.get('/api/login/').then(response => { // Try Kerberos
+                        this.loadMusic();
+                    }, response => {
                         if (response.status === 401) { // Unauthorized
-                            this.$http.get('/api/login/').then(response => { // Try Kerberos
-                                cb();
-                            }, response => {
-                                if (response.status === 401) { // Unauthorized
-                                    $('#loginModal').modal('show');
-                                } else {
-                                    console.log("Error from Server:", response);
-                                }
-                            });
+                            $('#loginModal').modal('show');
                         } else {
                             console.log("Error from Server:", response);
                         }
-                    }
+                    });
                 },
                 login: function() {
                     this.$http.post('/api/login/', {
@@ -526,7 +522,7 @@
                 progress: 0,
             }),
             ready: function() {
-                this.loadJingles();
+                this.tryLogin();
 
                 // FIXME: bind jquery-ui/fileupload events natively to vue methods
                 $('#fileupload-jingles').fileupload({
@@ -568,24 +564,20 @@
                             return list
                         }, []);
                         this.loading = false;
-                    }, this.retry_login(this.loadJingles));
+                    }, response => {
+                        console.log('Error');
+                    });
                 },
-                retry_login: function(cb) {
-                    return function(response) {
+                tryLogin: function() {
+                    this.$http.get('/api/login/').then(response => { // Try Kerberos
+                        this.loadJingles();
+                    }, response => {
                         if (response.status === 401) { // Unauthorized
-                            this.$http.get('/api/login/').then(response => { // Try Kerberos
-                                cb();
-                            }, response => {
-                                if (response.status === 401) { // Unauthorized
-                                    $('#loginModal').modal('show');
-                                } else {
-                                    console.log("Error from Server:", response);
-                                }
-                            });
+                            $('#loginModal').modal('show');
                         } else {
                             console.log("Error from Server:", response);
                         }
-                    }
+                    });
                 },
                 loadOneJingleFile: function(file) {
                     var id = Object.keys(file)[0];
