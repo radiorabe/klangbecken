@@ -89,7 +89,6 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     return changes
 
 
-# version_re = re.compile(r'^ffmpeg version (\d+\.\d+\.\S*) Copyright')
 silence_re = re.compile(r'silencedetect.*silence_(start|end):\s*(\S*)')
 trackgain_re = re.compile(r'replaygain.*track_gain = (\S* dB)')
 
@@ -110,14 +109,12 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     silence_times = [(name, float(value)) for name, value in silence_times]
 
     # Last 'start' time is cue_out
-    reversed_silence_times = reversed(silence_times)
-    cue_out = next((t[1] for t in reversed_silence_times if t[0] == 'start'))
+    reversed_times = reversed(silence_times)
+    cue_out = next((t[1] for t in reversed_times if t[0] == 'start'))
 
     # From remaining times, first 'end' time is cue_in, otherwise 0.0
-    reversed_reversed_silence_times = reversed(list(reversed_silence_times))
-    cue_in = next((t[1] for t in reversed_reversed_silence_times
-                   if t[0] == 'end'),
-                  0.0)
+    remaining_times = reversed(list(reversed_times))
+    cue_in = next((t[1] for t in remaining_times if t[0] == 'end'), 0.0)
 
     file_.seek(0)
     return [
