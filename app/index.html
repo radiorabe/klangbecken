@@ -112,23 +112,19 @@
         <table class="table table-condensed">
           <thead>
             <tr class="active">
-              <th v-for="(key, order) in sortOrders" @click="sortBy(key)"
-                  :class="[key, {active: sortKey == key}]" :class="key">
+              <th v-for="key in ['filename', 'artist', 'title', 'album', 'length']" :class="key">
                 {{ key | capitalize }}
-                <span class="arrow" :class="order > 0 ? 'asc' : 'dsc'"></span>
               </th>
               <th class="actions"></th>
             </tr>
           </thead>
           <tbody v-if="!loading" v-for="chunk in music | orderBy 'date' -1">
-            <tr class="active" :class="chunk.collapsed?'collapsed':''" @click="chunk.collapsed = !chunk.collapsed">
+            <tr class="active">
               <td colspan="6">
-                <span class="glyphicon glyphicon-triangle-right"></span>
-                <span class="glyphicon glyphicon-triangle-bottom"></span>
                 Imported {{chunk.date}}
               </td>
             </tr>
-            <tr v-for="file in chunk.files | filterBy search | orderBy sortKey sortOrders[sortKey]"
+            <tr v-for="file in chunk.files | filterBy search"
                 class="{{file.count === 0 ? 'disabled' : ''}}">
               <template v-if="file.edit">
                   <td>{{file.original_filename}}</td>
@@ -217,24 +213,16 @@
         <table class="table table-condensed">
           <thead>
             <tr class="active">
-              <th v-for="key in ['filename']" @click="sortBy(key)"
-                  :class="{active: sortKey == key}">
+              <th v-for="key in ['filename']">
                 {{ key | capitalize }}
-                <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'"></span>
               </th>
-              <th width="120" @click="sortBy('mtime')" :class="{active: sortKey == 'mtime'}">Date
-                <span class="arrow" :class="sortOrders['mtime'] > 0 ? 'asc' : 'dsc'"
-                      :class="{active: sortKey == 'mtime'}"></span>
-              </th>
-              <th width="90" @click="sortBy('length')" :class="{active: sortKey == 'length'}">Length
-                <span class="arrow" :class="sortOrders['length'] > 0 ? 'asc' : 'dsc'"
-                      :class="{active: sortKey == 'length'}"></span>
-              </th>
+              <th width="120">Date</th>
+              <th width="90">Length</th>
               <th width="110"></th>
             </tr>
           </thead>
           <tbody v-if="!loading">
-            <tr v-for="file in jingles | filterBy search | orderBy sortKey sortOrders[sortKey]"
+            <tr v-for="file in jingles | filterBy search"
               class="{{file.count=== 0 || file.count === '0' ? 'disabled' : ''}}">
               <td>{{file.original_filename}}</td>
               <td class="td-date">{{file.import_timestamp | date}}</td>
@@ -296,14 +284,6 @@
         var Music = Vue.extend({
             template: '#music-tmpl',
             data: () => ({
-                sortKey: 'filename',
-                sortOrders: {
-                    'filename': 1,
-                    'artist': 1,
-                    'title': 1,
-                    'album': 1,
-                    'length': 1
-                },
                 music: [],
                 nowplaying: '',
                 search: '',
@@ -495,26 +475,12 @@
                 ended: function() {
                     this.nowplaying = '';
                 },
-                sortBy: function(key) {
-                    if (key === this.sortKey) {
-                        this.sortOrders[key] = this.sortOrders[key] * -1;
-                    } else {
-                        this.sortKey = key;
-                        this.sortOrders[key] = 1;
-                    }
-                }
             },
         });
 
         var Jingles = Vue.extend({
             template: '#jingles-tmpl',
             data: () => ({
-                sortKey: 'mtime',
-                sortOrders: {
-                    'filename': 1,
-                    'mtime': -1,
-                    'length': 1
-                },
                 jingles: [],
                 nowplaying: '',
                 search: '',
@@ -617,14 +583,6 @@
                 ended: function() {
                     this.nowplaying = '';
                 },
-                sortBy: function(key) {
-                    if (key === this.sortKey) {
-                        this.sortOrders[key] = this.sortOrders[key] * -1;
-                    } else {
-                        this.sortKey = key;
-                        this.sortOrders[key] = 1;
-                    }
-                }
             },
         });
 
