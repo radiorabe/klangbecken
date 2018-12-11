@@ -415,9 +415,11 @@ class AnalyzersTestCase(unittest.TestCase):
                 self.assertIn(Change('length', 1.0), changes)
 
         # Test regular files with unicode tags
-        for ext in ['.mp3', '.ogg', '.flac']:
-            path = os.path.join(self.current_path, 'audio',
-                                'silence-unicode' + ext)
+        for suffix in ['-jointstereo.mp3', '-stereo.mp3', '.ogg', '.flac']:
+            extra, ext = suffix.split('.')
+            ext = '.' + ext
+            name = 'silence-unicode' + extra + ext
+            path = os.path.join(self.current_path, 'audio', name)
             with open(path, 'rb') as f:
                 fs = FileStorage(f)
                 changes = mutagen_tag_analyzer('music', 'fileId', ext, fs)
@@ -445,15 +447,19 @@ class AnalyzersTestCase(unittest.TestCase):
             with self.assertRaises(UnprocessableEntity):
                 mutagen_tag_analyzer('music', 'fileId', ext, fs)
 
-    def _analyzeOneFile(self, prefix, ext, gain, cue_in, cue_out):
+    def _analyzeOneFile(self, prefix, postfix, gain, cue_in, cue_out):
         from klangbecken_api import ffmpeg_audio_analyzer
         from klangbecken_api import MetadataChange
 
+        name = prefix + postfix.split('.')[0]
+        ext = '.' + postfix.split('.')[1]
+
         current_path = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(current_path, 'audio', prefix + ext)
+        path = os.path.join(current_path, 'audio', name + ext)
         with open(path, 'rb') as f:
             fs = FileStorage(f)
-            changes = ffmpeg_audio_analyzer('music', prefix, ext, fs)
+
+            changes = ffmpeg_audio_analyzer('music', name, ext, fs)
             self.assertEqual(len(changes), 3)
             for change in changes:
                 self.assertIsInstance(change, MetadataChange)
@@ -463,15 +469,17 @@ class AnalyzersTestCase(unittest.TestCase):
 
             # Track gain negativ and with units
             measured_gain = changes['track_gain']
-            self.assertTrue(measured_gain.startswith('-'))
             self.assertTrue(measured_gain.endswith(' dB'))
 
             # Be within ±0.5 dB of expected gain value
             self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
 
-            # Be within ±50ms of expected values for cue points
-            self.assertLess(abs(float(changes['cue_in']) - cue_in), 0.05)
-            self.assertLess(abs(float(changes['cue_out']) - cue_out), 0.05)
+            # Be within the expected values for cue points
+            # Dont fade in late, or fade out early!
+            self.assertGreater(float(changes['cue_in']), cue_in - 0.1)
+            self.assertLess(float(changes['cue_in']), cue_in + 0.01)
+            self.assertGreater(float(changes['cue_out']), cue_out - 0.01)
+            self.assertLess(float(changes['cue_out']), cue_out + 0.1)
 
     def testFFmpegAudioAnalyzer(self):
         from klangbecken_api import ffmpeg_audio_analyzer
@@ -495,11 +503,17 @@ class AnalyzersTestCase(unittest.TestCase):
                 'cue_in': 0,
                 'cue_out': 1,
             },
+            {
+                'prefix': 'silence-unicode',
+                'gain': +64,
+                'cue_in': 0,
+                'cue_out': 0,
+            },
         ]
 
         for data in test_data:
             for ext in '-jointstereo.mp3 -stereo.mp3 .ogg .flac'.split():
-                self._analyzeOneFile(ext=ext, **data)
+                self._analyzeOneFile(postfix=ext, **data)
 
         # invalid file
         with self.assertRaises(UnprocessableEntity):
@@ -882,18 +896,19 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
                          {'status': 'OK', 'user': 'dummyuser'})
 
         # Upload
-        path = os.path.join(self.current_path, 'audio', 'silence-unicode.mp3')
+        path = os.path.join(self.current_path, 'audio',
+                            'silence-unicode-jointstereo.mp3')
         with open(path, 'rb') as f:
             resp = self.client.post(
                 '/api/music/',
-                data={'file': (f, 'silence-unicode.mp3')},
+                data={'file': (f, 'silence-unicode-jointstereo.mp3')},
             )
         self.assertEqual(resp.status_code, 200)
         data = json.loads(six.text_type(resp.data, 'ascii'))
         fileId = list(data.keys())[0]
         self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
         expected = {
-            'original_filename': 'silence-unicode.mp3',
+            'original_filename': 'silence-unicode-jointstereo.mp3',
             'length': 1.0,
             'album': '☀⚛♬',
             'title': 'ÄÖÜ',

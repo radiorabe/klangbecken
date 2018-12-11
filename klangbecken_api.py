@@ -7,6 +7,7 @@ import functools
 import json
 import os
 import random
+import re
 import subprocess
 import time
 import uuid
@@ -88,46 +89,39 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     return changes
 
 
+silence_re = re.compile(r'silencedetect.*silence_(start|end):\s*(\S*)')
+trackgain_re = re.compile(r'replaygain.*track_gain = (\S* dB)')
+
+
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
-    command = """ffmpeg -hide_banner -i - -af
-        replaygain,apad=pad_len=100000,silencedetect=d=0.1 -f null -""".split()
+    command = """ffmpeg -i - -af
+    replaygain,apad=pad_len=100000,silencedetect=d=0.001 -f null -""".split()
 
     try:
-        output = subprocess.check_output(command, stdin=file_,
-                                         stderr=subprocess.STDOUT)
+        raw_output = subprocess.check_output(command, stdin=file_,
+                                             stderr=subprocess.STDOUT)
+        output = text_type(raw_output, 'utf-8')
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
-    lines = text_type(output, 'utf-8').split('\n')
-    rg_line = [line for line in lines if 'track_gain' in line][0]
+    gain = trackgain_re.search(output).groups()[0]
+    silence_times = re.findall(silence_re, output)
+    silence_times = [(name, float(value)) for name, value in silence_times]
 
-    changes = [MetadataChange('track_gain', rg_line.split('=')[1].strip())]
+    # Last 'start' time is cue_out
+    reversed_times = reversed(silence_times)
+    cue_out = next((t[1] for t in reversed_times if t[0] == 'start'))
 
-    silence_lines = [line for line in lines if 'silencedetect' in line]
-    start = 0
-    if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
-        line = silence_lines[0]
-        start = float(line.split('silence_start:')[1].strip())
-        if abs(start) < 0.2:
-            line = silence_lines[1]
-            cue_in = float(line.split('silence_end:')[1].split('|')[0].strip())
-            if start < 0 and ext in ('.mp3', '.ogg'):  # pragma: no cover
-                cue_in -= start
-            changes.append(MetadataChange('cue_in', text_type(cue_in)))
-            silence_lines = silence_lines[2:]
-        else:
-            changes.append(MetadataChange('cue_in', '0'))
-
-    silence_lines = [l for l in silence_lines if 'silence_start' in l]
-    if len(silence_lines):
-        line = silence_lines[-1]
-        cue_out = float(line.split('silence_start:')[1].strip())
-        if start < 0 and ext == '.flac':  # pragma: no cover
-            cue_out -= start
-        changes.append(MetadataChange('cue_out', text_type(cue_out)))
+    # From remaining times, first 'end' time is cue_in, otherwise 0.0
+    remaining_times = reversed(list(reversed_times))
+    cue_in = next((t[1] for t in remaining_times if t[0] == 'end'), 0.0)
 
     file_.seek(0)
-    return changes
+    return [
+        MetadataChange('track_gain', gain),
+        MetadataChange('cue_in', text_type(cue_in)),
+        MetadataChange('cue_out', text_type(cue_out)),
+    ]
 
 
 DEFAULT_UPLOAD_ANALYZERS = [
