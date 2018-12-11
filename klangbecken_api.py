@@ -89,25 +89,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     return changes
 
 
-def _fix_silence_times(times, ffmpeg_version, ext):
-    major, minor, patch = ffmpeg_version.split('.', 2)
-
-    if major == '2':
-        tmp = []
-        if ext == '.flac':
-            # add 0.05s to first (always a start) time measurement
-            #times[0][1] += 0.05
-            pass
-        elif ext in ('.mp3', '.ogg'):
-
-            pass
-        else:
-            raise NotImplementedError()
-
-    return times
-
-
-version_re = re.compile(r'^ffmpeg version (\d+\.\d+\.\S*) Copyright')
+# version_re = re.compile(r'^ffmpeg version (\d+\.\d+\.\S*) Copyright')
 silence_re = re.compile(r'silencedetect.*silence_(start|end):\s*(\S*)')
 trackgain_re = re.compile(r'replaygain.*track_gain = (\S* dB)')
 
@@ -117,63 +99,32 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     replaygain,apad=pad_len=100000,silencedetect=d=0.001 -f null -""".split()
 
     try:
-        output = subprocess.check_output(command, stdin=file_,
-                                         stderr=subprocess.STDOUT)
-        # TODO: encoding?
+        raw_output = subprocess.check_output(command, stdin=file_,
+                                             stderr=subprocess.STDOUT)
+        output = text_type(raw_output, 'utf-8')
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
-    lines = text_type(output, 'utf-8').split('\n')
-
-    version = version_re.search(output).groups()[0]
-    print('version', version)
     gain = trackgain_re.search(output).groups()[0]
-    changes = [MetadataChange('track_gain', gain)]
-    print('gain', gain)
-
     silence_times = re.findall(silence_re, output)
     silence_times = [(name, float(value)) for name, value in silence_times]
-    silence_times = _fix_silence_times(silence_times, version, ext)
-    print('silence times', )
-    for name, val in silence_times:
-        print('\t', name, val)
 
+    # Last 'start' time is cue_out
+    reversed_silence_times = reversed(silence_times)
+    cue_out = next((t[1] for t in reversed_silence_times if t[0] == 'start'))
 
-
-    silence_times = (silence_re.match(line) for line in lines)
-    silence_times = (match.groups() for match in silence_times if match)
-    silence_times = [(name, float(value)) for name, value in silence_times]
-    print(silence_times)
-
-
-
-    silence_lines = [line for line in lines if 'silencedetect' in line]
-    start = 0
-    if len(silence_lines) >= 2 and 'silence_start: ' in silence_lines[0]:
-        line = silence_lines[0]
-        start = float(line.split('silence_start:')[1].strip())
-        if abs(start) < 0.2:
-            line = silence_lines[1]
-            cue_in = float(line.split('silence_end:')[1].split('|')[0].strip())
-            if start < 0 and ext in ('.mp3', '.ogg'):  # pragma: no cover
-                cue_in -= start
-            changes.append(MetadataChange('cue_in', text_type(cue_in)))
-            silence_lines = silence_lines[2:]
-        else:
-            changes.append(MetadataChange('cue_in', '0'))
-    else:
-        changes.append(MetadataChange('cue_in', 0))
-
-    silence_lines = [l for l in silence_lines if 'silence_start' in l]
-    if len(silence_lines):
-        line = silence_lines[-1]
-        cue_out = float(line.split('silence_start:')[1].strip())
-        if start < 0 and ext == '.flac':  # pragma: no cover
-            cue_out -= start
-        changes.append(MetadataChange('cue_out', text_type(cue_out)))
+    # From remaining times, first 'end' time is cue_in, otherwise 0.0
+    reversed_reversed_silence_times = reversed(list(reversed_silence_times))
+    cue_in = next((t[1] for t in reversed_reversed_silence_times
+                   if t[0] == 'end'),
+                  0.0)
 
     file_.seek(0)
-    return changes
+    return [
+        MetadataChange('track_gain', gain),
+        MetadataChange('cue_in', text_type(cue_in)),
+        MetadataChange('cue_out', text_type(cue_out)),
+    ]
 
 
 DEFAULT_UPLOAD_ANALYZERS = [
