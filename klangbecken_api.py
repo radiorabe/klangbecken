@@ -306,10 +306,10 @@ class KlangbeckenAPI:
         return response(environ, start_response)
 
     def on_login(self, request):
-        if request.remote_user is None:
-            raise Unauthorized()
-
         if self.do_auth:
+            if request.remote_user is None:
+                raise Unauthorized()
+
             user = request.environ['REMOTE_USER']
             session = request.client_session
             session['user'] = user

@@ -63,6 +63,12 @@ class APITestCase(unittest.TestCase):
     def testUrls(self):
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 404)
+        resp = self.client.get('/login/')
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/login/')
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.post('/logout/')
+        self.assertEqual(resp.status_code, 200)
         resp = self.client.get('/music/')
         self.assertEqual(resp.status_code, 405)
         resp = self.client.get('/jingles/')
