@@ -906,6 +906,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
                          {'status': 'OK', 'user': 'dummyuser'})
+        resp.close()
 
         # Upload
         path = os.path.join(self.current_path, 'audio',
@@ -960,10 +961,12 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         # Logout
         resp = self.client.post('/api/logout/')
         self.assertEqual(resp.status_code, 200)
+        resp.close()
 
         # Verify that we are logged out
         resp = self.client.post('/api/music/')
         self.assertEqual(resp.status_code, 401)
+        resp.close()
 
 
 class ImporterTestCase(unittest.TestCase):
