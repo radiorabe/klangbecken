@@ -527,6 +527,12 @@ class AnalyzersTestCase(unittest.TestCase):
                 'cue_in': 0,
                 'cue_out': 0,
             },
+            {
+                'prefix': 'interleaved',
+                'gain': -14.16,
+                'cue_in': 0.2,
+                'cue_out': 0.8,
+            },
         ]
 
         for data in test_data:
