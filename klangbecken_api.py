@@ -95,7 +95,7 @@ trackgain_re = re.compile(r'replaygain.*track_gain = (\S* dB)')
 
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     command = """ffmpeg -i - -af
-    replaygain,apad=pad_len=100000,silencedetect=d=0.01 -f null -""".split()
+    replaygain,apad=pad_len=100000,silencedetect=d=0.001 -f null -""".split()
 
     try:
         raw_output = subprocess.check_output(command, stdin=file_,
