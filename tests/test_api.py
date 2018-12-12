@@ -284,6 +284,12 @@ class AuthTestCase(unittest.TestCase):
         self.assertIn('session', resp.headers['Set-Cookie'])
         self.assertIn('user', resp.headers['Set-Cookie'])
 
+        # See if we're still logged in
+        resp = self.client.get('/login/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK', 'user': 'xyz'})
+
         # Funny user name
         resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'äöü'})
         self.assertEqual(resp.status_code, 200)

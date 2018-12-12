@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 
 import collections
+import datetime
 import fcntl
 import functools
 import json
@@ -293,7 +294,7 @@ class KlangbeckenAPI:
     def __call__(self, environ, start_response):
         adapter = self.url_map.bind_to_environ(environ)
         request = Request(environ)
-        session = SecureCookie.load_cookie(request, secret_key=self.secret)
+        session = JSONSecureCookie.load_cookie(request, secret_key=self.secret)
         request.client_session = session
         try:
             endpoint, values = adapter.match()
@@ -307,14 +308,24 @@ class KlangbeckenAPI:
 
     def on_login(self, request):
         if self.do_auth:
-            if request.remote_user is None:
+            session = request.client_session
+
+            if request.remote_user is not None:  # Auth successful
+                user = request.environ['REMOTE_USER']
+            elif 'user' in session:              # Already logged in
+                user = session['user']
+            else:                                # None of both
                 raise Unauthorized()
 
-            user = request.environ['REMOTE_USER']
-            session = request.client_session
             session['user'] = user
+
             response = JSONResponse({'status': 'OK', 'user': user})
-            session.save_cookie(response)
+            session.save_cookie(
+                response,
+                httponly=True,
+                expires=datetime.datetime.now() + datetime.timedelta(days=7),
+                max_age=7 * 24 * 60 * 60  # one week
+            )
         else:
             response = JSONResponse({'status': 'OK'})
         return response
@@ -388,6 +399,22 @@ class JSONResponse(Response):
     def __init__(self, data, **json_opts):
         super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
                                            mimetype='text/json')
+
+
+class JSONSerializer:
+    @staticmethod
+    def dumps(obj):
+        # UTF-8 encoding is default in Python 3+
+        return json.dumps(obj).encode('utf-8')
+
+    @staticmethod
+    def loads(serialized):
+        # UTF-8 encoding is default in Python 3+
+        return json.loads(text_type(serialized, 'utf-8'))
+
+
+class JSONSecureCookie(SecureCookie):
+    serialization_method = JSONSerializer
 
 
 ###########################
