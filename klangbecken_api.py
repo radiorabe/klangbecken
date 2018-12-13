@@ -9,6 +9,7 @@ import json
 import os
 import random
 import re
+import shutil
 import subprocess
 import time
 import uuid
@@ -162,7 +163,8 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
-            file_.save(path)
+            with open(path, 'wb') as dest:
+                shutil.copyfileobj(file_, dest)
         elif isinstance(change, FileDeletion):
             if not os.path.isfile(path):
                 raise NotFound()
