@@ -138,7 +138,7 @@ class APITestCase(unittest.TestCase):
         self.assertTrue(isinstance(args[3], FileStorage))
         self.assertEqual(args[3].filename, 'test.mp3')
         self.assertEqual(args[3].mimetype, 'audio/mpeg')
-        self.assertEqual(args[3].read(), b'testcontent')
+        self.assertTrue(args[3].closed)
 
         self.processor.assert_called_once_with(
             'data_dir', 'music', fileId, '.mp3',

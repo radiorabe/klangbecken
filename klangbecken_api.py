@@ -342,22 +342,25 @@ class KlangbeckenAPI:
         if 'file' not in request.files:
             raise UnprocessableEntity('No attribute named \'file\' found.')
 
-        uploadFile = request.files['file']
+        try:
+            uploadFile = request.files['file']
 
-        ext = os.path.splitext(uploadFile.filename)[1].lower()
-        fileId = text_type(uuid.uuid1())   # Generate new file id
+            ext = os.path.splitext(uploadFile.filename)[1].lower()
+            fileId = text_type(uuid.uuid1())   # Generate new file id
 
-        actions = []
-        for analyzer in self.upload_analyzers:
-            actions += analyzer(playlist, fileId, ext, uploadFile)
+            actions = []
+            for analyzer in self.upload_analyzers:
+                actions += analyzer(playlist, fileId, ext, uploadFile)
 
-        for processor in self.processors:
-            processor(self.data_dir, playlist, fileId, ext, actions)
+            for processor in self.processors:
+                processor(self.data_dir, playlist, fileId, ext, actions)
 
-        response = {}
-        for change in actions:
-            if isinstance(change, MetadataChange):
-                response[change.key] = change.value
+            response = {}
+            for change in actions:
+                if isinstance(change, MetadataChange):
+                    response[change.key] = change.value
+        finally:
+            uploadFile.close()
 
         return JSONResponse({fileId: response})
 
