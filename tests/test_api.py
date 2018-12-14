@@ -1168,10 +1168,48 @@ class FsckTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    def testFsck(self):
+    def testFsckCorruptIndex(self):
         from klangbecken_api import fsck
+
+        index_path = os.path.join(self.tempdir, 'index.json')
+        with open(index_path, 'w'):
+            pass
+
         argv, sys.argv = sys.argv, ['', self.tempdir]
         try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
+    def testFsckCorruptDataDir(self):
+        from klangbecken_api import fsck
+
+        music_path = os.path.join(self.tempdir, 'music')
+        shutil.rmtree(music_path)
+
+        argv, sys.argv = sys.argv, ['', self.tempdir]
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
+    def testFsck(self):
+        from klangbecken_api import fsck
+        argv, sys.argv = sys.argv, ['']
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+            sys.argv.append(self.tempdir)
+
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertEqual(err.strip(), '')

@@ -627,7 +627,7 @@ def fsck():
             data = json.load(f)
             del data
         except ValueError as e:
-            print('ERROR:', e, file=sys.stderr)
+            print('ERROR:', text_type(e), file=sys.stderr)
             errors += 1
         finally:
             fcntl.lockf(f, fcntl.LOCK_UN)
