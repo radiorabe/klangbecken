@@ -987,5 +987,51 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp.close()
 
 
+class DataDirCreatorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testDataDirCheckOnly(self):
+        from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
+
+        for playlist in PLAYLISTS:
+            path = os.path.join(self.tempdir, playlist)
+            with self.assertRaises(Exception):
+                check_and_crate_data_dir(self.tempdir, False)
+            os.mkdir(path)
+
+        for playlist in PLAYLISTS:
+            path = os.path.join(self.tempdir, playlist + '.m3u')
+            with self.assertRaises(Exception):
+                check_and_crate_data_dir(self.tempdir, False)
+            with open(path, 'a'):
+                pass
+        with self.assertRaises(Exception):
+                check_and_crate_data_dir(self.tempdir, False)
+
+        with open(os.path.join(self.tempdir, 'index.json'), 'w'):
+                pass
+
+        check_and_crate_data_dir(self.tempdir, False)
+
+    def testDataDirCreation(self):
+        from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
+        check_and_crate_data_dir(self.tempdir)
+        for playlist in PLAYLISTS:
+            path = os.path.join(self.tempdir, playlist)
+            self.assertTrue(os.path.isdir(path))
+            path += '.m3u'
+            self.assertTrue(os.path.isfile(path))
+
+        path = os.path.join(self.tempdir, 'index.json')
+        self.assertTrue(os.path.isfile(path))
+        with open(path) as f:
+            self.assertEqual(json.load(f), {})
+
+
 class ImporterTestCase(unittest.TestCase):
     pass

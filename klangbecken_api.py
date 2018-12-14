@@ -450,7 +450,7 @@ class StandaloneWebApplication:
         dist_full_path = os.path.join(current_path, dist_dir)
 
         # Create dir structure if needed
-        self._check_and_crate_data_dir(data_full_path)
+        check_and_crate_data_dir(data_full_path)
 
         # Application session cookie secret
         secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
@@ -499,23 +499,34 @@ class StandaloneWebApplication:
 
         return self.app(environ, start_response)
 
-    @staticmethod
-    def _check_and_crate_data_dir(data_dir):
-        """
-        Create local data directory structure for testing and development
-        """
-        for path in [data_dir] + \
-                [os.path.join(data_dir, playlist) for playlist in PLAYLISTS]:
-            if not os.path.isdir(path):
+
+def check_and_crate_data_dir(data_dir, create=True):
+    """
+    Create local data directory structure for testing and development
+    """
+    for path in [data_dir] + \
+            [os.path.join(data_dir, playlist) for playlist in PLAYLISTS]:
+        if not os.path.isdir(path):
+            if create:
                 os.mkdir(path)
-        for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
-            if not os.path.isfile(path):
-                with open(path, 'a') as f:
-                    pass
-        path = os.path.join(data_dir, 'index.json')
+            else:
+                raise Exception('Directory "{}" does not exist'
+                                .format(path))
+    for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
         if not os.path.isfile(path):
+            if create:
+                with open(path, 'a'):
+                    pass
+            else:
+                raise Exception('Playlist "{}" does not exist'
+                                .format(path))
+    path = os.path.join(data_dir, 'index.json')
+    if not os.path.isfile(path):
+        if create:
             with open(path, 'w') as f:
                 f.write('{}')
+        else:
+            raise Exception('File "index.json" does not exist')
 
 
 if __name__ == '__main__':
