@@ -62,12 +62,15 @@ def raw_file_analyzer(playlist, fileId, ext, file_, ):
     if ext not in SUPPORTED_FILE_TYPES.keys():
         raise UnprocessableEntity('Unsupported file extension: %s' % ext)
 
+    # Be compatible with werkzeug.datastructures.FileStorage and plain files
+    filename = file_.filename if hasattr(file_, 'filename') else file_.name
+
     return [
         FileAddition(file_),
         MetadataChange('playlist', playlist),
         MetadataChange('id', fileId),
         MetadataChange('ext', ext),
-        MetadataChange('original_filename', file_.filename),
+        MetadataChange('original_filename', filename),
         MetadataChange('import_timestamp', time.time()),
         MetadataChange('count', 1),
     ]
