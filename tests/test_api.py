@@ -23,12 +23,20 @@ from werkzeug.wrappers import BaseResponse
 def capture(command, *args, **kwargs):
 
     out, sys.stdout = sys.stdout, io.StringIO()
+    err, sys.stderr = sys.stderr, io.StringIO()
     try:
-        command(*args, **kwargs)
+        ret = command(*args, **kwargs)
         sys.stdout.seek(0)
-        yield sys.stdout.read()
-    finally:
+        sys.stderr.seek(0)
+        out_data = sys.stdout.read()
+        err_data = sys.stderr.read()
         sys.stdout = out
+        sys.stderr = err
+        yield out_data, err_data, ret
+    finally:
+        # be very sure this happens
+        sys.stdout = out
+        sys.stderr = err
 
 
 class WSGIAppTest(unittest.TestCase):
@@ -879,8 +887,9 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
     def testNoFFmpegWarning(self):
         from klangbecken_api import StandaloneWebApplication
 
-        with capture(StandaloneWebApplication, self.tempdir) as output:
-            self.assertNotIn("WARNING", output)
+        with capture(StandaloneWebApplication, self.tempdir) \
+                as (out, err, ret):
+            self.assertNotIn("WARNING", out)
 
     def testDirStructure(self):
         from klangbecken_api import StandaloneWebApplication
