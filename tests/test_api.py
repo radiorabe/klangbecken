@@ -958,7 +958,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
             'playlist': 'music',
             'id': fileId
         }
-        self.assertTrue(set(expected.items()) <= set(data[fileId].items()))
+        self.assertLessEqual(set(expected.items()), set(data[fileId].items()))
         resp.close()
 
         # Update
