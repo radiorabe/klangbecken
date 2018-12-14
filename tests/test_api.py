@@ -1144,3 +1144,37 @@ class ImporterTestCase(unittest.TestCase):
 
         finally:
             sys.argv = argv
+
+
+class FsckTestCase(unittest.TestCase):
+    def setUp(self):
+        from klangbecken_api import PLAYLISTS
+        from klangbecken_api import check_and_crate_data_dir, _import_one_file
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+        self.music_dir = os.path.join(self.tempdir, 'music')
+        self.jingles_dir = os.path.join(self.tempdir, 'jingles')
+        check_and_crate_data_dir(self.tempdir)
+
+        # Correctly import a couple of files
+        for ext in '.ogg .flac .mp3'.split():
+            for playlist in PLAYLISTS:
+                _import_one_file(
+                    self.tempdir,
+                    playlist,
+                    os.path.join(self.current_path, 'audio', 'silence' + ext)
+                )
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testFsck(self):
+        from klangbecken_api import fsck
+        argv, sys.argv = sys.argv, ['', self.tempdir]
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertEqual(err.strip(), '')
+                    self.assertEqual(cm.exception.code, 0)
+        finally:
+            sys.arv = argv

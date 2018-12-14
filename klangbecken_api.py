@@ -601,6 +601,40 @@ def _import_one_file(data_dir, playlist, filename):
             processor(data_dir, playlist, fileId, ext, actions)
 
 
+def fsck():
+    """
+    Entry point for fsck script
+    """
+    try:
+        data_dir = sys.argv[1]
+    except IndexError:
+        print("""Usage:\npython fsck.py DATA_DIR""", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        check_and_crate_data_dir(data_dir, False)
+    except Exception as e:
+        print('ERROR: Problem with data directory.', file=sys.stderr)
+        print('ERROR: ' + text_type(e), file=sys.stderr)
+        sys.exit(1)
+
+    errors = 0
+
+    indexJson = os.path.join(data_dir, 'index.json')
+    with open(indexJson, 'r+') as f:
+        fcntl.lockf(f, fcntl.LOCK_EX)
+        try:
+            data = json.load(f)
+            del data
+        except ValueError as e:
+            print('ERROR:', e, file=sys.stderr)
+            errors += 1
+        finally:
+            fcntl.lockf(f, fcntl.LOCK_UN)
+
+    sys.exit(1 if errors else 0)
+
+
 if __name__ == '__main__':
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple

@@ -32,6 +32,7 @@ setup(
         'console_scripts': [
             'saemubox-listener=saemubox_listener:main',
             'klangbecken-import=klangecken_api:import_files',
+            'klangbecken-fsck=klangbecken_api:fsck',
         ],
     }
 )
