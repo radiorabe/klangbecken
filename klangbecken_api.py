@@ -116,7 +116,8 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
 
     # Last 'start' time is cue_out
     reversed_times = reversed(silence_times)
-    cue_out = next((t[1] for t in reversed_times if t[0] == 'start'))
+    cue_out = next((t[1] for t in reversed_times
+                    if t[0] == 'start'))                # pragma: no cover
 
     # From remaining times, first 'end' time is cue_in, otherwise 0.0
     remaining_times = reversed(list(reversed_times))
