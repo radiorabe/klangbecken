@@ -1043,4 +1043,104 @@ class DataDirCreatorTestCase(unittest.TestCase):
 
 
 class ImporterTestCase(unittest.TestCase):
-    pass
+    def setUp(self):
+        from klangbecken_api import check_and_crate_data_dir
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+        self.music_dir = os.path.join(self.tempdir, 'music')
+        self.jingles_dir = os.path.join(self.tempdir, 'jingles')
+        check_and_crate_data_dir(self.tempdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testImport(self):
+        from klangbecken_api import import_files
+        audio_path = os.path.join(self.current_path, 'audio')
+        audio1_path = os.path.join(audio_path, 'silence.mp3')
+        audio2_path = os.path.join(audio_path, 'padded.ogg')
+
+        argv, sys.argv = sys.argv, ['', self.tempdir, 'music']
+        try:
+            # Import nothing -> usage
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err, ret):
+                    self.assertIn('Usage', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+            # Import one file
+            sys.argv.append(audio1_path)
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(),
+                                     'Imported 1 files. Errors: 0.')
+                    self.assertEqual(cm.exception.code, 0)
+
+            files = [f for f in os.listdir(self.music_dir)
+                     if os.path.isfile(os.path.join(self.music_dir, f))]
+            self.assertEqual(len(files), 1)
+            with open(os.path.join(self.tempdir, 'index.json')) as file:
+                self.assertEqual(len(json.load(file).keys()), 1)
+
+            # Import two file
+            sys.argv.append(audio2_path)
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(),
+                                     'Imported 1 files. Errors: 0.')
+                    self.assertEqual(cm.exception.code, 0)
+
+            files = [f for f in os.listdir(self.music_dir)  # pragma: no cover
+                     if os.path.isfile(os.path.join(self.music_dir, f))]
+            self.assertEqual(len(files), 3)
+            with open(os.path.join(self.tempdir, 'index.json')) as file:
+                self.assertEqual(len(json.load(file).keys()), 3)
+
+            # Try importing inexistent file
+            sys.argv.append('inexistent')
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(),
+                                     'Imported 1 files. Errors: 1.')
+                    self.assertIn('WARNING', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+            # Try importing into inexistent playlist
+            sys.argv = ['', self.tempdir, 'nonexistentplaylist', audio1_path]
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(), '')
+                    self.assertIn('ERROR', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+            # Try importing into inexistent data dir
+            sys.argv = ['', 'nonexistentdatadir', 'music', audio2_path]
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(), '')
+                    self.assertIn('ERROR', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+            # Incomplete command
+            sys.argv = ['', self.tempdir]
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(), '')
+                    self.assertIn('Usage', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+            path = os.path.join(self.tempdir, 'file.wmv')
+            with open(path, 'w'):
+                pass
+
+            # Try importing unsupported file type
+            sys.argv = ['', self.tempdir, 'music', path]
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err):
+                    self.assertEqual(out.strip(),
+                                     'Imported 0 files. Errors: 1.')
+                    self.assertIn('WARNING', err)
+                    self.assertEqual(cm.exception.code, 1)
+
+        finally:
+            sys.argv = argv

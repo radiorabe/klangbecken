@@ -11,6 +11,7 @@ import random
 import re
 import shutil
 import subprocess
+import sys
 import time
 import uuid
 
@@ -527,6 +528,76 @@ def check_and_crate_data_dir(data_dir, create=True):
                 f.write('{}')
         else:
             raise Exception('File "index.json" does not exist')
+
+
+################
+# Entry points #
+################
+def import_files():
+    """
+    Entry point for import script
+    """
+
+    try:
+        data_dir = sys.argv[1]
+        playlist = sys.argv[2]
+        files = sys.argv[3:]
+        files[0]
+    except IndexError:
+        print("""Usage:
+python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        check_and_crate_data_dir(data_dir, False)
+    except Exception as e:
+        print('ERROR: Problem with data directory.', file=sys.stderr)
+        print('ERROR: ' + text_type(e), file=sys.stderr)
+        sys.exit(1)
+
+    if playlist not in PLAYLISTS:
+        print('ERROR: Invalid playlist name: {}'.format(playlist),
+              file=sys.stderr)
+        sys.exit(1)
+
+    count = 0
+    errors = 0
+    for filename in files:
+        try:
+            _import_one_file(data_dir, playlist, filename)
+            count += 1
+        except UnprocessableEntity as e:
+            print('WARNING: File cannot be processed: ' + filename,
+                  file=sys.stderr)
+            print('WARNING: ' + e.description if hasattr(e, 'description')
+                  else text_type(e), file=sys.stderr)
+            errors += 1
+
+    print('Imported {} files. Errors: {}.'.format(count, errors))
+    sys.exit(1 if errors else 0)
+
+
+def _import_one_file(data_dir, playlist, filename):
+    if not os.path.exists(filename):
+        raise UnprocessableEntity('File not found: ' + filename)
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in SUPPORTED_FILE_TYPES.keys():
+        raise UnprocessableEntity('File extension not supported: ' + ext)
+
+    with open(filename, 'rb') as importFile:
+        fileId = text_type(uuid.uuid1())
+        actions = []
+        for analyzer in DEFAULT_UPLOAD_ANALYZERS:
+            actions += analyzer(playlist, fileId, ext, importFile)
+
+        actions.append(MetadataChange('original_filename',
+                                      os.path.basename(filename)))
+        actions.append(MetadataChange('import_timestamp',
+                                      os.stat(filename).st_mtime))
+
+        for processor in DEFAULT_PROCESSORS:
+            processor(data_dir, playlist, fileId, ext, actions)
 
 
 if __name__ == '__main__':
