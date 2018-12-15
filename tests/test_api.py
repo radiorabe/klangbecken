@@ -1059,6 +1059,7 @@ class ImporterTestCase(unittest.TestCase):
         audio_path = os.path.join(self.current_path, 'audio')
         audio1_path = os.path.join(audio_path, 'silence.mp3')
         audio2_path = os.path.join(audio_path, 'padded.ogg')
+        audio1_mtime = os.stat(audio1_path).st_mtime
 
         argv, sys.argv = sys.argv, ['', self.tempdir, 'music']
         try:
@@ -1080,7 +1081,12 @@ class ImporterTestCase(unittest.TestCase):
                      if os.path.isfile(os.path.join(self.music_dir, f))]
             self.assertEqual(len(files), 1)
             with open(os.path.join(self.tempdir, 'index.json')) as file:
-                self.assertEqual(len(json.load(file).keys()), 1)
+                data = json.load(file)
+                self.assertEqual(len(data.keys()), 1)
+                self.assertEqual(list(data.values())[0]['import_timestamp'],
+                                 audio1_mtime)
+                self.assertEqual(list(data.values())[0]['original_filename'],
+                                 'silence.mp3')
 
             # Import two file
             sys.argv.append(audio2_path)
