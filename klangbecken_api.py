@@ -198,7 +198,8 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
                     if not check(val):
                         raise UnprocessableEntity(
                             'Invalid data format for "{}": Check failed '
-                            .format(key)
+                            '(value: "{}").'
+                            .format(key, val)
                         )
                 elif isinstance(check, text_type):
                     if re.match(check, val) is None:
