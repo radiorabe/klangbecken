@@ -38,12 +38,26 @@ SUPPORTED_FILE_TYPES = {
     '.flac': mutagen.flac.FLAC,
 }
 
-ALLOWED_METADATA_CHANGES = {
+ALLOWED_METADATA = {
+    'id': (text_type, r'^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$'),
+    'ext': (text_type, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
+    'playlist': (text_type, lambda pl: pl in PLAYLISTS),
+    'original_filename': text_type,
+    'import_timestamp': float,
+    'count': (int, lambda c: c >= 0),
+
     'artist': text_type,
     'title': text_type,
     'album': text_type,
-    'count': int,
+    'length': (float, lambda n: n >= 0.0),
+
+    'track_gain': (text_type, r'^[+-]?[0-9]*(\.[0-9]*) dB$'),
+    'cue_in':  (float, lambda n: n >= 0.0),
+    'cue_out': (float, lambda n: n >= 0.0),
 }
+
+UPDATE_KEYS = 'artist title album count'.split()
+TAG_KEYS = 'artist title album cue_in cue_out track_gain'.split()
 
 ####################
 # Action-"Classes" #
@@ -68,9 +82,9 @@ def raw_file_analyzer(playlist, fileId, ext, file_, ):
 
     return [
         FileAddition(file_),
-        MetadataChange('playlist', playlist),
         MetadataChange('id', fileId),
         MetadataChange('ext', ext),
+        MetadataChange('playlist', playlist),
         MetadataChange('original_filename', filename),
         MetadataChange('import_timestamp', time.time()),
         MetadataChange('count', 1),
@@ -126,8 +140,8 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     file_.seek(0)
     return [
         MetadataChange('track_gain', gain),
-        MetadataChange('cue_in', text_type(cue_in)),
-        MetadataChange('cue_out', text_type(cue_out)),
+        MetadataChange('cue_in', cue_in),
+        MetadataChange('cue_out', cue_out),
     ]
 
 
@@ -144,25 +158,63 @@ def update_data_analyzer(playlist, fileId, ext, data):
         raise UnprocessableEntity('Invalid data format: ' +
                                   'associative array expected')
     for key, value in data.items():
-        if key not in ALLOWED_METADATA_CHANGES.keys():
+        if key not in UPDATE_KEYS:
             raise UnprocessableEntity('Invalid data format: ' +
                                       'Key not allowed: ' + key)
-        if not isinstance(value, ALLOWED_METADATA_CHANGES[key]):
-            raise UnprocessableEntity(
-                'Invalid data format: Type error ' +
-                '(expected %s, got %s).' %
-                (ALLOWED_METADATA_CHANGES[key], type(value).__name__)
-            )
         changes.append(MetadataChange(key, value))
     return changes
 
 
-DEFAULT_UPDATE_ANALYZERS = [update_data_analyzer]
+DEFAULT_UPDATE_ANALYZERS = [
+    update_data_analyzer
+]
 
 
 ##############
 # Processors #
 ##############
+def check_processor(data_dir, playlist, fileId, ext, changes):
+    for change in changes:
+        if isinstance(change, MetadataChange):
+            key, val = change
+
+            if key not in ALLOWED_METADATA.keys():
+                raise UnprocessableEntity('Invalid metadata key: {}'
+                                          .format(key))
+
+            checks = ALLOWED_METADATA[key]
+            if not isinstance(checks, (list, tuple)):
+                checks = (checks,)
+
+            for check in checks:
+                if isinstance(check, type):
+                    if not isinstance(val, check):
+                        raise UnprocessableEntity(
+                            'Invalid data format for "{}": Type error '
+                            '(expected {}, got {}).'
+                            .format(key, check.__name__, type(val).__name__)
+                        )
+                elif callable(check):
+                    if not check(val):
+                        raise UnprocessableEntity(
+                            'Invalid data format for "{}": Check failed '
+                            .format(key)
+                        )
+                elif isinstance(check, text_type):
+                    if re.match(check, val) is None:
+                        raise UnprocessableEntity(
+                            'Invalid data format for "{}": Regex check failed '
+                            '(value: "{}", regex: "{}").'
+                            .format(key, val, check)
+                        )
+                else:
+                    raise NotImplementedError()
+        elif isinstance(change, (FileAddition, FileDeletion)):
+            pass
+        else:
+            raise ValueError('Invalid action class')
+
+
 def raw_file_processor(data_dir, playlist, fileId, ext, changes):
     path = os.path.join(data_dir, playlist, fileId + ext)
     for change in changes:
@@ -178,7 +230,7 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
             if not os.path.isfile(path):
                 raise NotFound()
         else:
-            raise ValueError('Change not recognized')
+            raise ValueError('Invalid action class')
 
 
 def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
@@ -210,8 +262,6 @@ def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
         finally:
             fcntl.lockf(f, fcntl.LOCK_UN)
 
-
-TAG_KEYS = 'artist title album cue_in cue_out track_gain'.split()
 
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
@@ -259,7 +309,8 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 
 
 DEFAULT_PROCESSORS = [
-    raw_file_processor,   # must be first (saving file)
+    check_processor,      # type and contract check changes
+    raw_file_processor,   # save file
     file_tag_processor,   # update tags
     playlist_processor,   # update playlist file
     index_processor,      # commit file to index at last

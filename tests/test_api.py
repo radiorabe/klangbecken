@@ -362,20 +362,6 @@ class AnalyzersTestCase(unittest.TestCase):
         self.assertTrue(MetadataChange('artist', 'A') in changes)
         self.assertTrue(MetadataChange('title', 'Ø') in changes)
 
-        # Update count with wrong data type
-        self.assertRaises(
-            UnprocessableEntity,
-            update_data_analyzer,
-            'playlist', 'id', '.ext', {'count': '1'}
-        )
-
-        # Update artist with wrong data type
-        self.assertRaises(
-            UnprocessableEntity,
-            update_data_analyzer,
-            'playlist', 'id', '.ext', {'artist': []}
-        )
-
         # Update not allowed property (original_filename)
         self.assertRaises(
             UnprocessableEntity,
@@ -579,6 +565,39 @@ class ProcessorsTestCase(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
+
+    def testCheckProcessor(self):
+        from klangbecken_api import check_processor, MetadataChange
+
+        # Invalid key
+        with self.assertRaises(UnprocessableEntity) as cm:
+            check_processor(self.tempdir, 'playlist', 'id', '.ext',
+                            [MetadataChange('invalid', 'xyz')])
+        self.assertTrue('Invalid metadata key' in cm.exception.description)
+
+        # Wrong data type (str instead of int)
+        with self.assertRaises(UnprocessableEntity) as cm:
+            check_processor(self.tempdir, 'playlist', 'id', '.ext',
+                            [MetadataChange('count', '1')])
+        self.assertTrue('Invalid data format' in cm.exception.description)
+
+        # Wrong data format (uuid)
+        with self.assertRaises(UnprocessableEntity) as cm:
+            check_processor(self.tempdir, 'playlist', 'id', '.ext',
+                            [MetadataChange('id', 'xyz')])
+        self.assertTrue('Invalid data format' in cm.exception.description)
+        self.assertTrue('Regex' in cm.exception.description)
+
+        # Wrong data format (negative length)
+        with self.assertRaises(UnprocessableEntity) as cm:
+            check_processor(self.tempdir, 'playlist', 'id', '.ext',
+                            [MetadataChange('length', -5.0)])
+        self.assertTrue('Invalid data format' in cm.exception.description)
+
+        # Invalid action class
+        with self.assertRaises(ValueError) as cm:
+            check_processor(self.tempdir, 'playlist', 'id', '.ext',
+                            ['whatever'])
 
     def testRawFileProcessor(self):
         from klangbecken_api import raw_file_processor
