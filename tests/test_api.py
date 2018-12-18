@@ -24,19 +24,36 @@ def capture(command, *args, **kwargs):
 
     out, sys.stdout = sys.stdout, io.StringIO()
     err, sys.stderr = sys.stderr, io.StringIO()
+    commandException = None
+    contextException = None
+    ret = None
     try:
-        ret = command(*args, **kwargs)
+        try:
+            ret = command(*args, **kwargs)
+        except BaseException as e:    # Catch exception, and let's first
+            commandException = e      # capture all the output
         sys.stdout.seek(0)
         sys.stderr.seek(0)
         out_data = sys.stdout.read()
         err_data = sys.stderr.read()
         sys.stdout = out
         sys.stderr = err
-        yield out_data, err_data, ret
+        try:
+            yield out_data, err_data, ret
+        except BaseException as e:     # Catch every exception thrown from
+            contextException = e       # within the context manager
     finally:
-        # be very sure this happens
+        # Clean up
         sys.stdout = out
         sys.stderr = err
+
+        # Do not ignore exceptions from within the context manager,
+        # in case of a deliberately failing command.
+        # Thus, prioritize contextException over commandException
+        if contextException:
+            raise contextException
+        elif commandException:
+            raise commandException
 
 
 class WSGIAppTest(unittest.TestCase):
@@ -1086,15 +1103,15 @@ class ImporterTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(import_files) as (out, err, ret):
                     self.assertIn('Usage', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
 
             # Import one file
             sys.argv.append(audio1_path)
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(),
                                      'Imported 1 files. Errors: 0.')
-                    self.assertEqual(cm.exception.code, 0)
+                self.assertEqual(cm.exception.code, 0)
 
             files = [f for f in os.listdir(self.music_dir)
                      if os.path.isfile(os.path.join(self.music_dir, f))]
@@ -1110,10 +1127,10 @@ class ImporterTestCase(unittest.TestCase):
             # Import two file
             sys.argv.append(audio2_path)
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(),
-                                     'Imported 1 files. Errors: 0.')
-                    self.assertEqual(cm.exception.code, 0)
+                                     'Imported 2 files. Errors: 0.')
+                self.assertEqual(cm.exception.code, 0)
 
             files = [f for f in os.listdir(self.music_dir)  # pragma: no cover
                      if os.path.isfile(os.path.join(self.music_dir, f))]
@@ -1124,35 +1141,35 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing inexistent file
             sys.argv.append('inexistent')
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(),
-                                     'Imported 1 files. Errors: 1.')
+                                     'Imported 2 files. Errors: 1.')
                     self.assertIn('WARNING', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
 
             # Try importing into inexistent playlist
             sys.argv = ['', self.tempdir, 'nonexistentplaylist', audio1_path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('ERROR', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
 
             # Try importing into inexistent data dir
             sys.argv = ['', 'nonexistentdatadir', 'music', audio2_path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('ERROR', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
 
             # Incomplete command
             sys.argv = ['', self.tempdir]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('Usage', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
 
             path = os.path.join(self.tempdir, 'file.wmv')
             with open(path, 'w'):
@@ -1161,11 +1178,11 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing unsupported file type
             sys.argv = ['', self.tempdir, 'music', path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err):
+                with capture(import_files) as (out, err, ret):
                     self.assertEqual(out.strip(),
                                      'Imported 0 files. Errors: 1.')
                     self.assertIn('WARNING', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
 
         finally:
             sys.argv = argv
@@ -1193,7 +1210,7 @@ class FsckTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    def testFsckCorruptIndex(self):
+    def testFsckCorruptIndexJson(self):
         from klangbecken_api import fsck
 
         index_path = os.path.join(self.tempdir, 'index.json')
@@ -1205,7 +1222,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1220,7 +1237,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                    self.assertEqual(cm.exception.code, 1)
+                self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1228,16 +1245,18 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken_api import fsck
         argv, sys.argv = sys.argv, ['']
         try:
+            # data_dir missing
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
-                    self.assertIn('ERROR', err)
-                    self.assertEqual(cm.exception.code, 1)
+                    self.assertIn('Usage', err)
+                self.assertEqual(cm.exception.code, 1)
 
             sys.argv.append(self.tempdir)
 
+            # correct invocation
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertEqual(err.strip(), '')
-                    self.assertEqual(cm.exception.code, 0)
+                self.assertEqual(cm.exception.code, 0)
         finally:
             sys.arv = argv
