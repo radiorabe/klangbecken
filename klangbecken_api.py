@@ -625,21 +625,67 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
               file=sys.stderr)
         sys.exit(1)
 
-    count = 0
-    errors = 0
+    analysis_data = []
     for filename in files:
         try:
-            _import_one_file(data_dir, playlist, filename)
-            count += 1
+            # _import_one_file(data_dir, playlist, filename)
+            # count += 1
+            analysis_data.append(
+                analyze_one_file(data_dir, playlist, filename)
+            )
         except UnprocessableEntity as e:
-            print('WARNING: File cannot be processed: ' + filename,
+            print('WARNING: File cannot be analyzed: ' + filename,
                   file=sys.stderr)
             print('WARNING: ' + e.description if hasattr(e, 'description')
                   else text_type(e), file=sys.stderr)
-            errors += 1
+        except Exception as e:
+            print('WARNING: Unknown error when analyzing file: ' + filename,
+                  file=sys.stderr)
+            print('WARNING: ' + e.description if hasattr(e, 'description')
+                  else text_type(e), file=sys.stderr)
 
-    print('Imported {} files. Errors: {}.'.format(count, errors))
-    sys.exit(1 if errors else 0)
+    print('Successfully analyzed {} of {} files.'.format(len(analysis_data),
+                                                         len(files)))
+    count = 0
+    if non_interactive or \
+            input('Start import now? [y/N] ').strip().lower() == 'y':
+        for filename, fileId, ext, actions in analysis_data:
+            try:
+                for processor in DEFAULT_PROCESSORS:
+                    processor(data_dir, playlist, fileId, ext, actions)
+                count += 1
+            except Exception as e:
+                print('WARNING: File cannot be imported: ' + filename,
+                      file=sys.stderr)
+                print('WARNING: ' + e.description
+                      if hasattr(e, 'description')
+                      else text_type(e), file=sys.stderr)
+
+    print('Successfully imported {} of {} files.'.format(count, len(files)))
+    sys.exit(1 if count < len(files) else 0)
+
+
+def analyze_one_file(data_dir, playlist, filename):
+    if not os.path.exists(filename):
+        raise UnprocessableEntity('File not found: ' + filename)
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in SUPPORTED_FILE_TYPES.keys():
+        raise UnprocessableEntity('File extension not supported: ' + ext)
+
+    with open(filename, 'rb') as importFile:
+        fileId = text_type(uuid.uuid1())
+        actions = []
+        for analyzer in DEFAULT_UPLOAD_ANALYZERS:
+            actions += analyzer(playlist, fileId, ext, importFile)
+
+        actions.append(MetadataChange('original_filename',
+                                      os.path.basename(filename)))
+        actions.append(MetadataChange('import_timestamp',
+                                      os.stat(filename).st_mtime))
+
+        actions[0] = FileAddition(filename)
+    return (filename, fileId, ext, actions)
 
 
 def _import_one_file(data_dir, playlist, filename):
