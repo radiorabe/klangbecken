@@ -120,7 +120,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     try:
         raw_output = subprocess.check_output(command, stdin=file_,
                                              stderr=subprocess.STDOUT)
-        output = text_type(raw_output, 'utf-8')
+        output = text_type(raw_output, sys.stdin.encoding, errors='ignore')
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
@@ -598,9 +598,11 @@ def import_files():
     """
 
     try:
-        data_dir = sys.argv[1]
-        playlist = sys.argv[2]
-        files = sys.argv[3:]
+        args = [text_type(arg, encoding=sys.stdin.encoding, errors='ignore')
+                for arg in sys.argv]
+        data_dir = args[1]
+        playlist = args[2]
+        files = args[3:]
         files[0]
     except IndexError:
         print("""Usage:
