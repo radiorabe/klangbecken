@@ -2,7 +2,7 @@
 /.tox/
 /.venv/
 /.vscode/
-/KlangbeckenAPI.egg-info/
+/*.egg-info/
 /__pycache__/
 .coverage
 *.pyc
