@@ -284,7 +284,8 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
             if key in TAG_KEYS:
                 if mutagenfile is None:
                     path = os.path.join(data_dir, playlist, fileId + ext)
-                    mutagenfile = mutagen.File(path, easy=True)
+                    FileType = SUPPORTED_FILE_TYPES[ext]
+                    mutagenfile = FileType(path)
 
                 mutagenfile[key] = text_type(value)
 
