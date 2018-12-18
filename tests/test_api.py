@@ -1389,3 +1389,76 @@ class FsckTestCase(unittest.TestCase):
                 self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
+
+    def testTagsValueMismatch(self):
+        from klangbecken_api import fsck, SUPPORTED_FILE_TYPES
+        argv, sys.argv = sys.argv, ['', self.tempdir]
+
+        file_path = os.path.join(self.music_dir, os.listdir(self.music_dir)[0])
+        FileType = SUPPORTED_FILE_TYPES['.' + file_path.split('.')[-1]]
+        mutagenfile = FileType(file_path)
+        mutagenfile['artist'] = 'Whatever'
+        mutagenfile.save()
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertIn('Tag value mismatch "artist"', err)
+                self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
+    def testPlaylistCountMismatch(self):
+        from klangbecken_api import fsck
+        argv, sys.argv = sys.argv, ['', self.tempdir]
+
+        playlist_path = os.path.join(self.tempdir, 'music.m3u')
+        with open(playlist_path) as f:
+            lines = f.readlines()
+        with open(playlist_path, 'w') as f:
+            f.writelines(lines[::2])    # only write back every second line
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertIn('Playlist count mismatch', err)
+                self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
+    def testDanglingPlaylistEntries(self):
+        from klangbecken_api import fsck
+        argv, sys.argv = sys.argv, ['', self.tempdir]
+
+        playlist_path = os.path.join(self.tempdir, 'music.m3u')
+        with open(playlist_path, 'a') as f:
+            f.write('music/not_an_uuid.mp3\n')
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertIn('Dangling playlist entry', err)
+                    self.assertIn('not_an_uuid', err)
+                self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
+    def testDanglingFiles(self):
+        from klangbecken_api import fsck
+        argv, sys.argv = sys.argv, ['', self.tempdir]
+
+        with open(os.path.join(self.tempdir, 'music', 'not_an_uuid'), 'w'):
+            pass
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(fsck) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertIn('Dangling files', err)
+                    self.assertIn('not_an_uuid', err)
+                self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv

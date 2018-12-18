@@ -683,6 +683,14 @@ def fsck():
         fcntl.lockf(f, fcntl.LOCK_EX)
         try:
             data = json.load(f)
+            files = set()
+            playlist_counts = collections.Counter()
+            for playlist in PLAYLISTS:
+                files.update(os.path.join(playlist, entry) for entry in
+                             os.listdir(os.path.join(data_dir, playlist)))
+                with open(os.path.join(data_dir, playlist + '.m3u')) as f1:
+                    playlist_counts.update(line.strip() for line in
+                                           f1.readlines())
             for id, entries in data.items():
                 keys = set(entries.keys())
                 missing = set(ALLOWED_METADATA.keys()) - keys
@@ -690,7 +698,7 @@ def fsck():
                     print('ERROR: missing entries:', ', '.join(missing),
                           file=sys.stderr)
                     errors += 1
-                    continue
+                    continue   # cannot continue with missing entries
                 too_many = keys - set(ALLOWED_METADATA.keys())
                 if too_many:
                     print('ERROR: too many entries:', ', '.join(too_many),
@@ -707,21 +715,55 @@ def fsck():
                 if id != entries['id']:
                     print('ERROR: Id missmatch', id, entries['id'],
                           file=sys.stderr)
+                    errors += 1
                 if entries['cue_in'] > entries['cue_out']:
                     print('ERROR: cue_in larger than cue_out',
                           text_type(entries['cue_in']),
                           text_type(entries['cue_out']),
                           file=sys.stderr)
+                    errors += 1
                 if entries['cue_out'] > entries['length']:
                     print('ERROR: cue_out larger than length',
                           text_type(entries['cue_out']),
                           text_type(entries['length']),
                           file=sys.stderr)
-                file_path = os.path.join(data_dir, entries['playlist'],
+                    errors += 1
+                file_path = os.path.join(entries['playlist'],
                                          entries['id'] + entries['ext'])
-                if not os.path.isfile(file_path):
-                    print('ERROR: file does not exist:', file_path,
+                file_full_path = os.path.join(data_dir, file_path)
+                if not os.path.isfile(file_full_path):
+                    print('ERROR: file does not exist:', file_full_path,
                           file=sys.stderr)
+                    errors += 1
+                else:
+                    files.remove(file_path)
+                    FileType = SUPPORTED_FILE_TYPES[entries['ext']]
+                    mutagenfile = FileType(file_full_path)
+                    for key in TAG_KEYS:
+                        tag_value = mutagenfile.get(key, [''])[0]
+                        if text_type(entries[key]) != tag_value:
+                            print('ERROR: Tag value mismatch "{}": {} != {}'
+                                  .format(key, entries[key], tag_value),
+                                  file=sys.stderr)
+                            errors += 1
+
+                    count = playlist_counts[file_path]
+                    del playlist_counts[file_path]
+                    if count != entries['count']:
+                        print('ERROR: Playlist count mismatch: {} != {}'
+                              .format(entries['count'], count),
+                              file=sys.stderr)
+                        errors += 1
+
+            if files:
+                print('ERROR: Dangling files:', ', '.join(files),
+                      file=sys.stderr)
+                errors += 1
+            if playlist_counts:
+                print('ERROR: Dangling playlist entry:',
+                      ', '.join(playlist_counts.keys()),
+                      file=sys.stderr)
+                errors += 1
         except ValueError as e:
             print('ERROR:', text_type(e), file=sys.stderr)
             errors += 1
