@@ -227,8 +227,11 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
-            with open(path, 'wb') as dest:
-                shutil.copyfileobj(file_, dest)
+            if isinstance(file_, text_type):
+                shutil.copy(file_, path)
+            else:
+                with open(path, 'wb') as dest:
+                    shutil.copyfileobj(file_, dest)
         elif isinstance(change, FileDeletion):
             if not os.path.isfile(path):
                 raise NotFound()
