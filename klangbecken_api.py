@@ -70,7 +70,7 @@ FileDeletion = collections.namedtuple('FileDeletion', ())
 #############
 # Analyzers #
 #############
-def raw_file_analyzer(playlist, fileId, ext, file_, ):
+def raw_file_analyzer(playlist, fileId, ext, file_):
     if not file_:
         raise UnprocessableEntity('No File found')
 
