@@ -683,7 +683,45 @@ def fsck():
         fcntl.lockf(f, fcntl.LOCK_EX)
         try:
             data = json.load(f)
-            del data
+            for id, entries in data.items():
+                keys = set(entries.keys())
+                missing = set(ALLOWED_METADATA.keys()) - keys
+                if missing:
+                    print('ERROR: missing entries:', ', '.join(missing),
+                          file=sys.stderr)
+                    errors += 1
+                    continue
+                too_many = keys - set(ALLOWED_METADATA.keys())
+                if too_many:
+                    print('ERROR: too many entries:', ', '.join(too_many),
+                          file=sys.stderr)
+                    errors += 1
+                try:
+                    check_processor(data_dir, entries['playlist'],
+                                    entries['id'], entries['ext'],
+                                    (MetadataChange(key, val)
+                                     for key, val in entries.items()))
+                except UnprocessableEntity as e:
+                    print('ERROR:', text_type(e))
+                    errors += 1
+                if id != entries['id']:
+                    print('ERROR: Id missmatch', id, entries['id'],
+                          file=sys.stderr)
+                if entries['cue_in'] > entries['cue_out']:
+                    print('ERROR: cue_in larger than cue_out',
+                          text_type(entries['cue_in']),
+                          text_type(entries['cue_out']),
+                          file=sys.stderr)
+                if entries['cue_out'] > entries['length']:
+                    print('ERROR: cue_out larger than length',
+                          text_type(entries['cue_out']),
+                          text_type(entries['length']),
+                          file=sys.stderr)
+                file_path = os.path.join(data_dir, entries['playlist'],
+                                         entries['id'] + entries['ext'])
+                if not os.path.isfile(file_path):
+                    print('ERROR: file does not exist:', file_path,
+                          file=sys.stderr)
         except ValueError as e:
             print('ERROR:', text_type(e), file=sys.stderr)
             errors += 1
