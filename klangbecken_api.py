@@ -22,6 +22,7 @@ import mutagen.mp3
 import mutagen.oggvorbis
 
 from six import text_type
+from six.moves import input
 
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
@@ -596,7 +597,7 @@ def check_and_crate_data_dir(data_dir, create=True):
 ################
 # Entry points #
 ################
-def import_files():
+def import_files(non_interactive=False):
     """
     Entry point for import script
     """
