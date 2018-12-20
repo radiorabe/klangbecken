@@ -1190,6 +1190,52 @@ class ImporterTestCase(unittest.TestCase):
         finally:
             sys.argv = argv
 
+    @mock.patch('klangbecken_api.input', return_value='y')
+    def testImportInteractiveYes(self, input):
+        from klangbecken_api import import_files
+
+        audio_path = os.path.join(self.current_path, 'audio')
+        audio1_path = os.path.join(audio_path, 'silence.mp3')
+
+        argv, sys.argv = sys.argv, ['', self.tempdir, 'music']
+        try:
+
+            sys.argv = ['', self.tempdir, 'music', audio1_path]
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err, ret):
+                    self.assertIn('Successfully analyzed 1 of 1 files.', out)
+                    self.assertIn('Successfully imported 1 of 1 files.', out)
+                    music_dir = os.path.join(self.tempdir, 'music')
+                    file_count = len(os.listdir(music_dir))
+                    self.assertEqual(file_count, 1)
+            self.assertEqual(cm.exception.code, 0)
+
+        finally:
+            sys.argv = argv
+
+    @mock.patch('klangbecken_api.input', return_value='n')
+    def testImportInteractiveNo(self, input):
+        from klangbecken_api import import_files
+
+        audio_path = os.path.join(self.current_path, 'audio')
+        audio1_path = os.path.join(audio_path, 'silence.mp3')
+
+        argv, sys.argv = sys.argv, ['', self.tempdir, 'music']
+        try:
+
+            sys.argv = ['', self.tempdir, 'music', audio1_path]
+            with self.assertRaises(SystemExit) as cm:
+                with capture(import_files) as (out, err, ret):
+                    self.assertIn('Successfully analyzed 1 of 1 files.', out)
+                    self.assertIn('Successfully imported 0 of 1 files.', out)
+                    music_dir = os.path.join(self.tempdir, 'music')
+                    file_count = len(os.listdir(music_dir))
+                    self.assertEqual(file_count, 0)
+            self.assertEqual(cm.exception.code, 1)
+
+        finally:
+            sys.argv = argv
+
 
 class FsckTestCase(unittest.TestCase):
     def setUp(self):
