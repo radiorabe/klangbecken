@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 
 import collections
+import contextlib
 import datetime
 import fcntl
 import functools
@@ -12,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import uuid
 
@@ -244,34 +246,43 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
             raise ValueError('Invalid action class')
 
 
+_index_lock = threading.Lock()
+
+
+@contextlib.contextmanager
+def open_index(data_dir):
+    with _index_lock:   # Prevent more than one thread accessing the file
+        with open(os.path.join(data_dir, 'index.json'), 'r+') as f:
+            # Prevent more than one process accessing the file (voluntarily)
+            fcntl.lockf(f, fcntl.LOCK_EX)
+            try:
+                yield f
+            finally:
+                fcntl.lockf(f, fcntl.LOCK_UN)
+
+
 def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
-    indexJson = os.path.join(data_dir, 'index.json')
-    with open(indexJson, 'r+') as f:
-        fcntl.lockf(f, fcntl.LOCK_EX)
-        try:
-            data = json.load(f)
-            for change in changes:
-                if isinstance(change, FileAddition):
-                    if fileId in data:
-                        raise UnprocessableEntity('Duplicate file ID: '
-                                                  + fileId)
-                    data[fileId] = {}
-                elif isinstance(change, FileDeletion):
-                    if fileId not in data:
-                        raise NotFound()
-                    del data[fileId]
-                elif isinstance(change, MetadataChange):
-                    key, value = change
-                    if fileId not in data:
-                        raise NotFound()
-                    data[fileId][key] = value
-                else:
-                    raise ValueError('Change not recognized')
-            f.seek(0)
-            f.truncate()
-            json.dump(data, f, **json_opts)
-        finally:
-            fcntl.lockf(f, fcntl.LOCK_UN)
+    with open_index(data_dir) as f:
+        data = json.load(f)
+        for change in changes:
+            if isinstance(change, FileAddition):
+                if fileId in data:
+                    raise UnprocessableEntity('Duplicate file ID: ' + fileId)
+                data[fileId] = {}
+            elif isinstance(change, FileDeletion):
+                if fileId not in data:
+                    raise NotFound()
+                del data[fileId]
+            elif isinstance(change, MetadataChange):
+                key, value = change
+                if fileId not in data:
+                    raise NotFound()
+                data[fileId][key] = value
+            else:
+                raise ValueError('Change not recognized')
+        f.seek(0)
+        f.truncate()
+        json.dump(data, f, **json_opts)
 
 
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
