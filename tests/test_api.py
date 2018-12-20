@@ -1108,17 +1108,16 @@ class ImporterTestCase(unittest.TestCase):
         try:
             # Import nothing -> usage
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
+                with capture(import_files, True) as (out, err, ret):
                     self.assertIn('Usage', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
             # Import one file
             sys.argv.append(audio1_path)
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
-                    self.assertEqual(out.strip(),
-                                     'Imported 1 files. Errors: 0.')
-                self.assertEqual(cm.exception.code, 0)
+                with capture(import_files, True) as (out, err, ret):
+                    self.assertIn('Successfully imported 1 of 1 files.', out)
+            self.assertEqual(cm.exception.code, 0)
 
             files = [f for f in os.listdir(self.music_dir)
                      if os.path.isfile(os.path.join(self.music_dir, f))]
@@ -1134,10 +1133,9 @@ class ImporterTestCase(unittest.TestCase):
             # Import two file
             sys.argv.append(audio2_path)
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
-                    self.assertEqual(out.strip(),
-                                     'Imported 2 files. Errors: 0.')
-                self.assertEqual(cm.exception.code, 0)
+                with capture(import_files, True) as (out, err, ret):
+                    self.assertIn('Successfully imported 2 of 2 files.', out)
+            self.assertEqual(cm.exception.code, 0)
 
             files = [f for f in os.listdir(self.music_dir)  # pragma: no cover
                      if os.path.isfile(os.path.join(self.music_dir, f))]
@@ -1148,35 +1146,34 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing inexistent file
             sys.argv.append('inexistent')
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
-                    self.assertEqual(out.strip(),
-                                     'Imported 2 files. Errors: 1.')
+                with capture(import_files, True) as (out, err, ret):
+                    self.assertIn('Successfully imported 2 of 3 files.', out)
                     self.assertIn('WARNING', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
             # Try importing into inexistent playlist
             sys.argv = ['', self.tempdir, 'nonexistentplaylist', audio1_path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
+                with capture(import_files, True) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('ERROR', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
             # Try importing into inexistent data dir
             sys.argv = ['', 'nonexistentdatadir', 'music', audio2_path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
+                with capture(import_files, True) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('ERROR', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
             # Incomplete command
             sys.argv = ['', self.tempdir]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
+                with capture(import_files, True) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('Usage', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
             path = os.path.join(self.tempdir, 'file.wmv')
             with open(path, 'w'):
@@ -1185,11 +1182,10 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing unsupported file type
             sys.argv = ['', self.tempdir, 'music', path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files) as (out, err, ret):
-                    self.assertEqual(out.strip(),
-                                     'Imported 0 files. Errors: 1.')
+                with capture(import_files, True) as (out, err, ret):
+                    self.assertIn('Successfully imported 0 of 1 files.', out)
                     self.assertIn('WARNING', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
         finally:
             sys.argv = argv
@@ -1229,7 +1225,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1244,7 +1240,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1256,7 +1252,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('Usage', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
 
             sys.argv.append(self.tempdir)
 
@@ -1264,7 +1260,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertEqual(err.strip(), '')
-                self.assertEqual(cm.exception.code, 0)
+            self.assertEqual(cm.exception.code, 0)
         finally:
             sys.arv = argv
 
@@ -1286,7 +1282,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Id missmatch', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1309,7 +1305,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('cue_in larger than cue_out', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1332,7 +1328,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('cue_out larger than length', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1355,7 +1351,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('missing entries: cue_out', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1378,7 +1374,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('too many entries: whatever', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1393,7 +1389,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('file does not exist', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1412,7 +1408,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Tag value mismatch "artist"', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1431,7 +1427,7 @@ class FsckTestCase(unittest.TestCase):
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Playlist count mismatch', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1449,7 +1445,7 @@ class FsckTestCase(unittest.TestCase):
                     self.assertIn('ERROR', err)
                     self.assertIn('Dangling playlist entry', err)
                     self.assertIn('not_an_uuid', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -1466,6 +1462,6 @@ class FsckTestCase(unittest.TestCase):
                     self.assertIn('ERROR', err)
                     self.assertIn('Dangling files', err)
                     self.assertIn('not_an_uuid', err)
-                self.assertEqual(cm.exception.code, 1)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
