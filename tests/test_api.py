@@ -1104,14 +1104,14 @@ class ImporterTestCase(unittest.TestCase):
         try:
             # Import nothing -> usage
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertIn('Usage', err)
             self.assertEqual(cm.exception.code, 1)
 
             # Import one file
             sys.argv.append(audio1_path)
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertIn('Successfully imported 1 of 1 files.', out)
             self.assertEqual(cm.exception.code, 0)
 
@@ -1129,7 +1129,7 @@ class ImporterTestCase(unittest.TestCase):
             # Import two file
             sys.argv.append(audio2_path)
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertIn('Successfully imported 2 of 2 files.', out)
             self.assertEqual(cm.exception.code, 0)
 
@@ -1142,7 +1142,7 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing inexistent file
             sys.argv.append('inexistent')
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertIn('Successfully imported 2 of 3 files.', out)
                     self.assertIn('WARNING', err)
             self.assertEqual(cm.exception.code, 1)
@@ -1150,7 +1150,7 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing into inexistent playlist
             sys.argv = ['', self.tempdir, 'nonexistentplaylist', audio1_path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('ERROR', err)
             self.assertEqual(cm.exception.code, 1)
@@ -1158,7 +1158,7 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing into inexistent data dir
             sys.argv = ['', 'nonexistentdatadir', 'music', audio2_path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('ERROR', err)
             self.assertEqual(cm.exception.code, 1)
@@ -1166,7 +1166,7 @@ class ImporterTestCase(unittest.TestCase):
             # Incomplete command
             sys.argv = ['', self.tempdir]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertEqual(out.strip(), '')
                     self.assertIn('Usage', err)
             self.assertEqual(cm.exception.code, 1)
@@ -1178,7 +1178,7 @@ class ImporterTestCase(unittest.TestCase):
             # Try importing unsupported file type
             sys.argv = ['', self.tempdir, 'music', path]
             with self.assertRaises(SystemExit) as cm:
-                with capture(import_files, True) as (out, err, ret):
+                with capture(import_files, False) as (out, err, ret):
                     self.assertIn('Successfully imported 0 of 1 files.', out)
                     self.assertIn('WARNING', err)
             self.assertEqual(cm.exception.code, 1)
@@ -1251,7 +1251,7 @@ class FsckTestCase(unittest.TestCase):
                     [os.path.join(self.current_path, 'audio', 'padded' + ext)
                      for ext in '.ogg .flac -stereo.mp3'.split()]
                 try:
-                    with capture(import_files, True) as (out, err, ret):
+                    with capture(import_files, False) as (out, err, ret):
                         pass
                 except SystemExit as e:
                     if e.code != 0:

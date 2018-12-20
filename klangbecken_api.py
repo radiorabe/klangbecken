@@ -33,6 +33,9 @@ from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
 
+# TODO: prevent duplicate entries when importing
+
+
 PLAYLISTS = ('music', 'jingles')
 
 SUPPORTED_FILE_TYPES = {
@@ -608,7 +611,7 @@ def check_and_crate_data_dir(data_dir, create=True):
 ################
 # Entry points #
 ################
-def import_files(non_interactive=False):
+def import_files(interactive=True):
     """
     Entry point for import script
     """
@@ -659,8 +662,8 @@ def import_files(non_interactive=False):
     print('Successfully analyzed {} of {} files.'.format(len(analysis_data),
                                                          len(files)))
     count = 0
-    if non_interactive or \
-            input('Start import now? [y/N] ').strip().lower() == 'y':
+    question = 'Start import now? [y/N] '
+    if not interactive or input(question).strip().lower() == 'y':
         for filename, fileId, ext, actions in analysis_data:
             try:
                 for processor in DEFAULT_PROCESSORS:
