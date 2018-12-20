@@ -1240,7 +1240,7 @@ class ImporterTestCase(unittest.TestCase):
 class FsckTestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import PLAYLISTS
-        from klangbecken_api import check_and_crate_data_dir, _import_one_file
+        from klangbecken_api import check_and_crate_data_dir, import_files
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
         self.music_dir = os.path.join(self.tempdir, 'music')
@@ -1248,13 +1248,21 @@ class FsckTestCase(unittest.TestCase):
         check_and_crate_data_dir(self.tempdir)
 
         # Correctly import a couple of files
-        for ext in '.ogg .flac -stereo.mp3'.split():
+        argv = sys.argv
+        try:
             for playlist in PLAYLISTS:
-                _import_one_file(
-                    self.tempdir,
-                    playlist,
-                    os.path.join(self.current_path, 'audio', 'padded' + ext)
-                )
+                sys.argv = ['', self.tempdir, playlist] + \
+                    [os.path.join(self.current_path, 'audio', 'padded' + ext)
+                     for ext in '.ogg .flac -stereo.mp3'.split()]
+                try:
+                    with capture(import_files, True) as (out, err, ret):
+                        pass
+                except SystemExit as e:
+                    if e.code != 0:
+                        print(err, file=sys.stderr)
+                        raise(RuntimeError('Command execution failed'))
+        finally:
+            sys.argv = argv
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)

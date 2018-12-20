@@ -632,7 +632,7 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
             # _import_one_file(data_dir, playlist, filename)
             # count += 1
             analysis_data.append(
-                analyze_one_file(data_dir, playlist, filename)
+                _analyze_one_file(data_dir, playlist, filename)
             )
         except UnprocessableEntity as e:
             print('WARNING: File cannot be analyzed: ' + filename,
@@ -666,7 +666,7 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
     sys.exit(1 if count < len(files) else 0)
 
 
-def analyze_one_file(data_dir, playlist, filename):
+def _analyze_one_file(data_dir, playlist, filename):
     if not os.path.exists(filename):
         raise UnprocessableEntity('File not found: ' + filename)
 
@@ -689,27 +689,10 @@ def analyze_one_file(data_dir, playlist, filename):
     return (filename, fileId, ext, actions)
 
 
-def _import_one_file(data_dir, playlist, filename):
-    if not os.path.exists(filename):
-        raise UnprocessableEntity('File not found: ' + filename)
 
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in SUPPORTED_FILE_TYPES.keys():
-        raise UnprocessableEntity('File extension not supported: ' + ext)
 
-    with open(filename, 'rb') as importFile:
-        fileId = text_type(uuid.uuid1())
-        actions = []
-        for analyzer in DEFAULT_UPLOAD_ANALYZERS:
-            actions += analyzer(playlist, fileId, ext, importFile)
 
-        actions.append(MetadataChange('original_filename',
-                                      os.path.basename(filename)))
-        actions.append(MetadataChange('import_timestamp',
-                                      os.stat(filename).st_mtime))
 
-        for processor in DEFAULT_PROCESSORS:
-            processor(data_dir, playlist, fileId, ext, actions)
 
 
 def fsck():
