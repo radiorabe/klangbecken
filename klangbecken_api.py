@@ -603,8 +603,13 @@ def import_files(non_interactive=False):
     """
 
     try:
-        args = [text_type(arg, encoding=sys.stdin.encoding, errors='ignore')
-                for arg in sys.argv]
+        def _convert(x):
+            if isinstance(x, text_type):
+                return x
+            else:
+                return text_type(arg, sys.stdin.encoding, 'ignore')
+
+        args = [_convert(arg) for arg in sys.argv]
         data_dir = args[1]
         playlist = args[2]
         files = args[3:]
