@@ -612,6 +612,8 @@ def import_files(non_interactive=False):
     """
     Entry point for import script
     """
+    def err(*args):
+        print(*args, file=sys.stderr)
 
     try:
         def _convert(x):
@@ -626,20 +628,17 @@ def import_files(non_interactive=False):
         files = args[3:]
         files[0]
     except IndexError:
-        print("""Usage:
-python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
+        err('Usage:\npython import_files DATA_DIR PLAYLIST FILE...')
         sys.exit(1)
 
     try:
         check_and_crate_data_dir(data_dir, False)
     except Exception as e:
-        print('ERROR: Problem with data directory.', file=sys.stderr)
-        print('ERROR: ' + text_type(e), file=sys.stderr)
+        err('ERROR: Problem with data directory.', text_type(e))
         sys.exit(1)
 
     if playlist not in PLAYLISTS:
-        print('ERROR: Invalid playlist name: {}'.format(playlist),
-              file=sys.stderr)
+        err('ERROR: Invalid playlist name: {}'.format(playlist))
         sys.exit(1)
 
     analysis_data = []
@@ -649,15 +648,13 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
                 _analyze_one_file(data_dir, playlist, filename)
             )
         except UnprocessableEntity as e:
-            print('WARNING: File cannot be analyzed: ' + filename,
-                  file=sys.stderr)
-            print('WARNING: ' + e.description if hasattr(e, 'description')
-                  else text_type(e), file=sys.stderr)
+            err('WARNING: File cannot be analyzed: ' + filename)
+            err('WARNING: ' + e.description if hasattr(e, 'description')
+                else text_type(e))
         except Exception as e:  # pragma: no cover
-            print('WARNING: Unknown error when analyzing file: ' + filename,
-                  file=sys.stderr)
-            print('WARNING: ' + e.description if hasattr(e, 'description')
-                  else text_type(e), file=sys.stderr)
+            err('WARNING: Unknown error when analyzing file: ' + filename)
+            err('WARNING: ' + e.description if hasattr(e, 'description')
+                else text_type(e))
 
     print('Successfully analyzed {} of {} files.'.format(len(analysis_data),
                                                          len(files)))
@@ -670,11 +667,9 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
                     processor(data_dir, playlist, fileId, ext, actions)
                 count += 1
             except Exception as e:  # pragma: no cover
-                print('WARNING: File cannot be imported: ' + filename,
-                      file=sys.stderr)
-                print('WARNING: ' + e.description
-                      if hasattr(e, 'description')
-                      else text_type(e), file=sys.stderr)
+                err('WARNING: File cannot be imported: ' + filename,
+                    e.description if hasattr(e, 'description')
+                    else text_type(e))
 
     print('Successfully imported {} of {} files.'.format(count, len(files)))
     sys.exit(1 if count < len(files) else 0)
@@ -707,27 +702,28 @@ def fsck():
     """
     Entry point for fsck script
     """
+    def err(*args):
+        print(*args, file=sys.stderr)
+        err.count += 1
+    err.count = 0
+
     try:
         data_dir = sys.argv[1]
     except IndexError:
-        print("""Usage:\npython fsck.py DATA_DIR""", file=sys.stderr)
+        err('Usage:\npython fsck.py DATA_DIR')
         sys.exit(1)
 
     try:
         check_and_crate_data_dir(data_dir, False)
     except Exception as e:
-        print('ERROR: Problem with data directory.', file=sys.stderr)
-        print('ERROR: ' + text_type(e), file=sys.stderr)
+        err('ERROR: Problem with data directory.', text_type(e))
         sys.exit(1)
-
-    errors = 0
 
     with open_index(data_dir) as f:
         try:
             data = json.load(f)
         except ValueError as e:
-            print('ERROR: Cannot read index.json', text_type(e),
-                  file=sys.stderr)
+            err('ERROR: Cannot read index.json', text_type(e))
             sys.exit(1)  # abort
 
         files = set()
@@ -742,46 +738,33 @@ def fsck():
             keys = set(entries.keys())
             missing = set(ALLOWED_METADATA.keys()) - keys
             if missing:
-                print('ERROR: missing entries:', ', '.join(missing),
-                      file=sys.stderr)
-                errors += 1
+                err('ERROR: missing entries:', ', '.join(missing))
                 continue   # cannot continue with missing entries
             too_many = keys - set(ALLOWED_METADATA.keys())
             if too_many:
-                print('ERROR: too many entries:', ', '.join(too_many),
-                      file=sys.stderr)
-                errors += 1
+                err('ERROR: too many entries:', ', '.join(too_many))
             try:
                 check_processor(data_dir, entries['playlist'],
                                 entries['id'], entries['ext'],
                                 (MetadataChange(key, val)
                                     for key, val in entries.items()))
             except UnprocessableEntity as e:
-                print('ERROR:', text_type(e))
-                errors += 1
+                err('ERROR:', text_type(e))
             if id != entries['id']:
-                print('ERROR: Id missmatch', id, entries['id'],
-                      file=sys.stderr)
-                errors += 1
+                err('ERROR: Id missmatch', id, entries['id'])
             if entries['cue_in'] > entries['cue_out']:
-                print('ERROR: cue_in larger than cue_out',
-                      text_type(entries['cue_in']),
-                      text_type(entries['cue_out']),
-                      file=sys.stderr)
-                errors += 1
+                err('ERROR: cue_in larger than cue_out',
+                    text_type(entries['cue_in']),
+                    text_type(entries['cue_out']))
             if entries['cue_out'] > entries['length']:
-                print('ERROR: cue_out larger than length',
-                      text_type(entries['cue_out']),
-                      text_type(entries['length']),
-                      file=sys.stderr)
-                errors += 1
+                err('ERROR: cue_out larger than length',
+                    text_type(entries['cue_out']),
+                    text_type(entries['length']))
             file_path = os.path.join(entries['playlist'],
                                      entries['id'] + entries['ext'])
             file_full_path = os.path.join(data_dir, file_path)
             if not os.path.isfile(file_full_path):
-                print('ERROR: file does not exist:', file_full_path,
-                      file=sys.stderr)
-                errors += 1
+                err('ERROR: file does not exist:', file_full_path)
             else:
                 files.remove(file_path)
                 FileType = SUPPORTED_FILE_TYPES[entries['ext']]
@@ -789,30 +772,22 @@ def fsck():
                 for key in TAG_KEYS:
                     tag_value = mutagenfile.get(key, [''])[0]
                     if text_type(entries[key]) != tag_value:
-                        print('ERROR: Tag value mismatch "{}": {} != {}'
-                              .format(key, entries[key], tag_value),
-                              file=sys.stderr)
-                        errors += 1
+                        err('ERROR: Tag value mismatch "{}": {} != {}'
+                            .format(key, entries[key], tag_value))
 
                 count = playlist_counts[file_path]
                 del playlist_counts[file_path]
                 if count != entries['count']:
-                    print('ERROR: Playlist count mismatch: {} != {}'
-                          .format(entries['count'], count),
-                          file=sys.stderr)
-                    errors += 1
+                    err('ERROR: Playlist count mismatch: {} != {}'
+                        .format(entries['count'], count))
 
         if files:
-            print('ERROR: Dangling files:', ', '.join(files),
-                  file=sys.stderr)
-            errors += 1
+            err('ERROR: Dangling files:', ', '.join(files))
         if playlist_counts:
-            print('ERROR: Dangling playlist entry:',
-                  ', '.join(playlist_counts.keys()),
-                  file=sys.stderr)
-            errors += 1
+            err('ERROR: Dangling playlist entry:',
+                ', '.join(playlist_counts.keys()))
 
-    sys.exit(1 if errors else 0)
+    sys.exit(1 if err.count else 0)
 
 
 if __name__ == '__main__':
