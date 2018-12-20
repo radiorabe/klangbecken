@@ -33,9 +33,6 @@ from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
 
-# TODO: prevent duplicate entries when importing
-
-
 PLAYLISTS = ('music', 'jingles')
 
 SUPPORTED_FILE_TYPES = {
@@ -623,7 +620,7 @@ def import_files(interactive=True):
             if isinstance(x, text_type):
                 return x
             else:
-                return text_type(arg, sys.stdin.encoding, 'ignore')
+                return text_type(x, sys.stdin.encoding, 'ignore')
 
         args = [_convert(arg) for arg in sys.argv]
         data_dir = args[1]
