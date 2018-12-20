@@ -781,8 +781,11 @@ class ProcessorsTestCase(unittest.TestCase):
                             in changes.items()]
 
         # Valid files
-        for ext in '.mp3 -stripped.mp3 .ogg .flac'.split():
-            path = os.path.join(self.tempdir, 'music', 'silence' + ext)
+        for filename in ['silence.mp3', 'silence-stripped.mp3', 'silence.ogg',
+                         'silence.flac']:
+            prefix, ext = filename.split('.')
+
+            path = os.path.join(self.tempdir, 'music', filename)
             mutagenfile = File(path, easy=True)
 
             # Make sure tags are not already the same before updating
@@ -790,7 +793,7 @@ class ProcessorsTestCase(unittest.TestCase):
                 self.assertNotEqual(val, mutagenfile.get(key, [''])[0])
 
             # Update and verify tags
-            file_tag_processor(self.tempdir, 'music', 'silence', ext,
+            file_tag_processor(self.tempdir, 'music', prefix, '.' + ext,
                                metadata_changes)
             mutagenfile = File(path, easy=True)
             for key, val in changes.items():
