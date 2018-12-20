@@ -30,8 +30,10 @@ def capture(command, *args, **kwargs):
     try:
         try:
             ret = command(*args, **kwargs)
-        except BaseException as e:    # Catch exception, and let's first
-            commandException = e      # capture all the output
+        except BaseException:
+            # Catch any exception, store it for now, and first capture
+            # all the output, before re-raising the exception.
+            commandException = sys.exc_info()
         sys.stdout.seek(0)
         sys.stderr.seek(0)
         out_data = sys.stdout.read()
@@ -40,8 +42,10 @@ def capture(command, *args, **kwargs):
         sys.stderr = err
         try:
             yield out_data, err_data, ret
-        except BaseException as e:     # Catch every exception thrown from
-            contextException = e       # within the context manager
+        except BaseException:
+            # Catch any exception thrown from within the context manager
+            # (often unittest assertions), and re-raise it later unmodified.
+            contextException = sys.exc_info()
     finally:
         # Clean up
         sys.stdout = out
@@ -51,9 +55,9 @@ def capture(command, *args, **kwargs):
         # in case of a deliberately failing command.
         # Thus, prioritize contextException over commandException
         if contextException:
-            raise contextException
+            six.reraise(*contextException)
         elif commandException:
-            raise commandException
+            six.reraise(*commandException)
 
 
 class WSGIAppTest(unittest.TestCase):
