@@ -645,8 +645,6 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
     analysis_data = []
     for filename in files:
         try:
-            # _import_one_file(data_dir, playlist, filename)
-            # count += 1
             analysis_data.append(
                 _analyze_one_file(data_dir, playlist, filename)
             )
@@ -655,7 +653,7 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
                   file=sys.stderr)
             print('WARNING: ' + e.description if hasattr(e, 'description')
                   else text_type(e), file=sys.stderr)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             print('WARNING: Unknown error when analyzing file: ' + filename,
                   file=sys.stderr)
             print('WARNING: ' + e.description if hasattr(e, 'description')
@@ -671,7 +669,7 @@ python import_files DATA_DIR PLAYLIST FILE...""", file=sys.stderr)
                 for processor in DEFAULT_PROCESSORS:
                     processor(data_dir, playlist, fileId, ext, actions)
                 count += 1
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 print('WARNING: File cannot be imported: ' + filename,
                       file=sys.stderr)
                 print('WARNING: ' + e.description
@@ -703,12 +701,6 @@ def _analyze_one_file(data_dir, playlist, filename):
 
         actions[0] = FileAddition(filename)
     return (filename, fileId, ext, actions)
-
-
-
-
-
-
 
 
 def fsck():

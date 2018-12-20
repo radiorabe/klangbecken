@@ -47,10 +47,6 @@ def capture(command, *args, **kwargs):
             # (often unittest assertions), and re-raise it later unmodified.
             contextException = sys.exc_info()
     finally:
-        # Clean up
-        sys.stdout = out
-        sys.stderr = err
-
         # Do not ignore exceptions from within the context manager,
         # in case of a deliberately failing command.
         # Thus, prioritize contextException over commandException
