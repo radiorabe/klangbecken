@@ -1,3 +1,7 @@
+# ================================================= #
+# SETTINGS                                          #
+# ================================================= #
+
 set("log.file", true)
 set("log.file.path","<syslogdir>/<script>.log")
 set("log.stdout", false)
@@ -10,6 +14,7 @@ set("log.level", 3)
 # set("log.unix_timestamps",false)
 
 set("server.socket", true)
+#set("server.socket.path", "/tmp/klangbecken.sock")
 #set("server.socket.path","<sysrundir>/<script>.sock")
 #set("server.socket.permissions",384)
 #set("server.timeout",30.)
@@ -21,28 +26,37 @@ set("server.socket", true)
 #set("harbor.max_connections",2)
 #set("harbor.reverse_dns",true)
 
+# Get the Klangbecken data directory
 data_dir = getenv("KLANGBECKEN_DATA")
 if not is_directory(data_dir) then
     log(level=2, "ERROR: Cannot find data directory: " ^ data_dir)
     shutdown()
 end
 
-jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(data_dir, "jingles.m3u"))
+
+# ================================================= #
+# PLAYLISTS                                         #
+# ================================================= #
+
+# Music playlist
 music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(data_dir, "music.m3u"))
 
-music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
-music = crossfade(start_next=.5, fade_out=1., fade_in=0., music)
+# Jingles playlist
+jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(data_dir, "jingles.m3u"))
+# Convert mono jingles to stereo
+jingles = audio_to_stereo(jingles)
+
+
+# ================================================= #
+# INSERT JINGLE EVERY 15 MINUTES                    #
+# ================================================= #
 
 insert_jingle = ref false
-restart = ref true
-
-restart_delay = interactive.float("restart.delay", 1.0)
-restart_fade = interactive.float("restart.fade", 3.0)
 
 def jingle_timeout() =
   jingle_times = [5m0s, 20m0s, 35m0s, 50m0s]
   if list.fold(fun (a,b) -> a or b, false, jingle_times) then
-    print('Jingle up next')
+    log('Jingle up next')
     insert_jingle := true
   end
   1.0
@@ -63,6 +77,13 @@ radio = switch(id="radio", [
   ({true}, music),
 ])
 
+
+# ================================================= #
+# REGISTER EXTERNAL RESTART COMMAND                 #
+# ================================================= #
+
+restart = ref true
+
 def restart_fun(_) =
   log("Restarting Klangbecken")
   restart := true
@@ -70,12 +91,15 @@ def restart_fun(_) =
   "Klangbecken restarted"
 end
 
-
 server.register(namespace='klangbecken',
                 description="Restart Klangbecken with a fade in",
                 usage="restart",
                 "restart", restart_fun)
 
+# Have restart delay and fade dynamically reconfigurable
+# for debugging purpose
+restart_delay = interactive.float("restart.delay", 1.0)
+restart_fade = interactive.float("restart.fade", 1.0)
 
 def trans(old, new) =
   if !restart and source.id(new) == "radio" then
@@ -91,23 +115,34 @@ radio = fallback(track_sensitive=false,
                  transitions=[trans],
                  [radio, blank(id="blank")])
 
+
+# ================================================= #
+# LOGGING                                           #
+# ================================================= #
+
 def log_md_func(m) =
-  print("Metadata: ")
-  print(m["replaygain_track_gain"])
+  log("Metadata: ")
+  list.iter(fun (el) -> log("   #{fst(el)}: #{snd(el)}"), m)
 end
+radio = on_track(log_md_func, radio)
 
-#radio = on_metadata(log_md_func, radio)
 
+# ================================================= #
+# AUDIO PROCESSING                                  #
+# ================================================= #
+
+# Cut silence at beginning and end
+radio = cue_cut(radio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
+# Apply calculated replay gain
 radio = amplify(1., override="replaygain_track_gain", radio)
-
+# Moderate cross-fading
+radio = crossfade(start_next=.5, fade_out=1., fade_in=0., radio)
+# Create some additional head room
 radio = amplify(0.5, radio)
 
-output.alsa(device="default:CARD=Axia", radio)
 
-#output.icecast(
-#  %mp3(bitrate=128),
-#  mount="/rabe-128.mp3",
-#  description="Radio Bern RaBe 95.6",
-#  url="http://www.rabe.ch/",
-#  host="localhost", port=8000, password="hackme",
-#  radio)
+# ================================================= #
+# OUTPUT                                            #
+# ================================================= #
+
+output.alsa(device="default:CARD=Axia", radio)
