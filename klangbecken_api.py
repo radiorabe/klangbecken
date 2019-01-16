@@ -146,7 +146,8 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     try:
         raw_output = subprocess.check_output(command, stdin=file_,
                                              stderr=subprocess.STDOUT)
-        output = text_type(raw_output, sys.stdin.encoding, errors='ignore')
+        # Non-ASCII characters can safely be ignored
+        output = text_type(raw_output, 'ascii', errors='ignore')
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
