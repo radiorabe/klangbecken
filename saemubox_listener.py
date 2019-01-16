@@ -62,8 +62,9 @@ def main():
                         else:
                             print("WARNING: received invalid data: %s" % data)
                 if output is None:
-                    print("ERROR: could not read current status.")
-                    output = 0
+                    print("ERROR: could not read current status. "
+                          "Reconnecting ...")
+                    raise socket.error()
 
                 new_status = int(output)
                 if status != new_status:
