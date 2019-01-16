@@ -469,7 +469,7 @@ class KlangbeckenAPI:
             uploadFile = request.files['file']
 
             ext = os.path.splitext(uploadFile.filename)[1].lower()
-            fileId = text_type(uuid.uuid1())   # Generate new file id
+            fileId = text_type(uuid.uuid4())   # Generate new file id
 
             actions = []
             for analyzer in self.upload_analyzers:
@@ -726,7 +726,7 @@ def _analyze_one_file(data_dir, playlist, filename):
         raise UnprocessableEntity('File extension not supported: ' + ext)
 
     with open(filename, 'rb') as importFile:
-        fileId = text_type(uuid.uuid1())
+        fileId = text_type(uuid.uuid4())
         actions = []
         for analyzer in DEFAULT_UPLOAD_ANALYZERS:
             actions += analyzer(playlist, fileId, ext, importFile)

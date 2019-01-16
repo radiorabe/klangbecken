@@ -114,15 +114,15 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         resp = self.client.put('/jingles/something.mp3')
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.put('/music/' + str(uuid.uuid1()))
+        resp = self.client.put('/music/' + str(uuid.uuid4()))
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.put('/music/' + str(uuid.uuid1()) + '.mp3')
+        resp = self.client.put('/music/' + str(uuid.uuid4()) + '.mp3')
         self.assertEqual(resp.status_code, 422)
-        resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.ogg')
+        resp = self.client.put('/jingles/' + str(uuid.uuid4()) + '.ogg')
         self.assertEqual(resp.status_code, 422)
-        resp = self.client.put('/music/' + str(uuid.uuid1()) + '.flac')
+        resp = self.client.put('/music/' + str(uuid.uuid4()) + '.flac')
         self.assertEqual(resp.status_code, 422)
-        resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.ttt')
+        resp = self.client.put('/jingles/' + str(uuid.uuid4()) + '.ttt')
         self.assertEqual(resp.status_code, 404)
         resp = self.client.delete('/music/')
         self.assertEqual(resp.status_code, 405)
@@ -130,15 +130,15 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         resp = self.client.delete('/jingles/something.mp3')
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.delete('/music/' + str(uuid.uuid1()))
+        resp = self.client.delete('/music/' + str(uuid.uuid4()))
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.delete('/jingles/' + str(uuid.uuid1()) + '.mp3')
+        resp = self.client.delete('/jingles/' + str(uuid.uuid4()) + '.mp3')
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ogg')
+        resp = self.client.delete('/music/' + str(uuid.uuid4()) + '.ogg')
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete('/jingles/' + str(uuid.uuid1()) + '.flac')
+        resp = self.client.delete('/jingles/' + str(uuid.uuid4()) + '.flac')
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ttt')
+        resp = self.client.delete('/music/' + str(uuid.uuid4()) + '.ttt')
         self.assertEqual(resp.status_code, 404)
 
     def testUpload(self):
@@ -197,7 +197,7 @@ class APITestCase(unittest.TestCase):
 
     def testUpdate(self):
         # Update count correctly
-        fileId = str(uuid.uuid1())
+        fileId = str(uuid.uuid4())
         resp = self.client.put(
             '/music/' + fileId + '.mp3',
             data=json.dumps({'count': 4}),
@@ -253,7 +253,7 @@ class APITestCase(unittest.TestCase):
 
     def testDelete(self):
         from klangbecken_api import FileDeletion
-        fileId = str(uuid.uuid1())
+        fileId = str(uuid.uuid4())
         resp = self.client.delete('/music/' + fileId + '.mp3',)
         self.assertEqual(resp.status_code, 200)
         self.update_analyzer.assert_not_called()
@@ -283,9 +283,9 @@ class AuthTestCase(unittest.TestCase):
     def testFailingAuth(self):
         resp = self.client.post('/music/')
         self.assertEqual(resp.status_code, 401)
-        resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.mp3')
+        resp = self.client.put('/jingles/' + str(uuid.uuid4()) + '.mp3')
         self.assertEqual(resp.status_code, 401)
-        resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ogg')
+        resp = self.client.delete('/music/' + str(uuid.uuid4()) + '.ogg')
         self.assertEqual(resp.status_code, 401)
         resp = self.client.post('/logout/')
         self.assertEqual(resp.status_code, 401)
@@ -343,10 +343,10 @@ class AuthTestCase(unittest.TestCase):
                                 data={'file': (io.BytesIO(b'xyz'),
                                                'test.mp3')})
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.put('/jingles/' + str(uuid.uuid1()) + '.mp3',
+        resp = self.client.put('/jingles/' + str(uuid.uuid4()) + '.mp3',
                                data=json.dumps({}))
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete('/music/' + str(uuid.uuid1()) + '.ogg')
+        resp = self.client.delete('/music/' + str(uuid.uuid4()) + '.ogg')
         self.assertEqual(resp.status_code, 200)
         resp = self.client.post('/logout/')
         self.assertEqual(resp.status_code, 200)
