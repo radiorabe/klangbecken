@@ -332,25 +332,43 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
         mutagenfile.save()
 
 
+_playlist_locks = {playlist: threading.Lock() for playlist in PLAYLISTS}
+
+
+@contextlib.contextmanager
+def open_playlist(data_dir, playlist):
+    # Prevent more than one thread accessing the file
+    with _playlist_locks[playlist]:
+        with open(os.path.join(data_dir, playlist + '.m3u'), 'r+') as f:
+            # Prevent more than one process accessing the file (voluntarily)
+            fcntl.lockf(f, fcntl.LOCK_EX)
+            try:
+                yield f
+            finally:
+                fcntl.lockf(f, fcntl.LOCK_UN)
+
+
 def playlist_processor(data_dir, playlist, fileId, ext, changes):
-    playlist_path = os.path.join(data_dir, playlist + '.m3u')
     for change in changes:
         if isinstance(change, FileDeletion):
-            with open(playlist_path) as f:
+            with open_playlist(data_dir, playlist) as f:
                 lines = (s.strip() for s in f.readlines() if s != '\n')
-            with open(playlist_path, 'w') as f:
+                f.seek(0)
+                f.truncate()
                 for line in lines:
                     if not line.endswith(os.path.join(playlist, fileId + ext)):
                         print(line, file=f)
         elif isinstance(change, MetadataChange) and change.key == 'count':
-            with open(playlist_path) as f:
+            with open_playlist(data_dir, playlist) as f:
                 lines = (s.strip() for s in f.readlines() if s != '\n')
-            lines = [s for s in lines if s and not s.endswith(fileId + ext)]
+                lines = [s for s in lines
+                         if s and not s.endswith(fileId + ext)]
 
-            count = change.value
-            lines.extend([os.path.join(playlist, fileId + ext)] * count)
-            random.shuffle(lines)  # TODO: custom shuffling?
-            with open(playlist_path, 'w') as f:
+                count = change.value
+                lines.extend([os.path.join(playlist, fileId + ext)] * count)
+                random.shuffle(lines)  # TODO: custom shuffling?
+                f.seek(0)
+                f.truncate()
                 for line in lines:
                     print(line, file=f)
 
