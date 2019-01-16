@@ -96,7 +96,7 @@
       <div class="col-md-6 col-sm-4 col-xs-12 well text-center dropzone" style="margin-bottom:20px;" v-if="!progress">
         <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drag and drop files here
       </div>
-      <div class="col-md-2 col-sm-3 col-xs-12 text-center well-button" v-if="!progress">
+      <div class="col-md-2 col-sm-3 col-xs-12 text-center well-button" :class="!!progress ? 'hidden' : ''">
         <input id="fileupload-music" style="margin: auto 0 auto 0" type="file" name="file" accept=".mp3,.oga,.ogg,.flac,audio/mpeg,audio/mp3,audio/ogg,audio/vorbis,application/ogg,audio/flac" multiple>
         <label  class="btn btn-primary"  for="fileupload-music">Select files...</label>
       </div>

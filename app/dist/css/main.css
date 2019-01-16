@@ -115,6 +115,9 @@ table .btn-delete:hover{
     opacity: 0.4;
 }
 
+.hidden {
+    display: none;
+}
 
 
 
