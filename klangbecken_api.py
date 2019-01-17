@@ -83,7 +83,8 @@ ALLOWED_METADATA = {
 }
 
 UPDATE_KEYS = 'artist title album count'.split()
-TAG_KEYS = 'artist title album cue_in cue_out track_gain'.split()
+TAG_KEYS = ('artist title album cue_in cue_out track_gain '
+            'original_filename import_timestamp count').split()
 
 ####################
 # Action-"Classes" #
@@ -298,6 +299,11 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_in', desc='CUE_IN')
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='cue_out', desc='CUE_OUT')
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='track_gain',
                                         desc='REPLAYGAIN_TRACK_GAIN')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='original_filename',
+                                        desc='ORIGINAL_FILENAME')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='import_timestamp',
+                                        desc='IMPORT_TIMESTAMP')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='count', desc='COUNT')
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
