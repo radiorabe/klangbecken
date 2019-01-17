@@ -426,7 +426,10 @@ class KlangbeckenAPI:
                 raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
-            response = e
+            response = JSONResponse({'code': e.code,
+                                     'name': e.name,
+                                     'description': e.description},
+                                    status=e.code)
         return response(environ, start_response)
 
     def on_login(self, request):
@@ -522,9 +525,9 @@ class JSONResponse(Response):
     """
     JSON response helper
     """
-    def __init__(self, data, **json_opts):
+    def __init__(self, data, status=200, **json_opts):
         super(JSONResponse, self).__init__(json.dumps(data, **json_opts),
-                                           mimetype='text/json')
+                                           status=status, mimetype='text/json')
 
 
 class JSONSerializer:
