@@ -270,23 +270,8 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
             raise ValueError('Invalid action class')
 
 
-_index_lock = threading.Lock()
-
-
-@contextlib.contextmanager
-def open_index(data_dir):
-    with _index_lock:   # Prevent more than one thread accessing the file
-        with open(os.path.join(data_dir, 'index.json'), 'r+') as f:
-            # Prevent more than one process accessing the file (voluntarily)
-            fcntl.lockf(f, fcntl.LOCK_EX)
-            try:
-                yield f
-            finally:
-                fcntl.lockf(f, fcntl.LOCK_UN)
-
-
 def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
-    with open_index(data_dir) as f:
+    with locked_open(os.path.join(data_dir, 'index.json')) as f:
         data = json.load(f)
         for change in changes:
             if isinstance(change, FileAddition):
@@ -332,26 +317,11 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
         mutagenfile.save()
 
 
-_playlist_locks = {playlist: threading.Lock() for playlist in PLAYLISTS}
-
-
-@contextlib.contextmanager
-def open_playlist(data_dir, playlist):
-    # Prevent more than one thread accessing the file
-    with _playlist_locks[playlist]:
-        with open(os.path.join(data_dir, playlist + '.m3u'), 'r+') as f:
-            # Prevent more than one process accessing the file (voluntarily)
-            fcntl.lockf(f, fcntl.LOCK_EX)
-            try:
-                yield f
-            finally:
-                fcntl.lockf(f, fcntl.LOCK_UN)
-
-
 def playlist_processor(data_dir, playlist, fileId, ext, changes):
+    playlist_path = os.path.join(data_dir, playlist + '.m3u')
     for change in changes:
         if isinstance(change, FileDeletion):
-            with open_playlist(data_dir, playlist) as f:
+            with locked_open(playlist_path) as f:
                 lines = (s.strip() for s in f.readlines() if s != '\n')
                 f.seek(0)
                 f.truncate()
@@ -359,7 +329,7 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
                     if not line.endswith(os.path.join(playlist, fileId + ext)):
                         print(line, file=f)
         elif isinstance(change, MetadataChange) and change.key == 'count':
-            with open_playlist(data_dir, playlist) as f:
+            with locked_open(playlist_path) as f:
                 lines = (s.strip() for s in f.readlines() if s != '\n')
                 lines = [s for s in lines
                          if s and not s.endswith(fileId + ext)]
@@ -380,6 +350,25 @@ DEFAULT_PROCESSORS = [
     playlist_processor,   # update playlist file
     index_processor,      # commit file to index at last
 ]
+
+
+# Locking Helper
+
+_locks = {}
+
+
+@contextlib.contextmanager
+def locked_open(path):
+    if path not in _locks:
+        _locks[path] = threading.Lock()
+    with _locks[path]:   # Prevent more than one thread accessing the file
+        with open(path, 'r+') as f:
+            # Prevent more than one process accessing the file (voluntarily)
+            fcntl.lockf(f, fcntl.LOCK_EX)
+            try:
+                yield f
+            finally:
+                fcntl.lockf(f, fcntl.LOCK_UN)
 
 
 ############
@@ -764,7 +753,7 @@ def fsck():
         err('ERROR: Problem with data directory.', text_type(e))
         sys.exit(1)
 
-    with open_index(data_dir) as f:
+    with locked_open(os.path.join(data_dir, 'index.json')) as f:
         try:
             data = json.load(f)
         except ValueError as e:
