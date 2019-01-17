@@ -24,7 +24,6 @@
         <span class="icon-bar"></span>
       </button>
                 <a class="navbar-brand" v-link="{path: '/music'}">
-                    <!--span class="glyphicon glyphicon-music"></span-->
                     RaBe Klangbecken
                 </a>
             </div>
@@ -32,7 +31,6 @@
                 <ul class="nav navbar-nav">
                     <li v-link-active><a v-link="{path: '/music'}" data-toggle="tab">Music</a></li>
                     <li v-link-active><a v-link="{path: '/jingles'}" data-toggle="tab">Jingles</a></li>
-                    <!--li v-link-active><a v-link="{path: '/settings'}" data-toggle="tab">Settings</a></li-->
                 </ul>
                 <ul class="nav navbar-nav pull-right">
                     <li><button type="submit" class="btn navbar-btn btn-danger" name="logout" id="logout" @click="logout" value="Log Out">Log Out</button></li>
@@ -130,8 +128,6 @@
                   </td>
               </template>
 
-
-
               <template v-else>
               <td v-for="key in ['original_filename', 'artist', 'title', 'album']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
@@ -149,11 +145,6 @@
                         v-on:click="disableFile(file)" data-toggle="tooltip" >
                   <span class="glyphicon {{file.count === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
                 </button>
-
-                <!-- <button class="btn btn-xs btn-playNext" title="Play Next" data-toggle="tooltip">
-                  <span class="glyphicon glyphicon-open"></span>
-                </button> -->
-
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-trash"></span>
                 </button>
@@ -168,7 +159,7 @@
   <audio v-if="nowplaying" v-bind:src="nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
-    <template id="jingles-tmpl">
+<template id="jingles-tmpl">
   <div class="row">
       <div class="col-md-10 col-sm-8 col-xs-6 well text-center jingles-dropzone" style="margin-bottom:20px;" v-if="!progress">
         <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drag and drop files here
@@ -224,10 +215,6 @@
   <audio v-if="nowplaying" v-bind:src="nowplaying" v-on:ended="ended" autoplay></audio>
 </template>
 
-    <!--template id="settings-tmpl">
-  <h1>Settings</h1>
-</template-->
-
     <!-- Code -->
     <script src="static/jquery.js"></script>
     <script src="static/jquery.ui.widget.js"></script>
@@ -278,9 +265,9 @@
                     done: (e, data) => {
                         this.loadOneMusicFile(data.response().result);
                     },
-                    error: (e, data) => {
-                        // FIXME: show notification somewhere (wrong filetype)
-                        alert(e.responseJSON.description)
+                    error: (response, data) => {
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     },
                     progressall: (e, data) => {
                         var progress = parseInt(data.loaded / data.total * 100, 10);
@@ -321,7 +308,8 @@
                         }, []);
                         this.loading = false;
                     }, response => {
-                        console.log("Error")
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 tryLogin: function() {
@@ -331,7 +319,8 @@
                         if (response.status === 401) { // Unauthorized
                             $('#loginModal').modal('show');
                         } else {
-                            console.log("Error from Server:", response);
+                            console.error("Error from Server:", response);
+                            alert(response.responseJSON.description);
                         }
                     });
                 },
@@ -346,9 +335,9 @@
                         this.loadMusic();
                         this.password = '';
                     }, response => {
-                        //FIXME: show message to user
-                        console.log(response);
                         this.password = '';
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
 
@@ -381,7 +370,8 @@
                             console.log("Error while deleting: Could not find file object.")
                         }
                     }, response => {
-                        //FIXME: error handling
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 disableFile: function(obj) {
@@ -397,8 +387,8 @@
                         // s'all good man
                     }, response => {
                         obj.count = old_count;
-                        //FIXME: error handling
-                        console.error(response);
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 startEdit: function(file) {
@@ -425,11 +415,11 @@
                         // s'all good man
                     }, response => {
                         obj.count = old_count;
-                        //FIXME: error handling
-                        console.error(response);
                         file.artist = old_artist;
                         file.album = old_album;
                         file.title = old_title;
+                        console.error(response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 cancelChanges: function(file) {
@@ -471,9 +461,9 @@
                         done: (e, data) => {
                             this.loadOneJingleFile(data.response().result);
                         },
-                        error: (e, data) => {
-                            // FIXME: show notification somewhere (wrong filetype)
-                            alert(e.responseJSON.description)
+                        error: (response, data) => {
+                            console.error("Error from Server:", response);
+                            alert(response.responseJSON.description)
                         },
                         progressall: (e, data) => {
                             var progress = parseInt(data.loaded / data.total * 100, 10);
@@ -503,7 +493,8 @@
                         }, []);
                         this.loading = false;
                     }, response => {
-                        console.log('Error');
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 tryLogin: function() {
@@ -513,7 +504,8 @@
                         if (response.status === 401) { // Unauthorized
                             $('#loginModal').modal('show');
                         } else {
-                            console.log("Error from Server:", response);
+                            console.error("Error from Server:", response);
+                            alert(response.responseJSON.description);
                         }
                     });
                 },
@@ -534,15 +526,16 @@
                             console.log("Error while deleting: Could not find file object.")
                         }
                     }, response => {
-                        //FIXME: error handling
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 updateCount: function(obj) {
                     this.$http.put('/api/' + obj.playlist + '/' + obj.id + obj.ext, {
                         count: parseInt(obj.count)
                     }).then(response => {}, response => {
-                        //FIXME: error handling
-                        console.error(response);
+                        console.error("Error from Server:", response);
+                        alert(response.responseJSON.description);
                     });
                 },
                 play: function(path) {
@@ -557,10 +550,6 @@
                 },
             },
         });
-
-        // var Settings = Vue.extend({
-        //   template: '#settings-tmpl',
-        // });
 
         var App = Vue.extend({
             methods: {
@@ -589,9 +578,6 @@
             '/jingles': {
                 component: Jingles,
             },
-            // '/settings': {
-            //   component: Settings,
-            // },
         });
 
         router.redirect({
@@ -599,10 +585,6 @@
         });
 
         router.start(App, '#app');
-
-
-
-
 
     </script>
 </body>
