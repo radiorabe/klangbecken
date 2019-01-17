@@ -743,7 +743,11 @@ def fsck():
     """
     Entry point for fsck script
     """
+    id = None
+
     def err(*args):
+        if id is not None:
+            print('ERROR when procesing', id, file=sys.stderr)
         print(*args, file=sys.stderr)
         err.count += 1
     err.count = 0
