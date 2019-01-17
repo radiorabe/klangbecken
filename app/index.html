@@ -79,13 +79,8 @@
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
 
-  <div class="tab-pane active music-dropzone main-dropzone">
-      <div class="rapper text-center">
-          <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drop it like it's hot
-      </div>
-  </div>
   <div class="row">
-      <div class="col-md-10 col-sm-8 col-xs-6 well text-center dropzone" style="margin-bottom:20px;" v-if="!progress">
+      <div class="col-md-10 col-sm-8 col-xs-6 well text-center music-dropzone" style="margin-bottom:20px;" v-if="!progress">
         <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drag and drop files here
       </div>
       <div class="col-md-2 col-sm-4 col-xs-6 text-center well-button" :class="!!progress ? 'hidden' : ''">
@@ -174,13 +169,8 @@
 </template>
 
     <template id="jingles-tmpl">
-  <div class="tab-pane active jingles-dropzone main-dropzone">
-      <div class="rapper text-center">
-          <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drop it like it's hot
-      </div>
-  </div>
   <div class="row">
-      <div class="col-md-10 col-sm-8 col-xs-6 well text-center dropzone" style="margin-bottom:20px;" v-if="!progress">
+      <div class="col-md-10 col-sm-8 col-xs-6 well text-center jingles-dropzone" style="margin-bottom:20px;" v-if="!progress">
         <span class="glyphicon glyphicon glyphicon-cloud-upload"></span> Drag and drop files here
       </div>
       <div class="col-md-2 col-sm-4 col-xs-6 text-center well-button" v-if="!progress">
@@ -613,21 +603,6 @@
 
 
 
-        $(document).bind('dragover', function (e) {
-            var dropZone = $('.main-dropzone'),
-            timeout = window.dropZoneTimeout;
-            if (timeout) {
-                clearTimeout(timeout);
-            } else {
-                dropZone.addClass('in');
-            }
-            var hoveredDropZone = $(e.target).closest(dropZone);
-            dropZone.toggleClass('hover', hoveredDropZone.length);
-            window.dropZoneTimeout = setTimeout(function () {
-                window.dropZoneTimeout = null;
-                dropZone.removeClass('in hover');
-            }, 100);
-        });
 
     </script>
 </body>
