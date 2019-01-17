@@ -257,7 +257,6 @@
             ready: function() {
                 this.tryLogin();
 
-                // FIXME: bind jquery-ui/fileupload events natively to vue methods
                 $('#fileupload-music').fileupload({
                     url: '/api/music/',
                     dataType: 'json',
@@ -303,7 +302,6 @@
                             data.id = id;
                             data.path = '/data/' + data.playlist + '/' + data.id + data.ext;
                             groupedList[0].files.push(data);
-                            //console.log(data);
                             return groupedList
                         }, []);
                         this.loading = false;
@@ -453,7 +451,6 @@
             ready: function() {
                 this.tryLogin();
 
-                // FIXME: bind jquery-ui/fileupload events natively to vue methods
                 $('#fileupload-jingles').fileupload({
                         url: '/api/jingles/',
                         dataType: 'json',
