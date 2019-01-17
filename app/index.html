@@ -289,8 +289,7 @@
                     },
                     error: (e, data) => {
                         // FIXME: show notification somewhere (wrong filetype)
-                        console.log(e);
-                        console.log(data);
+                        alert(e.responseJSON.description)
                     },
                     progressall: (e, data) => {
                         var progress = parseInt(data.loaded / data.total * 100, 10);
@@ -483,8 +482,7 @@
                         },
                         error: (e, data) => {
                             // FIXME: show notification somewhere (wrong filetype)
-                            console.log(e);
-                            console.log(data);
+                            alert(e.responseJSON.description)
                         },
                         progressall: (e, data) => {
                             var progress = parseInt(data.loaded / data.total * 100, 10);
