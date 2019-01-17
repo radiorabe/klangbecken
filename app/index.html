@@ -104,9 +104,10 @@
         <table class="table table-condensed">
           <thead>
             <tr class="active">
-              <th v-for="key in ['filename', 'artist', 'title', 'album', 'length']" :class="key">
+              <th v-for="key in ['filename', 'artist', 'title', 'album']" :class="key">
                 {{ key | capitalize }}
               </th>
+              <th class="length right">Length</th>
               <th class="actions"></th>
             </tr>
           </thead>
@@ -140,7 +141,7 @@
               <td v-for="key in ['original_filename', 'artist', 'title', 'album']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
               <td class="td-time">{{file.length | time}}</td>
-              <td class="actions">
+              <td class="actions right">
                 <button class="btn btn-xs"
                     title="Edit" v-on:click="startEdit(file)" data-toggle="tooltip">
                     <span class="glyphicon glyphicon-pencil"></span>
@@ -201,9 +202,9 @@
               <th v-for="key in ['filename']">
                 {{ key | capitalize }}
               </th>
-              <th width="120">Date</th>
-              <th width="90">Length</th>
-              <th width="110"></th>
+              <th width="120" class="center">Date</th>
+              <th width="90" class="right">Length</th>
+              <th width="120"></th>
             </tr>
           </thead>
           <tbody v-if="!loading">
@@ -212,7 +213,7 @@
               <td>{{file.original_filename}}</td>
               <td class="td-date">{{file.import_timestamp | date}}</td>
               <td class="td-time">{{file.length | time}}</td>
-              <td>
+              <td class="right">
                 <input class="spinner" type="number" name="Priority" v-model="file.count" min="0" max="9"
                       title="Priority (0-9)" data-toggle="tooltip" v-on:change="updateCount(file)"
                       onClick="this.select();">

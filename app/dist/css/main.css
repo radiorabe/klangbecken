@@ -147,7 +147,13 @@ table .btn-delete:hover{
     margin-top: -13px;
 }
 
+.right {
+    text-align: right;
+}
 
+.center {
+    text-align: center;
+}
 
 
 .main-dropzone{
@@ -305,7 +311,6 @@ th.active {
 
 td .btn{
     padding: 3px 6px 1px 5px;
-    float: left;
     margin-right: 2px;
 }
 
@@ -417,7 +422,6 @@ th.actions {
 
 input[type=number].spinner {
     max-width: 30px;
-    float: left;
     border: 1px solid #cddcda;
     margin-right: 2px;
     border-radius: 3px;
