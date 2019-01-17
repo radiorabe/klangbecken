@@ -314,7 +314,8 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
                 mutagenfile[key] = text_type(value)
 
     if mutagenfile:
-        mutagenfile.save()
+        with locked_open(path):
+                mutagenfile.save()
 
 
 def playlist_processor(data_dir, playlist, fileId, ext, changes):
