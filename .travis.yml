@@ -12,7 +12,7 @@ addons:
       - ffmpeg
 env:
   global:
-    - KLANGBECKEN_DATA=data
+    - KLANGBECKEN_DATA=/tmp/data
 
 install:
   - pip install tox
