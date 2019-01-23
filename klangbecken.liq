@@ -149,4 +149,4 @@ radio = amplify(0.5, radio)
 # OUTPUT                                            #
 # ================================================= #
 
-output.alsa(device="default:CARD=Axia", radio)
+output.alsa(id="out", device="default:CARD=Axia", radio)
