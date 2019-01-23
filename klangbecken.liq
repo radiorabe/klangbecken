@@ -38,6 +38,9 @@ end
 # PLAYLISTS                                         #
 # ================================================= #
 
+# Priority playlist
+prio = playlist.once(id="prio", reload_mode="watch", path.concat(data_dir, "prio.m3u"))
+
 # Music playlist
 music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(data_dir, "music.m3u"))
 
@@ -76,6 +79,13 @@ radio = switch(id="radio", [
   (check_jingle, jingles),
   ({true}, music),
 ])
+
+
+# ================================================= #
+# PLAY FROM PRIORITY PLAYLIST IF AVAILABLE          #
+# ================================================= #
+
+radio = fallback([prio, radio])
 
 
 # ================================================= #

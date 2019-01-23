@@ -134,16 +134,16 @@
               <td class="td-time">{{file.length | time}}</td>
               <td class="actions right">
                 <button class="btn btn-xs"
-                    title="Edit" v-on:click="startEdit(file)" data-toggle="tooltip">
+                    title="Edit tags" v-on:click="startEdit(file)" data-toggle="tooltip">
                     <span class="glyphicon glyphicon-pencil"></span>
                 </button>
                 <button class="btn btn-xs {{file.path === nowplaying ? 'active' : ''}}"
-                        title="Play" v-on:click="play(file.path)" data-toggle="tooltip">
+                        title="Preview" v-on:click="preview(file.path)" data-toggle="tooltip">
                   <span class="glyphicon {{file.path === nowplaying ? 'glyphicon-stop' : 'glyphicon-play'}}"></span>
                 </button>
-                <button class="btn btn-xs" title="{{file.count === 0 ? 'Enable': 'Disable'}}"
-                        v-on:click="disableFile(file)" data-toggle="tooltip" >
-                  <span class="glyphicon {{file.count === 0 ? 'glyphicon-plus': 'glyphicon-ban-circle'}}"></span>
+                <button class="btn btn-xs" title="Play next!"
+                        v-on:click="playNext(file)" data-toggle="tooltip" >
+                  <span class="glyphicon glyphicon-open"></span>
                 </button>
                 <button class="btn btn-xs btn-delete" title="Delete" v-on:click="deleteFile(file)" data-toggle="tooltip">
                   <span class="glyphicon glyphicon-trash"></span>
@@ -375,19 +375,15 @@
                         alert(response.responseJSON.description);
                     });
                 },
-                disableFile: function(obj) {
-                    var new_count = 0;
-                    var old_count = obj.count;
-                    if (obj.count === 0) {
-                        new_count = 1;
+                playNext: function(obj) {
+                    if (!confirm('Really play\n"' + obj.original_filename + '"\n as next song."')) {
+                        return
                     }
-                    obj.count = new_count;
-                    this.$http.put('/api/' + obj.playlist + '/' + obj.id + obj.ext, {
-                        count: new_count
+                    this.$http.post('/api/playnext/', {
+                        file: obj.playlist + '/' + obj.id + obj.ext
                     }).then(response => {
                         // s'all good man
                     }, response => {
-                        obj.count = old_count;
                         console.error("Error from Server:", response);
                         alert(response.responseJSON.description);
                     });
@@ -430,7 +426,7 @@
 
                     file.edit = false;
                 },
-                play: function(path) {
+                preview: function(path) {
                     if (this.nowplaying === path) {
                         this.nowplaying = '';
                     } else {

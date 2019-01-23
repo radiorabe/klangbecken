@@ -359,6 +359,24 @@ DEFAULT_PROCESSORS = [
 ]
 
 
+def playnext_processor(data_dir, data):
+    if not isinstance(data, dict):
+        raise UnprocessableEntity('Invalid data format: ' +
+                                  'associative array expected')
+    if 'file' not in data:
+        raise UnprocessableEntity('Invalid data format: ' +
+                                  'Key "file" not found')
+
+    path = os.path.join(data_dir, data['file'])
+    if not os.path.isfile(path):
+        raise NotFound()
+
+    with locked_open(os.path.join(data_dir, 'prio.m3u')) as f:
+        f.seek(0)
+        f.truncate()
+        print(data['file'], file=f)
+
+
 # Locking Helper
 
 _locks = {}
@@ -408,6 +426,7 @@ class KlangbeckenAPI:
             Rule(playlist_url, methods=('POST',), endpoint='upload'),
             Rule(file_url, methods=('PUT',), endpoint='update'),
             Rule(file_url, methods=('DELETE',), endpoint='delete'),
+            Rule('/playnext/', methods=('POST',), endpoint='play_next')
         ))
 
     def __call__(self, environ, start_response):
@@ -513,6 +532,20 @@ class KlangbeckenAPI:
         change = [FileDeletion()]
         for processor in self.processors:
             processor(self.data_dir, playlist, fileId, ext, change)
+
+        return JSONResponse({'status': 'OK'})
+
+    def on_play_next(self, request):
+        try:
+            data = json.loads(text_type(request.data, 'utf-8'))
+            playnext_processor(self.data_dir, data)
+
+        except (UnicodeDecodeError, TypeError):
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid UTF-8 data')
+        except ValueError:
+            raise UnprocessableEntity('Cannot parse PUT request: ' +
+                                      ' not valid JSON')
 
         return JSONResponse({'status': 'OK'})
 
@@ -629,7 +662,8 @@ def check_and_crate_data_dir(data_dir, create=True):
             else:
                 raise Exception('Directory "{}" does not exist'
                                 .format(path))
-    for path in [os.path.join(data_dir, d + '.m3u') for d in PLAYLISTS]:
+    for path in [os.path.join(data_dir, d + '.m3u') for d in
+                 PLAYLISTS + ('prio',)]:
         if not os.path.isfile(path):
             if create:
                 with open(path, 'a'):

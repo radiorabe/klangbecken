@@ -1043,13 +1043,13 @@ class DataDirCreatorTestCase(unittest.TestCase):
     def testDataDirCheckOnly(self):
         from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
 
-        for playlist in PLAYLISTS:
+        for playlist in PLAYLISTS + ('prio',):
             path = os.path.join(self.tempdir, playlist)
             with self.assertRaises(Exception):
                 check_and_crate_data_dir(self.tempdir, False)
             os.mkdir(path)
 
-        for playlist in PLAYLISTS:
+        for playlist in PLAYLISTS + ('prio',):
             path = os.path.join(self.tempdir, playlist + '.m3u')
             with self.assertRaises(Exception):
                 check_and_crate_data_dir(self.tempdir, False)
