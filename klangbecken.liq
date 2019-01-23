@@ -123,6 +123,10 @@ radio = fallback(track_sensitive=false,
 def log_md_func(m) =
   log("Metadata: ")
   list.iter(fun (el) -> log("   #{fst(el)}: #{snd(el)}"), m)
+
+  # Print filename to stdout
+  print('Playing: ', newline=false)
+  print(m['filename'])
 end
 radio = on_track(log_md_func, radio)
 
