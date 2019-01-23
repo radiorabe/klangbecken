@@ -1011,6 +1011,15 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         resp.close()
 
+        # Put file in prio list
+        resp = self.client.post(
+            '/api/playnext/',
+            data=json.dumps({'file': 'music/' + fileId + '.mp3'}),
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
         # Get index.json
         resp = self.client.get('/data/index.json')
         self.assertEqual(resp.status_code, 200)
