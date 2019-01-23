@@ -24,6 +24,7 @@ script:
   - tox
   - liquidsoap --version
   - test -d $KLANGBECKEN_DATA || mkdir $KLANGBECKEN_DATA
+  - touch $KLANGBECKEN_DATA/prio.m3u
   - test -f klangbecken.liq && liquidsoap --check klangbecken.liq
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report --fail-under=99 -m
