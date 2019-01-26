@@ -386,12 +386,13 @@ th.length {
     width: 90px;
 }
 
-th.actions {
+th.actions, td.actions {
     width: 150px;
+    padding-left: 20px !important;
 }
 
 input[type=number].spinner {
-    max-width: 30px;
+    max-width: 50px;
     border: 1px solid #cddcda;
     margin-right: 2px;
     border-radius: 3px;
