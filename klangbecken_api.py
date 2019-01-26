@@ -691,8 +691,8 @@ def import_files(interactive=True):
         print(*args, file=sys.stderr)
 
     try:
-        def _convert(x):
-            if isinstance(x, text_type):   # pragma: no cover
+        def _convert(x):   # pragma: no cover
+            if isinstance(x, text_type):
                 return x
             else:
                 return text_type(x, sys.stdin.encoding, 'ignore')
