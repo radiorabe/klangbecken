@@ -390,8 +390,12 @@
                         this.password = '';
                     }, response => {
                         this.password = '';
-                        console.error("Error from Server:", response);
-                        alert(response.responseJSON.description);
+                        if (response.data.code == 401) {
+                            alert('Username / password not recognized.')
+                        } else {
+                            console.error("Error from Server:", response);
+                            alert('Unknown Error:\n' + response.data.description)
+                        }
                     });
                 },
                 loadOneMusicFile: function(file) {
@@ -562,12 +566,16 @@
                         emulateJSON: true
                     }).then(response => {
                         $('#loginModal').modal('hide');
-                        this.loadMusic();
+                        this.loadJingles();
                         this.password = '';
                     }, response => {
                         this.password = '';
-                        console.error("Error from Server:", response);
-                        alert(response.responseJSON.description);
+                        if (response.data.code == 401) {
+                            alert('Username / password not recognized.')
+                        } else {
+                            console.error("Error from Server:", response);
+                            alert('Unknown Error:\n' + response.data.description)
+                        }
                     });
                 },
                 loadOneJingleFile: function(file) {
