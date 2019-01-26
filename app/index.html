@@ -97,7 +97,7 @@
         <table class="table table-condensed">
           <thead>
             <tr class="active">
-              <th v-for="key in ['filename', 'artist', 'title']" :class="key">
+              <th v-for="key in ['artist', 'title', 'filename']" :class="key">
                 {{ key | capitalize }}
               </th>
               <th class="length right">Length</th>
@@ -113,9 +113,9 @@
             <tr v-for="file in chunk.files"
                 class="{{file.count === 0 ? 'disabled' : ''}}">
               <template v-if="file.edit">
-                  <td>{{file.original_filename}}</td>
                   <td><input v-model="file.artist_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
                   <td><input v-model="file.title_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
+                  <td>{{file.original_filename}}</td>
                   <td class="td-time">{{file.length | time}}</td>
                   <td class="actions">
                       <button @click="cancelChanges(file)" class="btn btn-xs" title="Cancel Edit" data-toggle="tooltip">
@@ -128,7 +128,7 @@
               </template>
 
               <template v-else>
-              <td v-for="key in ['original_filename', 'artist', 'title']" title="{{file[key]}}"
+              <td v-for="key in ['artist', 'title', 'original_filename']" title="{{file[key]}}"
                   data-toggle="tooltip">{{file[key]}}</td>
               <td class="td-time">{{file.length | time}}</td>
               <td class="actions">
@@ -206,7 +206,7 @@
         <table class="table table-condensed">
           <thead>
             <tr class="active">
-              <th v-for="key in ['filename', 'artist', 'title']">
+              <th v-for="key in ['artist', 'title', 'filename']">
                 {{ key | capitalize }}
               </th>
               <th width="70" class="right">Count</th>
@@ -218,9 +218,9 @@
             <tr v-for="file in jingles"
               class="{{file.count=== 0 || file.count === '0' ? 'disabled' : ''}}">
               <template v-if="file.edit">
-                <td>{{file.original_filename}}</td>
                 <td><input v-model="file.artist_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
                 <td><input v-model="file.title_tmp" @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"></td>
+                <td>{{file.original_filename}}</td>
                 <td class="right">
                     <input class="spinner" type="number" v-model="file.count_tmp"
                     @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"
@@ -239,9 +239,8 @@
               </template>
 
               <template v-else>
-                <td>{{file.original_filename}}</td>
-                <td>{{file.artist}}</td>
-                <td>{{file.title}}</td>
+                <td v-for="key in ['artist', 'title', 'original_filename']" title="{{file[key]}}"
+                    data-toggle="tooltip">{{file[key]}}</td>
                 <td class="right">{{file.count}}</td>
                 <td class="td-time">{{file.length | time}}</td>
                 <td class="actions">
