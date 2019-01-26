@@ -692,7 +692,7 @@ def import_files(interactive=True):
 
     try:
         def _convert(x):
-            if isinstance(x, text_type):
+            if isinstance(x, text_type):   # pragma: no cover
                 return x
             else:
                 return text_type(x, sys.stdin.encoding, 'ignore')

@@ -275,7 +275,8 @@ class APITestCase(unittest.TestCase):
             content_type='text/json'
         )
         self.assertEqual(resp.status_code, 200)
-        playnext_processor.assert_called_once_with('data_dir', {'file': 'tutu'})
+        playnext_processor.assert_called_once_with('data_dir',
+                                                   {'file': 'tutu'})
         playnext_processor.reset_mock()
 
         # Update with invalid json format
