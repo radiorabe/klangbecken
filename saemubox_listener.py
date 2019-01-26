@@ -60,7 +60,8 @@ def main():
                         if ids[-1] in valid_ids:  # only take last id
                             output = ids[-1]
                         else:
-                            print("WARNING: received invalid data: %s" % data)
+                            print("WARNING: received invalid data: %s" %
+                                  repr(data))
                 if output is None:
                     print("ERROR: could not read current status. "
                           "Reconnecting ...")
