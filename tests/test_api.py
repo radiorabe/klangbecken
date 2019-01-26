@@ -266,6 +266,38 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
 
+    @mock.patch('klangbecken_api.playnext_processor')
+    def testPlaynext(self, playnext_processor):
+        # Update count correctly
+        resp = self.client.post(
+            '/playnext/',
+            data=json.dumps({'file': 'tutu'}),
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        playnext_processor.assert_called_once_with('data_dir', {'file': 'tutu'})
+        playnext_processor.reset_mock()
+
+        # Update with invalid json format
+        resp = self.client.post(
+            '/playnext/',
+            data='{ a: " }',
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertTrue(b'not valid JSON' in resp.data)
+        playnext_processor.assert_not_called()
+
+        # Update with invalid unicode format
+        resp = self.client.post(
+            '/playnext/',
+            data=b'\xFF',
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.assertTrue(b'not valid UTF-8 data' in resp.data)
+        playnext_processor.assert_not_called()
+
 
 class AuthTestCase(unittest.TestCase):
     def setUp(self):
@@ -579,6 +611,7 @@ class ProcessorsTestCase(unittest.TestCase):
             print('{}', file=f)
         open(os.path.join(self.tempdir, 'music.m3u'), 'w').close()
         open(os.path.join(self.tempdir, 'jingles.m3u'), 'w').close()
+        open(os.path.join(self.tempdir, 'prio.m3u'), 'w').close()
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -910,6 +943,27 @@ class ProcessorsTestCase(unittest.TestCase):
         with open(jingles_path) as f:
             data = f.read()
         self.assertEqual(data, '')
+
+    def testPlaynextProcessor(self):
+        from klangbecken_api import playnext_processor
+
+        prio_path = os.path.join(self.tempdir, 'prio.m3u')
+
+        # Invalid playnext updates
+        with self.assertRaises(UnprocessableEntity):
+            playnext_processor(self.tempdir, [])
+        with self.assertRaises(UnprocessableEntity):
+            playnext_processor(self.tempdir, {})
+
+        # Inexistent file
+        with self.assertRaises(NotFound):
+            playnext_processor(self.tempdir, {'file': 'sdfsadf'})
+
+        # Correct update
+        playnext_processor(self.tempdir, {'file': 'music/silence.mp3'})
+        with open(prio_path) as f:
+            data = f.read()
+        self.assertEqual(data.strip(), 'music/silence.mp3')
 
 
 class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
