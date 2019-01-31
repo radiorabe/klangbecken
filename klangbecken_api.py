@@ -321,7 +321,7 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
 
     if mutagenfile:
         with locked_open(path):
-                mutagenfile.save()
+            mutagenfile.save()
 
 
 def playlist_processor(data_dir, playlist, fileId, ext, changes):
