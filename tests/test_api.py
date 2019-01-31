@@ -1120,10 +1120,10 @@ class DataDirCreatorTestCase(unittest.TestCase):
             with open(path, 'a'):
                 pass
         with self.assertRaises(Exception):
-                check_and_crate_data_dir(self.tempdir, False)
+            check_and_crate_data_dir(self.tempdir, False)
 
         with open(os.path.join(self.tempdir, 'index.json'), 'w'):
-                pass
+            pass
 
         check_and_crate_data_dir(self.tempdir, False)
 
