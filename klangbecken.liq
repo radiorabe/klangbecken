@@ -127,8 +127,12 @@ radio = fallback(track_sensitive=false,
 
 
 # ================================================= #
-# LOGGING                                           #
+# LOGGING METADATA                                  #
 # ================================================= #
+have_metadata = ref false
+artist = ref ''
+title = ref ''
+length = ref 0.0
 
 def log_md_func(m) =
   log("Metadata: ")
@@ -137,8 +141,29 @@ def log_md_func(m) =
   # Print filename to stdout
   print('Playing: ', newline=false)
   print(m['filename'])
+  have_metadata := true
+  artist := m['artist']
+  title := m['title']
+  length := float_of_string(m['cue_out']) - float_of_string(m['cue_in'])
 end
 radio = on_track(log_md_func, radio)
+
+def upload_metadata() =
+  have_metadata := false
+  system("ssh endlosplayer@10.1.1.71 'cat > Eingang/now-playing-new.xml' <<EOF
+<?xml version=\"1.0\"?>
+<now_playing playing=\"1\" timestamp=\"$(date -Iseconds)\">
+  <song timestamp=\"$(date -Iseconds)\">
+    <title>#{!title}</title>
+    <artist>#{!artist}</artist>
+    <time>#{!length}</time>
+    <album/><genre>Other</genre><kind>MPEG-Audiodatei</kind><track>1</track><numTracks/><year></year><comments/><bitrate/><rating/><disc/><numDiscs/><playCount>1</playCount><compilation/><composer/><grouping/><urlSource/><file/><artworkID/>
+  </song>
+</now_playing>
+EOF")
+end
+
+exec_at(pred=fun() -> !have_metadata, upload_metadata)
 
 
 # ================================================= #
