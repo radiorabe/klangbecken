@@ -156,10 +156,28 @@ def upload_metadata() =
   <song timestamp=\"$(date -Iseconds)\">
     <title>#{!title}</title>
     <artist>#{!artist}</artist>
+    <album/>
+    <genre>Other</genre>
+    <kind>MPEG-Audiodatei</kind>
+    <track>1</track>
+    <numTracks/>
+    <year>2012</year>
+    <comments/>
     <time>#{!length}</time>
-    <album/><genre>Other</genre><kind>MPEG-Audiodatei</kind><track>1</track><numTracks/><year></year><comments/><bitrate/><rating/><disc/><numDiscs/><playCount>1</playCount><compilation/><composer/><grouping/><urlSource/><file/><artworkID/>
+    <bitrate>320</bitrate>
+    <rating/>
+    <disc/>
+    <numDiscs/>
+    <playCount>1</playCount>
+    <compilation/>
+    <composer/>
+    <grouping/>
+    <urlSource/>
+    <file/>
+    <artworkID/>
   </song>
 </now_playing>
+
 EOF")
 end
 
