@@ -132,7 +132,7 @@ radio = fallback(track_sensitive=false,
 have_metadata = ref false
 artist = ref ''
 title = ref ''
-length = ref 0.0
+length = ref 0
 
 def log_md_func(m) =
   log("Metadata: ")
@@ -144,7 +144,7 @@ def log_md_func(m) =
   have_metadata := true
   artist := m['artist']
   title := m['title']
-  length := float_of_string(m['cue_out']) - float_of_string(m['cue_in'])
+  length := int_of_float(float_of_string(m['cue_out']) - float_of_string(m['cue_in']))
 end
 radio = on_track(log_md_func, radio)
 
@@ -161,7 +161,7 @@ def upload_metadata() =
     <kind>MPEG-Audiodatei</kind>
     <track>1</track>
     <numTracks/>
-    <year>2012</year>
+    <year></year>
     <comments/>
     <time>#{!length}</time>
     <bitrate>320</bitrate>
@@ -177,7 +177,6 @@ def upload_metadata() =
     <artworkID/>
   </song>
 </now_playing>
-
 EOF")
 end
 
