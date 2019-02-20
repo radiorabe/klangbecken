@@ -650,6 +650,28 @@ class ProcessorsTestCase(unittest.TestCase):
             check_processor(self.tempdir, 'playlist', 'id', '.ext',
                             ['whatever'])
 
+    def testFilterDuplicatesProcessor(self):
+        from klangbecken_api import filter_duplicates_processor
+        from klangbecken_api import index_processor
+        from klangbecken_api import FileAddition, MetadataChange
+
+        file_ = FileStorage(io.BytesIO(b'abc'), 'filename.mp3')
+        changes = [
+            FileAddition(file_),
+            MetadataChange('original_filename', 'filename.mp3'),
+            MetadataChange('artist', 'Artist'),
+            MetadataChange('title', 'Title'),
+        ]
+        filter_duplicates_processor(self.tempdir, 'music', 'id1', '.mp3',
+                                    changes)
+
+        index_processor(self.tempdir, 'music', 'id1', '.mp3',
+                        changes)
+        with self.assertRaises(UnprocessableEntity) as cm:
+            filter_duplicates_processor(self.tempdir, 'music', 'id', '.mp3',
+                                        changes)
+        self.assertTrue('Duplicate file entry' in cm.exception.description)
+
     def testRawFileProcessor(self):
         from klangbecken_api import raw_file_processor
         from klangbecken_api import FileAddition, FileDeletion, MetadataChange

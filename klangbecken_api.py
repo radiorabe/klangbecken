@@ -250,6 +250,27 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
             raise ValueError('Invalid action class')
 
 
+def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
+    with open(os.path.join(data_dir, 'index.json')) as f:
+        data = json.load(f)
+
+    addition = [c for c in changes if isinstance(c, FileAddition)]
+    if addition:
+        changes = [c for c in changes if isinstance(c, MetadataChange)]
+
+        fname = [c.value for c in changes if c.key == 'original_filename'][0]
+        title = [c.value for c in changes if c.key == 'title'][0]
+        artist = [c.value for c in changes if c.key == 'artist'][0]
+
+        for entry in data.values():
+            if (entry['original_filename'] == fname and
+                    entry['artist'] == artist and
+                    entry['title'] == title):
+                raise UnprocessableEntity('Duplicate file entry:\n' +
+                                          artist + ' - ' + title +
+                                          ' (' + fname + ')')
+
+
 def raw_file_processor(data_dir, playlist, fileId, ext, changes):
     path = os.path.join(data_dir, playlist, fileId + ext)
     for change in changes:
@@ -352,6 +373,7 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 
 DEFAULT_PROCESSORS = [
     check_processor,      # type and contract check changes
+    filter_duplicates_processor,
     raw_file_processor,   # save file
     file_tag_processor,   # update tags
     playlist_processor,   # update playlist file
@@ -616,7 +638,9 @@ class StandaloneWebApplication:
 
         # Slightly modify processors, such that index.json is pretty printed
         processors = [
+            check_processor,
             raw_file_processor,
+            filter_duplicates_processor,
             functools.partial(index_processor,
                               json_opts={'indent': 2, 'sort_keys': True}),
             file_tag_processor,
