@@ -413,9 +413,9 @@
                     this.music[0].files.unshift(data);
                 },
                 deleteFile: function(obj) {
-                    if (!confirm('Really delete file:\n' + obj.original_filename)) {
-                        return
-                    }
+                    // if (!confirm('Really delete file:\n' + obj.original_filename)) {
+                    //     return
+                    // }
                     this.$http.delete('/api/' + obj.playlist + '/' + obj.id + obj.ext).then(response => {
                         var found = false;
                         for (var chunk of this.music) {
