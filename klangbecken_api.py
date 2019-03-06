@@ -758,8 +758,8 @@ def import_files(interactive=True):
     print('Successfully analyzed {} of {} files.'.format(len(analysis_data),
                                                          len(files)))
     count = 0
-    question = 'Start import now? [y/N] '
-    if not interactive or input(question).strip().lower() == 'y':
+    print('Start import now? [y/N]', end=' ')
+    if not interactive or input().strip().lower() == 'y':
         for filename, fileId, ext, actions in analysis_data:
             try:
                 for processor in DEFAULT_PROCESSORS:
