@@ -209,7 +209,7 @@
               <th v-for="key in ['artist', 'title', 'filename']">
                 {{ key | capitalize }}
               </th>
-              <th width="70" class="right">Count</th>
+              <th width="70" class="right">Prio</th>
               <th width="90" class="right">Length</th>
               <th class="actions"></th>
             </tr>
@@ -224,7 +224,7 @@
                 <td class="right">
                     <input class="spinner" type="number" v-model="file.count_tmp"
                     @keyup.esc="cancelChanges(file)" @keyup.enter="saveChanges(file)"
-                    min="0" max="9" title="Count (0-9)">
+                    min="0" max="9" title="Prio (0-9)">
                 </td>
                 <td class="td-time">{{file.length | time}}</td>
 
