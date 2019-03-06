@@ -634,7 +634,7 @@ class StandaloneWebApplication:
             upload_analyzers.append(ffmpeg_audio_analyzer)
         except (OSError, subprocess.CalledProcessError):  # pragma: no cover
             print('WARNING: ffmpeg binary not found. ' +
-                  'No audio analysis is performed.')
+                  'No audio analysis is performed.', file=sys.stderr)
 
         # Slightly modify processors, such that index.json is pretty printed
         processors = [
