@@ -712,7 +712,7 @@ def import_files(interactive=True):
     Entry point for import script
     """
     def err(*args):
-        print(*args, file=sys.stderr)
+        print(*(arg.encode('utf-8') for arg in args), file=sys.stderr)
 
     try:
         def _convert(x):   # pragma: no cover
