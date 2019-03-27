@@ -103,7 +103,7 @@ class APITestCase(unittest.TestCase):
         resp = self.client.get('/öäü/')
         self.assertEqual(resp.status_code, 404)
         resp = self.client.post('/jingles')
-        self.assertEqual(resp.status_code, 301)
+        self.assertIn(resp.status_code, (301, 308))
         resp = self.client.post('/music/')
         self.assertEqual(resp.status_code, 422)
         resp = self.client.post('/jingles/something')
