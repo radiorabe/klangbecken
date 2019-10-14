@@ -16,8 +16,10 @@ before_install:
   - pip install -U pip
   - pip install codecov
 install:
-  - pip install  ".[test]" .
+  - pip install -r requirements-dev.txt
+  - pip install -e .
 script:
+  - pre-commit run -a
   - klangbecken init -d $KLANGBECKEN_DATA
   - coverage run --source=klangbecken -m unittest discover
   - flake8
