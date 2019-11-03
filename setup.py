@@ -7,7 +7,7 @@ setup(
     url='https://github.com/radiorabe/klangbecken',
     author='Marco Schmalz',
     author_email='marco@schess.ch ',
-    py_modules=['klangbecken_api', 'saemubox_listener'],
+    py_modules=['klangbecken_api', 'saemubox_listener', 'play_logger'],
     license='AGPLv3',
     classifiers=[
         'Development Status :: 3 - Alpha',
