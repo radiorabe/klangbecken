@@ -98,22 +98,24 @@ current_saemubox_id = ref 1
 
 def set_saemubox_id_fun(id) =
   current_saemubox_id := int_of_string(id)
-  onair_path = path.concat(data_dir, 'onair.txt')
+  onair_path = path.concat(data_dir, 'onair.json')
   if !current_saemubox_id == SAEMUBOX_KLANGBECKEN_ID then
-    log("Restarting Klangbecken")
+    log("Starting Klangbecken")
     restart := true
     source.skip(radio)
-    "Klangbecken restarted"
-    system("echo true > #{path}")
+    system("echo true > #{onair_path}")
+    "Klangbecken started"
   else
-    system("echo false > #{path}")
+    system("echo false > #{onair_path}")
+    "Klangbecken stopped"
   end
 end
 
 server.register(namespace='klangbecken',
                 description="Set the current Saemubox channel id",
                 usage="set_saemubox_id ID",
-                "set_id", set_saemubox_id_fun)
+                "set_saemubox_id",
+                set_saemubox_id_fun)
 
 # Have restart delay and fade dynamically reconfigurable
 # for debugging purpose
