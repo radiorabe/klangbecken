@@ -164,6 +164,9 @@ def log_md_func(m) =
     filename = m['filename']
     nowplaying_path = path.concat(data_dir, 'now-playing.txt')
     system("echo #{filename} > #{nowplaying_path}")
+
+    # Run logger
+    system("/usr/local/venvs/klangbecken/bin/klangbecken-song-logger")
   end
 end
 radio = on_track(log_md_func, radio)
