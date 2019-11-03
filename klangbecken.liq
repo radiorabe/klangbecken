@@ -167,6 +167,8 @@ def log_md_func(m) =
 
     # Run logger
     system("/usr/local/venvs/klangbecken/bin/klangbecken-play-logger")
+  else
+    system("/usr/local/venvs/klangbecken/bin/klangbecken-play-logger")
   end
 end
 radio = on_track(log_md_func, radio)
