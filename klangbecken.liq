@@ -166,7 +166,7 @@ def log_md_func(m) =
     system("echo #{filename} > #{nowplaying_path}")
 
     # Run logger
-    system("/usr/local/venvs/klangbecken/bin/klangbecken-song-logger")
+    system("/usr/local/venvs/klangbecken/bin/klangbecken-play-logger")
   end
 end
 radio = on_track(log_md_func, radio)
