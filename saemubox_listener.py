@@ -5,8 +5,7 @@ import select
 import socket
 import time
 
-KLANGBECKEN_STATUS = 1
-LS_COMMAND = b'klangbecken.restart\n'
+LS_COMMAND = b'klangbecken.set_saemubox_id {}\n'
 
 
 def main():
@@ -71,18 +70,17 @@ def main():
                 if status != new_status:
                     print('New status: {} (old: {})'
                           .format(new_status, status))
-                    if new_status == KLANGBECKEN_STATUS:
-                        print('Restarting Klangbecken ...')
-                        try:
-                            ls_sock = socket.socket(socket.AF_UNIX,
-                                                    socket.SOCK_STREAM)
-                            ls_sock.connect(liquidsoap_sock)
-                            ls_sock.sendall(LS_COMMAND)
-                            print(ls_sock.recv(1000))
-                            ls_sock.sendall(b'quit\n')
-                            print(ls_sock.recv(1000))
-                        except socket.error:
-                            print('ERROR: cannot connect to liquidsoap server')
+                    print('Setting new status ...')
+                    try:
+                        ls_sock = socket.socket(socket.AF_UNIX,
+                                                socket.SOCK_STREAM)
+                        ls_sock.connect(liquidsoap_sock)
+                        ls_sock.sendall(LS_COMMAND.format(new_status))
+                        print(ls_sock.recv(1000))
+                        ls_sock.sendall(b'quit\n')
+                        print(ls_sock.recv(1000))
+                    except socket.error:
+                        print('ERROR: cannot connect to liquidsoap server')
                 status = int(output)
             except socket.error:
                 try:
