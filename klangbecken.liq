@@ -149,7 +149,7 @@ def log_md_func(m) =
   log("Metadata: ")
   list.iter(fun (el) -> log("   #{fst(el)}: #{snd(el)}"), m)
 
-  if !current_id == KLANGBECKEN_ID then
+  if !current_saemubox_id == KLANGBECKEN_ID then
     # Log to stdout
     print('Playing: ', newline=false)
     print(m['filename'])
