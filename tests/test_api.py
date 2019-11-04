@@ -196,16 +196,16 @@ class APITestCase(unittest.TestCase):
         self.processor.assert_not_called()
 
     def testUpdate(self):
-        # Update count correctly
+        # Update weight correctly
         fileId = str(uuid.uuid4())
         resp = self.client.put(
             '/music/' + fileId + '.mp3',
-            data=json.dumps({'count': 4}),
+            data=json.dumps({'weight': 4}),
             content_type='text/json'
         )
         self.assertEqual(resp.status_code, 200)
         self.update_analyzer.assert_called_once_with('music', fileId, '.mp3',
-                                                     {'count': 4})
+                                                     {'weight': 4})
         self.upload_analyzer.assert_not_called()
         self.processor.assert_called_once_with('data_dir', 'music', fileId,
                                                '.mp3', ['UpdateChange'])
@@ -268,7 +268,7 @@ class APITestCase(unittest.TestCase):
 
     @mock.patch('klangbecken_api.playnext_processor')
     def testPlaynext(self, playnext_processor):
-        # Update count correctly
+        # Update weight correctly
         resp = self.client.post(
             '/playnext/',
             data=json.dumps({'file': 'tutu'}),
@@ -456,7 +456,7 @@ class AnalyzersTestCase(unittest.TestCase):
         t = [ch for ch in result if (isinstance(ch, MetadataChange) and
                                      ch.key == 'import_timestamp')][0]
         self.assertTrue(time.time() - t.value < 1)
-        self.assertTrue(MetadataChange('count', 1) in result)
+        self.assertTrue(MetadataChange('weight', 1) in result)
 
     def testMutagenTagAnalyzer(self):
         from klangbecken_api import mutagen_tag_analyzer
@@ -629,7 +629,7 @@ class ProcessorsTestCase(unittest.TestCase):
         # Wrong data type (str instead of int)
         with self.assertRaises(UnprocessableEntity) as cm:
             check_processor(self.tempdir, 'playlist', 'id', '.ext',
-                            [MetadataChange('count', '1')])
+                            [MetadataChange('weight', '1')])
         self.assertTrue('Invalid data format' in cm.exception.description)
 
         # Wrong data format (uuid)
@@ -856,9 +856,9 @@ class ProcessorsTestCase(unittest.TestCase):
         music_path = os.path.join(self.tempdir, 'music.m3u')
         jingles_path = os.path.join(self.tempdir, 'jingles.m3u')
 
-        # Update playlist count (initial)
+        # Update playlist weight (initial)
         playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
-                           [MetadataChange('count', 2)])
+                           [MetadataChange('weight', 2)])
 
         with open(music_path) as f:
             lines = f.read().split('\n')
@@ -869,9 +869,9 @@ class ProcessorsTestCase(unittest.TestCase):
             data = f.read()
         self.assertEqual(data, '')
 
-        # Update playlist count
+        # Update playlist weight
         playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
-                           [MetadataChange('count', 4)])
+                           [MetadataChange('weight', 4)])
 
         with open(music_path) as f:
             lines = f.read().split('\n')
@@ -882,9 +882,9 @@ class ProcessorsTestCase(unittest.TestCase):
             data = f.read()
         self.assertEqual(data, '')
 
-        # Set playlist count to zero (same as delete)
+        # Set playlist weight to zero (same as delete)
         playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
-                           [MetadataChange('count', 0)])
+                           [MetadataChange('weight', 0)])
 
         with open(music_path) as f:
             data = f.read()
@@ -896,15 +896,15 @@ class ProcessorsTestCase(unittest.TestCase):
 
         # Add more files to playlist
         playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
-                           [MetadataChange('count', 2)])
+                           [MetadataChange('weight', 2)])
         playlist_processor(self.tempdir, 'music', 'fileId2', '.ogg',
-                           [MetadataChange('count', 1)])
+                           [MetadataChange('weight', 1)])
         playlist_processor(self.tempdir, 'music', 'fileId3', '.flac',
-                           [MetadataChange('count', 3)])
+                           [MetadataChange('weight', 3)])
         playlist_processor(self.tempdir, 'jingles', 'fileId4', '.mp3',
-                           [MetadataChange('count', 2)])
+                           [MetadataChange('weight', 2)])
         playlist_processor(self.tempdir, 'jingles', 'fileId5', '.mp3',
-                           [MetadataChange('count', 3)])
+                           [MetadataChange('weight', 3)])
 
         with open(music_path) as f:
             lines = [l.strip() for l in f.readlines()]
@@ -1067,7 +1067,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
             'title': 'ÄÖÜ',
             'artist': 'ÀÉÈ',
             'ext': '.mp3',
-            'count': 1,
+            'weight': 1,
             'playlist': 'music',
             'id': fileId
         }
@@ -1077,7 +1077,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         # Update
         resp = self.client.put(
             '/api/music/' + fileId + '.mp3',
-            data=json.dumps({'count': 4}),
+            data=json.dumps({'weight': 4}),
             content_type='text/json'
         )
         self.assertEqual(resp.status_code, 200)
@@ -1545,7 +1545,7 @@ class FsckTestCase(unittest.TestCase):
         finally:
             sys.arv = argv
 
-    def testPlaylistCountMismatch(self):
+    def testPlaylistWeightMismatch(self):
         from klangbecken_api import fsck
         argv, sys.argv = sys.argv, ['', self.tempdir]
 
@@ -1559,7 +1559,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(fsck) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                    self.assertIn('Playlist count mismatch', err)
+                    self.assertIn('Playlist weight mismatch', err)
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv

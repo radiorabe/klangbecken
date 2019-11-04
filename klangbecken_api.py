@@ -70,7 +70,7 @@ ALLOWED_METADATA = {
     'playlist': (text_type, lambda pl: pl in PLAYLISTS),
     'original_filename': text_type,
     'import_timestamp': float,
-    'count': (int, lambda c: c >= 0),
+    'weight': (int, lambda c: c >= 0),
 
     'artist': text_type,
     'title': text_type,
@@ -82,7 +82,7 @@ ALLOWED_METADATA = {
     'cue_out': (float, lambda n: n >= 0.0),
 }
 
-UPDATE_KEYS = 'artist title album count'.split()
+UPDATE_KEYS = 'artist title album weight'.split()
 TAG_KEYS = ('artist title album cue_in cue_out track_gain '
             'original_filename import_timestamp count').split()
 
@@ -114,7 +114,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
         MetadataChange('playlist', playlist),
         MetadataChange('original_filename', filename),
         MetadataChange('import_timestamp', time.time()),
-        MetadataChange('count', 1),
+        MetadataChange('weight', 1),
     ]
 
 
@@ -324,7 +324,7 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(key='original_filename',
                                         desc='ORIGINAL_FILENAME')
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='import_timestamp',
                                         desc='IMPORT_TIMESTAMP')
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key='count', desc='COUNT')
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key='weight', desc='WEIGHT')
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
@@ -356,14 +356,14 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
                 for line in lines:
                     if not line.endswith(os.path.join(playlist, fileId + ext)):
                         print(line, file=f)
-        elif isinstance(change, MetadataChange) and change.key == 'count':
+        elif isinstance(change, MetadataChange) and change.key == 'weight':
             with locked_open(playlist_path) as f:
                 lines = (s.strip() for s in f.readlines() if s != '\n')
                 lines = [s for s in lines
                          if s and not s.endswith(fileId + ext)]
 
-                count = change.value
-                lines.extend([os.path.join(playlist, fileId + ext)] * count)
+                weight = change.value
+                lines.extend([os.path.join(playlist, fileId + ext)] * weight)
                 random.shuffle(lines)  # TODO: custom shuffling?
                 f.seek(0)
                 f.truncate()
@@ -881,9 +881,9 @@ def fsck():
 
                 count = playlist_counts[file_path]
                 del playlist_counts[file_path]
-                if count != entries['count']:
-                    err('ERROR: Playlist count mismatch: {} != {}'
-                        .format(entries['count'], count))
+                if count != entries['weight']:
+                    err('ERROR: Playlist weight mismatch: {} != {}'
+                        .format(entries['weight'], count))
 
         if files:
             err('ERROR: Dangling files:', ', '.join(files))
