@@ -391,14 +391,20 @@ def playnext_processor(data_dir, data):
         raise UnprocessableEntity('Invalid data format: ' +
                                   'Key "file" not found')
 
-    path = os.path.join(data_dir, data['file'])
+    filename = data['file']
+    filename_re = r'^({})/([^/.]+)({})$' \
+        .format('|'.join(PLAYLISTS), '|'.join(SUPPORTED_FILE_TYPES.keys()))
+    if not re.match(filename_re, filename):
+        raise UnprocessableEntity('Invalid file path format')
+
+    path = os.path.join(data_dir, filename)
     if not os.path.isfile(path):
         raise NotFound()
 
     with locked_open(os.path.join(data_dir, 'prio.m3u')) as f:
         f.seek(0)
         f.truncate()
-        print(data['file'], file=f)
+        print(filename, file=f)
 
 
 # Locking Helper

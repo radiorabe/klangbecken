@@ -938,10 +938,12 @@ class ProcessorsTestCase(unittest.TestCase):
             playnext_processor(self.tempdir, [])
         with self.assertRaises(UnprocessableEntity):
             playnext_processor(self.tempdir, {})
+        with self.assertRaises(UnprocessableEntity):
+            playnext_processor(self.tempdir, {'file': 'funny/../path.mp3'})
 
         # Inexistent file
         with self.assertRaises(NotFound):
-            playnext_processor(self.tempdir, {'file': 'nonexistent'})
+            playnext_processor(self.tempdir, {'file': 'music/nonexistent.mp3'})
 
         # Correct update
         playnext_processor(self.tempdir, {'file': 'music/silence.mp3'})
