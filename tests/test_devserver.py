@@ -1,0 +1,190 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, print_function
+
+import json
+import os
+import shutil
+import six
+import tempfile
+import unittest
+import uuid
+
+from werkzeug.test import Client
+from werkzeug.wrappers import BaseResponse
+
+from utils import capture
+
+
+class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
+    def setUp(self):
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testNoFFmpegWarning(self):
+        from klangbecken_api import StandaloneWebApplication
+
+        with capture(StandaloneWebApplication, self.tempdir) \
+                as (out, err, ret):
+            self.assertNotIn("WARNING", out)
+
+    def testDirStructure(self):
+        from klangbecken_api import StandaloneWebApplication
+        self.assertFalse(os.path.isdir(os.path.join(self.tempdir, 'music')))
+
+        StandaloneWebApplication(self.tempdir)
+        self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
+
+        with open(os.path.join(self.tempdir, 'music', 'abc.txt'), 'w'):
+            pass
+
+        StandaloneWebApplication(self.tempdir)
+        self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
+        self.assertTrue(os.path.isfile(os.path.join(self.tempdir, 'music',
+                                                    'abc.txt')))
+
+
+class StandaloneWebApplicationTestCase(unittest.TestCase):
+    def setUp(self):
+        from klangbecken_api import StandaloneWebApplication
+
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+
+        app = StandaloneWebApplication(self.tempdir)
+        self.client = Client(app, BaseResponse)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testIndexHtml(self):
+        resp = self.client.get('/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.data.startswith(b'<!DOCTYPE html>'))
+        self.assertIn(b'RaBe Klangbecken', resp.data)
+        resp.close()
+
+    def testApi(self):
+        # Login
+        resp = self.client.get('/api/login/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+                         {'status': 'OK', 'user': 'dummyuser'})
+        resp.close()
+
+        # Upload
+        path = os.path.join(self.current_path, 'audio',
+                            'silence-unicode-jointstereo.mp3')
+        with open(path, 'rb') as f:
+            resp = self.client.post(
+                '/api/music/',
+                data={'file': (f, 'silence-unicode-jointstereo.mp3')},
+            )
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(six.text_type(resp.data, 'ascii'))
+        fileId = list(data.keys())[0]
+        self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
+        expected = {
+            'original_filename': 'silence-unicode-jointstereo.mp3',
+            'length': 1.0,
+            'album': '☀⚛♬',
+            'title': 'ÄÖÜ',
+            'artist': 'ÀÉÈ',
+            'ext': '.mp3',
+            'weight': 1,
+            'playlist': 'music',
+            'id': fileId
+        }
+        self.assertLessEqual(set(expected.items()), set(data[fileId].items()))
+        resp.close()
+
+        # Update
+        resp = self.client.put(
+            '/api/music/' + fileId + '.mp3',
+            data=json.dumps({'weight': 4}),
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Get file
+        resp = self.client.get('/data/music/' + fileId + '.mp3')
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Put file in prio list
+        resp = self.client.post(
+            '/api/playnext/',
+            data=json.dumps({'file': 'music/' + fileId + '.mp3'}),
+            content_type='text/json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Get index.json
+        resp = self.client.get('/data/index.json')
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Delete file
+        resp = self.client.delete('/api/music/' + fileId + '.mp3',)
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Logout
+        resp = self.client.post('/api/logout/')
+        self.assertEqual(resp.status_code, 200)
+        resp.close()
+
+        # Verify that we are logged out
+        resp = self.client.post('/api/music/')
+        self.assertEqual(resp.status_code, 401)
+        resp.close()
+
+
+class DataDirCreatorTestCase(unittest.TestCase):
+    def setUp(self):
+        self.current_path = os.path.dirname(os.path.realpath(__file__))
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testDataDirCheckOnly(self):
+        from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
+
+        for playlist in PLAYLISTS + ('prio',):
+            path = os.path.join(self.tempdir, playlist)
+            with self.assertRaises(Exception):
+                check_and_crate_data_dir(self.tempdir, False)
+            os.mkdir(path)
+
+        for playlist in PLAYLISTS + ('prio',):
+            path = os.path.join(self.tempdir, playlist + '.m3u')
+            with self.assertRaises(Exception):
+                check_and_crate_data_dir(self.tempdir, False)
+            with open(path, 'a'):
+                pass
+        with self.assertRaises(Exception):
+            check_and_crate_data_dir(self.tempdir, False)
+
+        with open(os.path.join(self.tempdir, 'index.json'), 'w'):
+            pass
+
+        check_and_crate_data_dir(self.tempdir, False)
+
+    def testDataDirCreation(self):
+        from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
+        check_and_crate_data_dir(self.tempdir)
+        for playlist in PLAYLISTS:
+            path = os.path.join(self.tempdir, playlist)
+            self.assertTrue(os.path.isdir(path))
+            path += '.m3u'
+            self.assertTrue(os.path.isfile(path))
+
+        path = os.path.join(self.tempdir, 'index.json')
+        self.assertTrue(os.path.isfile(path))
+        with open(path) as f:
+            self.assertEqual(json.load(f), {})
