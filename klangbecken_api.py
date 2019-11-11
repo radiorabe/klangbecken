@@ -80,6 +80,8 @@ ALLOWED_METADATA = {
     'track_gain': (text_type, r'^[+-]?[0-9]*(\.[0-9]*) dB$'),
     'cue_in':  (float, lambda n: n >= 0.0),
     'cue_out': (float, lambda n: n >= 0.0),
+
+    'play_count': (int, lambda n: n >= 0),
 }
 
 UPDATE_KEYS = 'artist title album weight'.split()
@@ -115,6 +117,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
         MetadataChange('original_filename', filename),
         MetadataChange('import_timestamp', time.time()),
         MetadataChange('weight', 1),
+        MetadataChange('play_count', 0),
     ]
 
 
