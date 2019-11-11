@@ -150,9 +150,6 @@ def log_md_func(m) =
   list.iter(fun (el) -> log("   #{fst(el)}: #{snd(el)}"), m)
 
   if !current_saemubox_id == SAEMUBOX_KLANGBECKEN_ID then
-    # Log to stdout
-    print('Playing: ', newline=false)
-    print(m['filename'])
 
     # Prepare sending metadata to nowplaying server
     have_metadata := true
@@ -160,10 +157,6 @@ def log_md_func(m) =
     title := m['title']
     length := int_of_float(float_of_string(m['cue_out']) - float_of_string(m['cue_in']))
 
-    # Write now-playing file
-    filename = m['filename']
-    nowplaying_path = path.concat(data_dir, 'now-playing.txt')
-    system("echo #{filename} > #{nowplaying_path}")
 
     # Run logger
     system("/usr/local/venvs/klangbecken/bin/klangbecken-play-logger")
