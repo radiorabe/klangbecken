@@ -546,10 +546,10 @@ class KlangbeckenAPI:
 
         except (UnicodeDecodeError, TypeError):
             raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid UTF-8 data')
+                                      'invalid UTF-8 data')
         except ValueError:
             raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid JSON')
+                                      'invalid JSON')
 
         for processor in self.processors:
             processor(self.data_dir, playlist, fileId, ext, actions)

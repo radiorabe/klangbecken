@@ -199,7 +199,7 @@ class APITestCase(unittest.TestCase):
             content_type='text/json'
         )
         self.assertEqual(resp.status_code, 422)
-        self.assertTrue(b'not valid JSON' in resp.data)
+        self.assertIn(b'invalid JSON', resp.data)
         self.update_analyzer.assert_not_called()
 
         # Update with invalid unicode format
@@ -209,7 +209,7 @@ class APITestCase(unittest.TestCase):
             content_type='text/json'
         )
         self.assertEqual(resp.status_code, 422)
-        self.assertTrue(b'not valid UTF-8 data' in resp.data)
+        self.assertIn(b'invalid UTF-8 data', resp.data)
         self.update_analyzer.assert_not_called()
 
     def testDelete(self):
