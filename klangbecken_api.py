@@ -614,7 +614,8 @@ class StandaloneWebApplication:
     """
 
     def __init__(self, data_path=None):
-        from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
+        from werkzeug.middleware.dispatcher import DispatcherMiddleware
+        from werkzeug.middleware.shared_data import SharedDataMiddleware
 
         # Assemble useful paths
         current_path = os.path.dirname(os.path.realpath(__file__))
