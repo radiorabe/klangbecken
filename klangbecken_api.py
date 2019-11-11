@@ -84,7 +84,7 @@ ALLOWED_METADATA = {
 
 UPDATE_KEYS = 'artist title album weight'.split()
 TAG_KEYS = ('artist title album cue_in cue_out track_gain '
-            'original_filename import_timestamp count').split()
+            'original_filename import_timestamp').split()
 
 ####################
 # Action-"Classes" #
@@ -324,7 +324,6 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(key='original_filename',
                                         desc='ORIGINAL_FILENAME')
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key='import_timestamp',
                                         desc='IMPORT_TIMESTAMP')
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key='weight', desc='WEIGHT')
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
