@@ -539,7 +539,7 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
 
             # Be within the expected values for cue points
-            # Dont fade in late, or fade out early!
+            # Don't fade in late, or fade out early!
             self.assertGreater(float(changes['cue_in']), cue_in - 0.1)
             self.assertLess(float(changes['cue_in']), cue_in + 0.01)
             self.assertGreater(float(changes['cue_out']), cue_out - 0.01)
@@ -980,7 +980,7 @@ class ProcessorsTestCase(unittest.TestCase):
 
         # Inexistent file
         with self.assertRaises(NotFound):
-            playnext_processor(self.tempdir, {'file': 'sdfsadf'})
+            playnext_processor(self.tempdir, {'file': 'nonexistent'})
 
         # Correct update
         playnext_processor(self.tempdir, {'file': 'music/silence.mp3'})
