@@ -9,7 +9,7 @@ import sys
 import tempfile
 import unittest
 
-from utils import capture
+from .utils import capture
 
 
 class ImporterTestCase(unittest.TestCase):

@@ -12,7 +12,7 @@ import uuid
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from utils import capture
+from .utils import capture
 
 
 class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
