@@ -94,7 +94,7 @@ radio = fallback([prio, radio])
 # ================================================= #
 
 restart = ref true
-current_saemubox_id = ref 1
+current_saemubox_id = ref 0
 
 def set_saemubox_id_fun(id) =
   current_saemubox_id := int_of_string(id)
