@@ -27,9 +27,9 @@ set("server.socket", true)
 #set("harbor.reverse_dns",true)
 
 # Get the Klangbecken data directory
-data_dir = getenv("KLANGBECKEN_DATA")
-if not is_directory(data_dir) then
-    log(level=2, "ERROR: Cannot find data directory: " ^ data_dir)
+DATA_DIR = getenv("KLANGBECKEN_DATA")
+if not is_directory(DATA_DIR) then
+    log(level=2, "ERROR: Cannot find data directory: " ^ DATA_DIR)
     shutdown()
 end
 
@@ -40,13 +40,13 @@ SAEMUBOX_KLANGBECKEN_ID = 1
 # ================================================= #
 
 # Priority playlist
-prio = playlist.once(id="prio", reload_mode="watch", path.concat(data_dir, "prio.m3u"))
+prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio.m3u"))
 
 # Music playlist
-music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(data_dir, "music.m3u"))
+music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(DATA_DIR, "music.m3u"))
 
 # Jingles playlist
-jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(data_dir, "jingles.m3u"))
+jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(DATA_DIR, "jingles.m3u"))
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
 
@@ -98,7 +98,7 @@ current_saemubox_id = ref 1
 
 def set_saemubox_id_fun(id) =
   current_saemubox_id := int_of_string(id)
-  onair_path = path.concat(data_dir, 'onair.json')
+  onair_path = path.concat(DATA_DIR, 'onair.json')
   if !current_saemubox_id == SAEMUBOX_KLANGBECKEN_ID then
     log("Starting Klangbecken")
     restart := true
