@@ -14,87 +14,85 @@ from .utils import capture
 class FsckTestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import PLAYLISTS
-        from klangbecken_api import _check_data_dir, import_files
+        from klangbecken_api import _check_data_dir, import_cmd
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
         self.music_dir = os.path.join(self.tempdir, 'music')
         self.jingles_dir = os.path.join(self.tempdir, 'jingles')
-        _check_data_dir(self.tempdir)
+        _check_data_dir(self.tempdir, create=True)
 
         # Correctly import a couple of files
-        argv = sys.argv
-        try:
-            for playlist in PLAYLISTS:
-                sys.argv = ['', self.tempdir, playlist] + \
-                    [os.path.join(self.current_path, 'audio', 'padded' + ext)
-                     for ext in '.ogg .flac -stereo.mp3'.split()]
-                try:
-                    with capture(import_files, False) as (out, err, ret):
-                        pass
-                except SystemExit as e:
-                    if e.code != 0:
-                        print(err, file=sys.stderr)
-                        raise(RuntimeError('Command execution failed'))
-        finally:
-            sys.argv = argv
+        files = [os.path.join(self.current_path, 'audio', 'padded' + ext)
+                 for ext in '.ogg .flac -stereo.mp3'.split()]
+        for playlist in PLAYLISTS:
+            try:
+                args = [self.tempdir, playlist, files, True]
+                with capture(import_cmd, *args) as (out, err, ret):
+                    pass
+            except SystemExit as e:
+                if e.code != 0:
+                    print(err, file=sys.stderr)
+                    raise(RuntimeError('Command execution failed'))
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
     def testFsckCorruptIndexJson(self):
-        from klangbecken_api import fsck
+        from klangbecken_api import main
 
         index_path = os.path.join(self.tempdir, 'index.json')
         with open(index_path, 'w'):
             pass
 
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
     def testFsckCorruptDataDir(self):
-        from klangbecken_api import fsck
+        from klangbecken_api import main
 
         music_path = os.path.join(self.tempdir, 'music')
         shutil.rmtree(music_path)
 
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
     def testFsck(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['']
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', 'invalid']
         try:
-            # data_dir missing
+            # inexistent data_dir
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
-                    self.assertIn('Usage', err)
+                with capture(main) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertIn('Data directory "invalid" does not exist',
+                                  err)
             self.assertEqual(cm.exception.code, 1)
 
-            sys.argv.append(self.tempdir)
+            sys.argv[-1] = self.tempdir
 
             # correct invocation
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertEqual(err.strip(), '')
             self.assertEqual(cm.exception.code, 0)
         finally:
             sys.arv = argv
 
     def testIndexWithWrongId(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         index_path = os.path.join(self.tempdir, 'index.json')
         with open(index_path) as f:
@@ -107,7 +105,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Id missmatch', err)
             self.assertEqual(cm.exception.code, 1)
@@ -115,8 +113,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexWithWrongCueIn(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         index_path = os.path.join(self.tempdir, 'index.json')
         with open(index_path) as f:
@@ -130,7 +128,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('cue_in larger than cue_out', err)
             self.assertEqual(cm.exception.code, 1)
@@ -138,8 +136,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexWithWrongCueOut(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         index_path = os.path.join(self.tempdir, 'index.json')
         with open(index_path) as f:
@@ -153,7 +151,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('cue_out larger than length', err)
             self.assertEqual(cm.exception.code, 1)
@@ -161,8 +159,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexMissingEntries(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         index_path = os.path.join(self.tempdir, 'index.json')
         with open(index_path) as f:
@@ -176,7 +174,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('missing entries: cue_out', err)
             self.assertEqual(cm.exception.code, 1)
@@ -184,8 +182,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexTooManyEntries(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         index_path = os.path.join(self.tempdir, 'index.json')
         with open(index_path) as f:
@@ -199,7 +197,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('too many entries: whatever', err)
             self.assertEqual(cm.exception.code, 1)
@@ -207,14 +205,14 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexMissingFile(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         os.remove(os.path.join(self.music_dir, os.listdir(self.music_dir)[0]))
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('file does not exist', err)
             self.assertEqual(cm.exception.code, 1)
@@ -222,8 +220,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testTagsValueMismatch(self):
-        from klangbecken_api import fsck, SUPPORTED_FILE_TYPES
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main, SUPPORTED_FILE_TYPES
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         file_path = os.path.join(self.music_dir, os.listdir(self.music_dir)[0])
         FileType = SUPPORTED_FILE_TYPES['.' + file_path.split('.')[-1]]
@@ -233,7 +231,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Tag value mismatch "artist"', err)
             self.assertEqual(cm.exception.code, 1)
@@ -241,8 +239,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testPlaylistWeightMismatch(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         playlist_path = os.path.join(self.tempdir, 'music.m3u')
         with open(playlist_path) as f:
@@ -252,7 +250,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Playlist weight mismatch', err)
             self.assertEqual(cm.exception.code, 1)
@@ -260,8 +258,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testDanglingPlaylistEntries(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         playlist_path = os.path.join(self.tempdir, 'music.m3u')
         with open(playlist_path, 'a') as f:
@@ -269,7 +267,7 @@ class FsckTestCase(unittest.TestCase):
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Dangling playlist entry', err)
                     self.assertIn('not_an_uuid', err)
@@ -278,15 +276,15 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testDanglingFiles(self):
-        from klangbecken_api import fsck
-        argv, sys.argv = sys.argv, ['', self.tempdir]
+        from klangbecken_api import main
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
         with open(os.path.join(self.tempdir, 'music', 'not_an_uuid'), 'w'):
             pass
 
         try:
             with self.assertRaises(SystemExit) as cm:
-                with capture(fsck) as (out, err, ret):
+                with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
                     self.assertIn('Dangling files', err)
                     self.assertIn('not_an_uuid', err)

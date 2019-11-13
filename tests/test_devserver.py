@@ -24,16 +24,21 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testNoFFmpegWarning(self):
-        from klangbecken_api import StandaloneWebApplication
+        from klangbecken_api import StandaloneWebApplication, init_cmd
 
+        init_cmd(self.tempdir)
         with capture(StandaloneWebApplication, self.tempdir) \
                 as (out, err, ret):
             self.assertNotIn("WARNING", out)
 
     def testDirStructure(self):
-        from klangbecken_api import StandaloneWebApplication
+        from klangbecken_api import StandaloneWebApplication, init_cmd
         self.assertFalse(os.path.isdir(os.path.join(self.tempdir, 'music')))
 
+        with self.assertRaises(Exception):
+            StandaloneWebApplication(self.tempdir)
+
+        init_cmd(self.tempdir)
         StandaloneWebApplication(self.tempdir)
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
 
@@ -48,11 +53,11 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
 
 class StandaloneWebApplicationTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken_api import StandaloneWebApplication
+        from klangbecken_api import StandaloneWebApplication, init_cmd
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
-
+        init_cmd(self.tempdir)
         app = StandaloneWebApplication(self.tempdir)
         self.client = Client(app, BaseResponse)
 
@@ -173,11 +178,13 @@ class DataDirCreatorTestCase(unittest.TestCase):
         with open(os.path.join(self.tempdir, 'index.json'), 'w'):
             pass
 
+        os.mkdir(os.path.join(self.tempdir, 'log'))
+
         _check_data_dir(self.tempdir, False)
 
     def testDataDirCreation(self):
         from klangbecken_api import _check_data_dir, PLAYLISTS
-        _check_data_dir(self.tempdir)
+        _check_data_dir(self.tempdir, create=True)
         for playlist in PLAYLISTS:
             path = os.path.join(self.tempdir, playlist)
             self.assertTrue(os.path.isdir(path))
