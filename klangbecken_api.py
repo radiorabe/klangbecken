@@ -268,17 +268,18 @@ def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
     if addition:
         changes = [c for c in changes if isinstance(c, MetadataChange)]
 
-        fname = [c.value for c in changes if c.key == 'original_filename'][0]
+        filename = [c.value for c in changes
+                    if c.key == 'original_filename'][0]
         title = [c.value for c in changes if c.key == 'title'][0]
         artist = [c.value for c in changes if c.key == 'artist'][0]
 
         for entry in data.values():
-            if (entry['original_filename'] == fname and
+            if (entry['original_filename'] == filename and
                     entry['artist'] == artist and
                     entry['title'] == title):
                 raise UnprocessableEntity('Duplicate file entry:\n' +
                                           artist + ' - ' + title +
-                                          ' (' + fname + ')')
+                                          ' (' + filename + ')')
 
 
 def raw_file_processor(data_dir, playlist, fileId, ext, changes):
