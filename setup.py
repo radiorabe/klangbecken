@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='klangbecken',
-    version='0.0.10',
-    description='Klangbecken API',
+    version='0.0.11',
+    description='Klangbecken Audio Player',
     url='https://github.com/radiorabe/klangbecken',
     author='Marco Schmalz',
     author_email='marco@schess.ch ',
