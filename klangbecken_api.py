@@ -63,6 +63,9 @@ except pkg_resources.DistributionNotFound:
     __version__ = 'development version'
 
 
+############
+# Settings #
+############
 PLAYLISTS = ('music', 'jingles')
 
 SUPPORTED_FILE_TYPES = {
@@ -691,6 +694,9 @@ class StandaloneWebApplication:
         return self.app(environ, start_response)
 
 
+###########
+# Helpers #
+###########
 def _check_data_dir(data_dir, create=False):
     """
     Create local data directory structure for testing and development
