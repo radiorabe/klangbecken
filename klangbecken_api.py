@@ -825,11 +825,11 @@ def fsck():
     """
     Entry point for fsck script
     """
-    id = None
+    song_id = None
 
     def err(*args):
-        if id is not None:
-            print('ERROR when processing', id, file=sys.stderr)
+        if song_id is not None:
+            print('ERROR when processing', song_id, file=sys.stderr)
         print(*args, file=sys.stderr)
         err.count += 1
     err.count = 0
@@ -861,7 +861,7 @@ def fsck():
             with open(os.path.join(data_dir, playlist + '.m3u')) as f1:
                 playlist_counts.update(line.strip() for line in
                                        f1.readlines())
-        for id, entries in data.items():
+        for song_id, entries in data.items():
             keys = set(entries.keys())
             missing = set(ALLOWED_METADATA.keys()) - keys
             if missing:
@@ -877,8 +877,8 @@ def fsck():
                                     for key, val in entries.items()))
             except UnprocessableEntity as e:
                 err('ERROR:', text_type(e))
-            if id != entries['id']:
-                err('ERROR: Id missmatch', id, entries['id'])
+            if song_id != entries['id']:
+                err('ERROR: Id missmatch', song_id, entries['id'])
             if entries['cue_in'] > entries['cue_out']:
                 err('ERROR: cue_in larger than cue_out',
                     text_type(entries['cue_in']),
