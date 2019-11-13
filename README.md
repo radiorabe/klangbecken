@@ -44,3 +44,5 @@ To get a working test environment with Docker, you need one container with Iceca
     sudo docker exec $(sudo docker ps -lq) tail -f /var/log/liquidsoap/klangbecken.log
     ```
 5. Now you can open Klangbecken on http://localhost:5000 and the stream on http://localhost:8000
+## System Overview
+![System overview diagram](doc/system-overview.svg)
