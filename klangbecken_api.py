@@ -31,6 +31,7 @@ import fcntl
 import functools
 import json
 import os
+import pkg_resources
 import random
 import re
 import shutil
@@ -54,6 +55,12 @@ from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
                                  Unauthorized)
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
+
+
+try:
+    __version__ = pkg_resources.get_distribution('klangbecken').version
+except pkg_resources.DistributionNotFound:
+    __version__ = 'development version'
 
 
 PLAYLISTS = ('music', 'jingles')
