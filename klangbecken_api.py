@@ -768,10 +768,12 @@ def _analyze_one_file(data_dir, playlist, filename):
 ################
 def init_cmd(data_dir):
     if os.path.exists(data_dir):
-        print('ERROR: Data directory {} exists.'.format(data_dir))
-        exit(1)
-
-    os.mkdir(data_dir)
+        if os.path.isdir(data_dir) and len(os.listdir(data_dir)) != 0:
+            print('ERROR: Data directory {} exists but is not empty.'
+                  .format(data_dir))
+            exit(1)
+    else:
+        os.mkdir(data_dir)
     _check_data_dir(data_dir, create=True)
 
 
@@ -954,7 +956,7 @@ Options:
 
     data_dir = args['--data']
 
-    if os.path.exists(data_dir) and os.path.isdir(data_dir):
+    if os.path.exists(data_dir) and not os.path.isdir(data_dir):
         print('ERROR: Data directory "{}" exists, but is not a directory.'
               .format(data_dir), file=sys.stderr)
         exit(1)
