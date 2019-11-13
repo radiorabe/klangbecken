@@ -844,7 +844,7 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
     sys.exit(1 if count < len(files) else 0)
 
 
-def fsck_cmd(data_dir, dev_mode=False):
+def fsck_cmd(data_dir, repair=False, dev_mode=False):
     """
     Entry point for fsck script
     """
