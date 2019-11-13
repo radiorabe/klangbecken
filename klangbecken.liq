@@ -98,7 +98,7 @@ current_saemubox_id = ref 0
 
 def set_saemubox_id_fun(id) =
   current_saemubox_id := int_of_string(id)
-  onair_path = path.concat(DATA_DIR, 'onair.json')
+  onair_path = path.concat(path.concat(DATA_DIR, 'log'), 'onair.json')
   if !current_saemubox_id == SAEMUBOX_KLANGBECKEN_ID then
     log("Starting Klangbecken")
     restart := true
