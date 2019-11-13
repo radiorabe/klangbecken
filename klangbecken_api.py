@@ -1012,8 +1012,6 @@ Options:
         fsck_cmd(data_dir, repair=args['--repair'])
     elif args['playlog']:
         playlog_cmd(data_dir, args['FILE'][0])
-    elif args['nextlog']:
-        nextlog_cmd(data_dir, args['FILE'][0])
 
 
 if __name__ == '__main__':
