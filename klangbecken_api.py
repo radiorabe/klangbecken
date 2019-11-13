@@ -631,7 +631,7 @@ class StandaloneWebApplication:
         dist_full_path = os.path.join(current_path, dist_dir)
 
         # Create dir structure if needed
-        check_and_crate_data_dir(data_full_path)
+        _check_data_dir(data_full_path)
 
         # Application session cookie secret
         secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
@@ -683,7 +683,7 @@ class StandaloneWebApplication:
         return self.app(environ, start_response)
 
 
-def check_and_crate_data_dir(data_dir, create=True):
+def _check_data_dir(data_dir, create=False):
     """
     Create local data directory structure for testing and development
     """
@@ -741,7 +741,7 @@ def import_files(interactive=True):
         sys.exit(1)
 
     try:
-        check_and_crate_data_dir(data_dir, False)
+        _check_data_dir(data_dir)
     except Exception as e:
         err('ERROR: Problem with data directory.', text_type(e))
         sys.exit(1)
@@ -827,7 +827,7 @@ def fsck():
         sys.exit(1)
 
     try:
-        check_and_crate_data_dir(data_dir, False)
+        _check_data_dir(data_dir)
     except Exception as e:
         err('ERROR: Problem with data directory.', text_type(e))
         sys.exit(1)

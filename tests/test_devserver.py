@@ -153,31 +153,31 @@ class DataDirCreatorTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testDataDirCheckOnly(self):
-        from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
+        from klangbecken_api import _check_data_dir, PLAYLISTS
 
         for playlist in PLAYLISTS + ('prio',):
             path = os.path.join(self.tempdir, playlist)
             with self.assertRaises(Exception):
-                check_and_crate_data_dir(self.tempdir, False)
+                _check_data_dir(self.tempdir, False)
             os.mkdir(path)
 
         for playlist in PLAYLISTS + ('prio',):
             path = os.path.join(self.tempdir, playlist + '.m3u')
             with self.assertRaises(Exception):
-                check_and_crate_data_dir(self.tempdir, False)
+                _check_data_dir(self.tempdir, False)
             with open(path, 'a'):
                 pass
         with self.assertRaises(Exception):
-            check_and_crate_data_dir(self.tempdir, False)
+            _check_data_dir(self.tempdir, False)
 
         with open(os.path.join(self.tempdir, 'index.json'), 'w'):
             pass
 
-        check_and_crate_data_dir(self.tempdir, False)
+        _check_data_dir(self.tempdir, False)
 
     def testDataDirCreation(self):
-        from klangbecken_api import check_and_crate_data_dir, PLAYLISTS
-        check_and_crate_data_dir(self.tempdir)
+        from klangbecken_api import _check_data_dir, PLAYLISTS
+        _check_data_dir(self.tempdir)
         for playlist in PLAYLISTS:
             path = os.path.join(self.tempdir, playlist)
             self.assertTrue(os.path.isdir(path))

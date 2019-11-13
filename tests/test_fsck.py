@@ -14,12 +14,12 @@ from .utils import capture
 class FsckTestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken_api import PLAYLISTS
-        from klangbecken_api import check_and_crate_data_dir, import_files
+        from klangbecken_api import _check_data_dir, import_files
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
         self.music_dir = os.path.join(self.tempdir, 'music')
         self.jingles_dir = os.path.join(self.tempdir, 'jingles')
-        check_and_crate_data_dir(self.tempdir)
+        _check_data_dir(self.tempdir)
 
         # Correctly import a couple of files
         argv = sys.argv

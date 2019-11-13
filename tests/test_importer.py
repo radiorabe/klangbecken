@@ -14,12 +14,12 @@ from .utils import capture
 
 class ImporterTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken_api import check_and_crate_data_dir
+        from klangbecken_api import _check_data_dir
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
         self.music_dir = os.path.join(self.tempdir, 'music')
         self.jingles_dir = os.path.join(self.tempdir, 'jingles')
-        check_and_crate_data_dir(self.tempdir)
+        _check_data_dir(self.tempdir)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
