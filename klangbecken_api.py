@@ -26,6 +26,7 @@ from __future__ import print_function, unicode_literals, division
 
 import collections
 import contextlib
+import csv
 import datetime
 import fcntl
 import functools
@@ -932,6 +933,41 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                 ', '.join(playlist_counts.keys()))
 
     sys.exit(1 if err.count else 0)
+
+
+def playlog_cmd(data_dir, filename, dev_mode=False):
+    file_id = filename.split('/')[-1].split('.')[0]
+
+    json_opts = {'indent': 2, 'sort_keys': True} if dev_mode else {}
+
+    now = datetime.datetime.now()
+
+    with locked_open(os.path.join(data_dir, 'index.json')) as f:
+        data = json.load(f)
+        entry = data[file_id]
+        entry['play_count'] = entry.get('play_count', 0) + 1
+        entry['last_play'] = now.isoformat()
+        f.seek(0)
+        f.truncate()
+        json.dump(data, f, **json_opts)
+        del data
+
+    with open(os.path.join(data_dir, 'log', 'current.json'), 'w') as f:
+        json.dump(entry, f, **json_opts)
+
+    log_file_name = '{}-{}.csv'.format(now.year, now.month)
+    log_file_path = os.path.join(data_dir, 'log', log_file_name)
+
+    if not os.path.exists(log_file_path):
+        with open(log_file_path, 'w', newline='') as csv_file:
+            fieldnames = sorted(ALLOWED_METADATA.keys())
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+
+    with open(log_file_path, 'a', newline='') as csv_file:
+        fieldnames = sorted(ALLOWED_METADATA.keys())
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writerow(entry)
 
 
 def main(dev_mode=False):
