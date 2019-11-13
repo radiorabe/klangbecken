@@ -701,7 +701,7 @@ def _check_data_dir(data_dir, create=False):
     """
     Create local data directory structure for testing and development
     """
-    for path in [data_dir] + \
+    for path in [data_dir, os.path.join(data_dir, 'log')] + \
             [os.path.join(data_dir, playlist) for playlist in PLAYLISTS]:
         if not os.path.isdir(path):
             if create:
