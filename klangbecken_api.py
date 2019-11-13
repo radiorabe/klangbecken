@@ -74,6 +74,16 @@ SUPPORTED_FILE_TYPES = {
     '.flac': mutagen.flac.FLAC,
 }
 
+ISO8601_RE = \
+   (
+    # Date
+    r'(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T'
+    # Time (optionally with a fraction of a second)
+    r'(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?'
+    # Timezone information (Z for UTC or +/- offset from UTC)
+    r'(Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?'
+   )
+
 ALLOWED_METADATA = {
     'id': (text_type, r'^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$'),
     'ext': (text_type, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
@@ -92,11 +102,13 @@ ALLOWED_METADATA = {
     'cue_out': (float, lambda n: n >= 0.0),
 
     'play_count': (int, lambda n: n >= 0),
+    'last_play': (text_type, r'^(^$)|(^{}$)'.format(ISO8601_RE)),
 }
 
 UPDATE_KEYS = 'artist title album weight'.split()
 TAG_KEYS = ('artist title album cue_in cue_out track_gain '
             'original_filename import_timestamp').split()
+
 
 ####################
 # Action-"Classes" #
@@ -128,6 +140,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
         MetadataChange('import_timestamp', time.time()),
         MetadataChange('weight', 1),
         MetadataChange('play_count', 0),
+        MetadataChange('last_play', ''),
     ]
 
 
