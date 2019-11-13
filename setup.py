@@ -24,15 +24,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Topic :: Internet :: WWW/HTTP :: WSGI',
     ],
-    install_requires=['werkzeug', 'mutagen', 'six'],
+    install_requires=['docopt', 'mutagen', 'six', 'Werkzeug'],
     extras_require={
         'test': ['tox', 'coverage', 'mock', 'flake8'],
     },
     entry_points={
         'console_scripts': [
+            'klangbecken=klangbecken_api:main',
             'saemubox-listener=saemubox_listener:main',
-            'klangbecken-import=klangecken_api:import_files',
-            'klangbecken-fsck=klangbecken_api:fsck',
             'klangbecken-play-logger=play_logger:main',
         ],
     }

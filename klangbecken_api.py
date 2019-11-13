@@ -753,7 +753,23 @@ def _analyze_one_file(data_dir, playlist, filename):
 ################
 # Entry points #
 ################
-def import_files(interactive=True):
+def init_cmd(data_dir):
+    if os.path.exists(data_dir):
+        print('ERROR: Data directory {} exists.'.format(data_dir))
+        exit(1)
+
+    os.mkdir(data_dir)
+    _check_data_dir(data_dir, create=True)
+
+
+def serve_cmd(data_dir):
+    # Run locally in stand-alone development mode
+    from werkzeug.serving import run_simple
+    run_simple('127.0.0.1', 5000, StandaloneWebApplication(data_dir),
+               use_debugger=True, use_reloader=True, threaded=True)
+
+
+def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
     """
     Entry point for import script
     """
@@ -761,21 +777,13 @@ def import_files(interactive=True):
         print(*(arg if isinstance(arg, text_type) else text_type(arg, 'utf-8')
                 for arg in args), file=sys.stderr)
 
-    try:
-        def _convert(x):   # pragma: no cover
-            if isinstance(x, text_type):
-                return x
-            else:
-                return text_type(x, sys.stdin.encoding, 'ignore')
+    def _convert(x):   # pragma: no cover
+        if isinstance(x, text_type):
+            return x
+        else:
+            return text_type(x, sys.stdin.encoding, 'ignore')
 
-        args = [_convert(arg) for arg in sys.argv]
-        data_dir = args[1]
-        playlist = args[2]
-        files = args[3:]
-        files[0]
-    except IndexError:
-        err('Usage:\npython import_files DATA_DIR PLAYLIST FILE...')
-        sys.exit(1)
+    files = [_convert(f) for f in files]
 
     try:
         _check_data_dir(data_dir)
@@ -806,7 +814,7 @@ def import_files(interactive=True):
                                                          len(files)))
     count = 0
     print('Start import now? [y/N]', end=' ')
-    if not interactive or input().strip().lower() == 'y':
+    if not yes or input().strip().lower() == 'y':
         for filename, fileId, ext, actions in analysis_data:
             try:
                 for processor in DEFAULT_PROCESSORS:
@@ -821,7 +829,7 @@ def import_files(interactive=True):
     sys.exit(1 if count < len(files) else 0)
 
 
-def fsck():
+def fsck_cmd(data_dir, dev_mode=False):
     """
     Entry point for fsck script
     """
@@ -833,12 +841,6 @@ def fsck():
         print(*args, file=sys.stderr)
         err.count += 1
     err.count = 0
-
-    try:
-        data_dir = sys.argv[1]
-    except IndexError:
-        err('Usage:\npython fsck.py DATA_DIR')
-        sys.exit(1)
 
     try:
         _check_data_dir(data_dir)
@@ -917,8 +919,52 @@ def fsck():
     sys.exit(1 if err.count else 0)
 
 
+def main(dev_mode=False):
+    '''Klangbecken
+
+Usage:
+  klangbecken init [-d DATA_DIR]
+  klangbecken serve [-d DATA_DIR]
+  klangbecken import [-d DATA_DIR] [-y] PLAYLIST FILE...
+  klangbecken fsck [-d DATA_DIR] [-R]
+  klangbecken playlog [-d DATA_DIR] FILE
+  klangbecken nextlog [-d DATA_DIR] FILE
+
+Options:
+  -d DIR, --data=DIR   Set data directory [default: ./data/]
+  -y, --yes            Automatically answer yes for all questions.
+  -R, --repair         Try to repair index.
+
+'''
+    from docopt import docopt
+    args = docopt(main.__doc__, version='Klangbecken {}'.format(__version__))
+
+    data_dir = args['--data']
+
+    if os.path.exists(data_dir) and os.path.isdir(data_dir):
+        print('ERROR: Data directory "{}" exists, but is not a directory.'
+              .format(data_dir), file=sys.stderr)
+        exit(1)
+
+    if not os.path.isdir(data_dir) and not args['init']:
+        print('ERROR: Data directory "{}" does not exist.'.format(data_dir),
+              file=sys.stderr)
+        exit(1)
+
+    if args['init']:
+        init_cmd(data_dir)
+    elif args['serve']:
+        serve_cmd(data_dir)
+    elif args['import']:
+        import_cmd(data_dir, args['PLAYLIST'], args['FILE'], yes=args['--yes'])
+    elif args['fsck']:
+        fsck_cmd(data_dir, repair=args['--repair'])
+    elif args['playlog']:
+        playlog_cmd(data_dir, args['FILE'][0])
+    elif args['nextlog']:
+        nextlog_cmd(data_dir, args['FILE'][0])
+
+
 if __name__ == '__main__':
-    # Run locally in stand-alone development mode
-    from werkzeug.serving import run_simple
-    run_simple('127.0.0.1', 5000, StandaloneWebApplication(),
-               use_debugger=True, use_reloader=True, threaded=True)
+    main(dev_mode=True)
+    exit(0)
