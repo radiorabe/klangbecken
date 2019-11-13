@@ -829,7 +829,7 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
                                                          len(files)))
     count = 0
     print('Start import now? [y/N]', end=' ')
-    if not yes or input().strip().lower() == 'y':
+    if yes or input().strip().lower() == 'y':
         for filename, fileId, ext, actions in analysis_data:
             try:
                 for processor in DEFAULT_PROCESSORS:
