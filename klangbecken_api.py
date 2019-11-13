@@ -727,6 +727,29 @@ def _check_data_dir(data_dir, create=False):
             raise Exception('File "index.json" does not exist')
 
 
+def _analyze_one_file(data_dir, playlist, filename):
+    if not os.path.exists(filename):
+        raise UnprocessableEntity('File not found: ' + filename)
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in SUPPORTED_FILE_TYPES.keys():
+        raise UnprocessableEntity('File extension not supported: ' + ext)
+
+    with open(filename, 'rb') as importFile:
+        fileId = text_type(uuid.uuid4())
+        actions = []
+        for analyzer in DEFAULT_UPLOAD_ANALYZERS:
+            actions += analyzer(playlist, fileId, ext, importFile)
+
+        actions.append(MetadataChange('original_filename',
+                                      os.path.basename(filename)))
+        actions.append(MetadataChange('import_timestamp',
+                                      os.stat(filename).st_mtime))
+
+        actions[0] = FileAddition(filename)
+    return (filename, fileId, ext, actions)
+
+
 ################
 # Entry points #
 ################
@@ -796,29 +819,6 @@ def import_files(interactive=True):
 
     print('Successfully imported {} of {} files.'.format(count, len(files)))
     sys.exit(1 if count < len(files) else 0)
-
-
-def _analyze_one_file(data_dir, playlist, filename):
-    if not os.path.exists(filename):
-        raise UnprocessableEntity('File not found: ' + filename)
-
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in SUPPORTED_FILE_TYPES.keys():
-        raise UnprocessableEntity('File extension not supported: ' + ext)
-
-    with open(filename, 'rb') as importFile:
-        fileId = text_type(uuid.uuid4())
-        actions = []
-        for analyzer in DEFAULT_UPLOAD_ANALYZERS:
-            actions += analyzer(playlist, fileId, ext, importFile)
-
-        actions.append(MetadataChange('original_filename',
-                                      os.path.basename(filename)))
-        actions.append(MetadataChange('import_timestamp',
-                                      os.stat(filename).st_mtime))
-
-        actions[0] = FileAddition(filename)
-    return (filename, fileId, ext, actions)
 
 
 def fsck():
