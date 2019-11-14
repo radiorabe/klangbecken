@@ -655,10 +655,10 @@ class StandaloneWebApplication:
             dist_dir = f.read().strip()
         dist_full_path = os.path.join(current_path, dist_dir)
 
-        # Create dir structure if needed
+        # Check data dirrectory structure
         _check_data_dir(data_full_path)
 
-        # Application session cookie secret
+        # Create random application session cookie secret
         secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
 
         # Only add ffmpeg_audio_analyzer to analyzers if binary is present
@@ -698,7 +698,7 @@ class StandaloneWebApplication:
 
     def __call__(self, environ, start_response):
         # Insert dummy user for authentication
-        # (normally done by the apache auth module)
+        # (normally done externally)
         environ['REMOTE_USER'] = 'dummyuser'
 
         # Send 'index.html' when requesting '/'
@@ -1015,6 +1015,8 @@ Options:
 
 
 if __name__ == '__main__':
+    # Enable development mode, when being called directly with
+    # $ python klangbecken.py
     main(dev_mode=True)
     exit(0)
 
