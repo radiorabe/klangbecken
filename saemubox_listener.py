@@ -79,9 +79,9 @@ def main():
                         print(ls_sock.recv(1000))
                         ls_sock.sendall(b'quit\n')
                         print(ls_sock.recv(1000))
+                        status = new_status
                     except socket.error:
                         print('ERROR: cannot connect to liquidsoap server')
-                status = int(output)
             except socket.error:
                 try:
                     sock.close()
