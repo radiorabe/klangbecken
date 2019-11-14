@@ -60,7 +60,7 @@ from werkzeug.wrappers import Request, Response
 
 try:
     __version__ = pkg_resources.get_distribution('klangbecken').version
-except pkg_resources.DistributionNotFound:
+except pkg_resources.DistributionNotFound:   # pragma: no cover
     __version__ = 'development version'
 
 
