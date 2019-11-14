@@ -6,7 +6,6 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
-
 addons:
   apt:
     packages:
@@ -18,21 +17,17 @@ addons:
 env:
   global:
     - KLANGBECKEN_DATA=/tmp/data
-
-install:
-  - pip install tox
-  - pip install .
-  - pip install coverage
-  - pip install codecov
-
-script:
-  - tox
+before_install:
   - liquidsoap --version
-  - test -d $KLANGBECKEN_DATA || mkdir $KLANGBECKEN_DATA
-  - touch $KLANGBECKEN_DATA/prio.m3u
-  - test -f klangbecken.liq && liquidsoap --check klangbecken.liq
+  - python --version
+  - pip install -U pip
+  - pip install codecov
+install:
+  - pip install  ".[test]" .
+script:
+  - klangbecken init -d $KLANGBECKEN_DATA
+  - liquidsoap --check klangbecken.liq
   - coverage run --source=klangbecken_api -m unittest discover
   - coverage report --fail-under=90 -m
-
 after_success:
   - codecov
