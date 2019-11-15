@@ -8,10 +8,12 @@
 ### Dependencies
 
 * Unix-like operating system environment
-* **Python** >= 2.7
+* **Python** 2.7 or >= 3.5
 * **Werkzeug** library for the WSGI application
 * **mutagen** library for audio tag editing
-* **ffmpeg** binary for audio analysis
+* **six** library for Python 2.7 and 3 compatibility
+* **docopt** library for parsing command line arguments
+* **ffmpeg** binary (>=4.0) for audio analysis
 
 ### Development dependencies:
 
