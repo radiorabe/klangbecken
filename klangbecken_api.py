@@ -637,11 +637,11 @@ class StandaloneWebApplication:
     """
     Stand-alone Klangbecken WSGI application for testing and development.
 
-    * Serves static files from the dist directory
     * Serves data files from the data directory
     * Relays API calls to the KlangbeckenAPI instance
 
-    Authentication is disabled. Loudness and silence analysis are skipped.
+    Authentication is disabled. Loudness and silence analysis are skipped,
+    if ffmpeg binary is missing.
     """
 
     def __init__(self, data_path=None):
@@ -651,9 +651,6 @@ class StandaloneWebApplication:
         # Assemble useful paths
         current_path = os.path.dirname(os.path.realpath(__file__))
         data_full_path = data_path or os.path.join(current_path, 'data')
-        with open(os.path.join(current_path, '.dist_dir')) as f:
-            dist_dir = f.read().strip()
-        dist_full_path = os.path.join(current_path, dist_dir)
 
         # Check data dirrectory structure
         _check_data_dir(data_full_path)
@@ -688,9 +685,8 @@ class StandaloneWebApplication:
 
         # Return 404 Not Found by default
         app = NotFound()
-        # Serve static files from the dist and data directories
-        app = SharedDataMiddleware(app, {'': dist_full_path,
-                                         '/data': data_full_path})
+        # Serve static files from the data directory
+        app = SharedDataMiddleware(app, {'/data': data_full_path})
         # Relay requests to /api to the KlangbeckenAPI instance
         app = DispatcherMiddleware(app, {'/api': api})
 
@@ -701,9 +697,12 @@ class StandaloneWebApplication:
         # (normally done externally)
         environ['REMOTE_USER'] = 'dummyuser'
 
-        # Send 'index.html' when requesting '/'
+        # Be nice
         if environ['PATH_INFO'] == '/':
-            environ['PATH_INFO'] = '/index.html'
+            msg = b'Welcome to the Klangbecken API!\n'
+            start_response('200 OK', [('Content-Type', 'text/plain'),
+                                      ('Content-Length', str(len(msg)))])
+            return [msg]
 
         return self.app(environ, start_response)
 
