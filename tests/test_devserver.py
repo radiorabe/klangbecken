@@ -67,8 +67,8 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
     def testIndexHtml(self):
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 200)
-        self.assertTrue(resp.data.startswith(b'<!DOCTYPE html>'))
-        self.assertIn(b'RaBe Klangbecken', resp.data)
+        self.assertTrue(resp.data.startswith(b'Welcome'))
+        self.assertIn(b'Klangbecken', resp.data)
         resp.close()
 
     def testApi(self):
