@@ -73,7 +73,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                    self.assertIn('Data directory "invalid" does not exist',
+                    self.assertIn("Data directory 'invalid' does not exist",
                                   err)
             self.assertEqual(cm.exception.code, 1)
 
@@ -230,7 +230,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(main) as (out, err, ret):
                     self.assertIn('ERROR', err)
-                    self.assertIn('Tag value mismatch "artist"', err)
+                    self.assertIn("Tag value mismatch 'artist'", err)
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv

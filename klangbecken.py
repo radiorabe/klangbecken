@@ -971,11 +971,12 @@ Options:
 
     if os.path.exists(data_dir) and not os.path.isdir(data_dir):
         print(f"ERROR: Data directory '{data_dir}' exists, but is not a "
-              'directory.')
+              'directory.', file=sys.stderr)
         exit(1)
 
     if not os.path.isdir(data_dir) and not args['init']:
-        print(f"ERROR: Data directory '{data_dir}' does not exist.")
+        print(f"ERROR: Data directory '{data_dir}' does not exist.",
+              file=sys.stderr)
         exit(1)
 
     if args['init']:
