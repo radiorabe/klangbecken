@@ -1003,7 +1003,5 @@ if __name__ == '__main__':
     # Enable development mode, when being called directly with
     # $ python klangbecken.py
     main(dev_mode=True)
-    exit(0)
-
 
 # -*- mode: python; indent-tabs-mode: nil; tab-width: 4 -*-
