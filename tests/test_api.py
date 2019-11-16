@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals, print_function
-
 import io
 import json
 import mock
 import os
 import shutil
-import six
 import tempfile
 import unittest
 import uuid
@@ -111,9 +107,9 @@ class APITestCase(unittest.TestCase):
             data={'file': (io.BytesIO(b'testcontent'), 'test.mp3')},
         )
         self.assertEqual(resp.status_code, 200)
-        data = json.loads(six.text_type(resp.data, 'ascii'))
+        data = json.loads(resp.data)
         fileId = list(data.keys())[0]
-        self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
+        self.assertEqual(fileId, str(uuid.UUID(fileId)))
         self.assertEqual(list(data.values())[0], {'testkey': 'testvalue'})
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_called_once()
@@ -170,7 +166,7 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.assert_not_called()
         self.processor.assert_called_once_with('data_dir', 'music', fileId,
                                                '.mp3', ['UpdateChange'])
-        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+        self.assertEqual(json.loads(resp.data),
                          {'status': 'OK'})
         self.update_analyzer.reset_mock()
         self.processor.reset_mock()
@@ -222,7 +218,7 @@ class APITestCase(unittest.TestCase):
         self.processor.assert_called_once_with('data_dir', 'music', fileId,
                                                '.mp3', [FileDeletion()])
 
-        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+        self.assertEqual(json.loads(resp.data),
                          {'status': 'OK'})
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
@@ -297,7 +293,7 @@ class AuthTestCase(unittest.TestCase):
         method_func = getattr(self.client, method.lower())
         resp = method_func('/login/', environ_base={'REMOTE_USER': 'xyz'})
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+        self.assertEqual(json.loads(resp.data),
                          {'status': 'OK', 'user': 'xyz'})
         self.assertIn('Set-Cookie', resp.headers)
         self.assertIn('session', resp.headers['Set-Cookie'])
@@ -306,13 +302,13 @@ class AuthTestCase(unittest.TestCase):
         # See if we're still logged in
         resp = self.client.get('/login/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+        self.assertEqual(json.loads(resp.data),
                          {'status': 'OK', 'user': 'xyz'})
 
         # Funny user name
         resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'äöü'})
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+        self.assertEqual(json.loads(resp.data),
                          {'status': 'OK', 'user': 'äöü'})
 
     def testLoginGet(self):
@@ -732,13 +728,13 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue('fileId2' in data)
 
         # Try duplicating file ids
-        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+        with self.assertRaisesRegex(UnprocessableEntity, 'Duplicate'):
             index_processor(self.tempdir, 'music', 'fileId2', '.ogg',
                             [FileAddition(file_)])
-        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+        with self.assertRaisesRegex(UnprocessableEntity, 'Duplicate'):
             index_processor(self.tempdir, 'jingles', 'fileId2', '.mp3',
                             [FileAddition(file_)])
-        with self.assertRaisesRegexp(UnprocessableEntity, 'Duplicate'):
+        with self.assertRaisesRegex(UnprocessableEntity, 'Duplicate'):
             index_processor(self.tempdir, 'music', 'fileId2', '.mp3',
                             [FileAddition(file_)])
 

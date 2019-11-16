@@ -22,8 +22,6 @@
 # Please submit enhancements, bugfixes or comments via:
 # https://github.com/radiorabe/klangbecken
 
-from __future__ import print_function, unicode_literals, division
-
 import collections
 import contextlib
 import csv
@@ -47,9 +45,6 @@ import mutagen.easyid3
 import mutagen.flac
 import mutagen.mp3
 import mutagen.oggvorbis
-
-from six import text_type
-from six.moves import input
 
 from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
@@ -86,24 +81,24 @@ ISO8601_RE = \
    )
 
 ALLOWED_METADATA = {
-    'id': (text_type, r'^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$'),
-    'ext': (text_type, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
-    'playlist': (text_type, lambda pl: pl in PLAYLISTS),
-    'original_filename': text_type,
+    'id': (str, r'^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$'),
+    'ext': (str, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
+    'playlist': (str, lambda pl: pl in PLAYLISTS),
+    'original_filename': str,
     'import_timestamp': float,
     'weight': (int, lambda c: c >= 0),
 
-    'artist': text_type,
-    'title': text_type,
-    'album': text_type,
+    'artist': str,
+    'title': str,
+    'album': str,
     'length': (float, lambda n: n >= 0.0),
 
-    'track_gain': (text_type, r'^[+-]?[0-9]*(\.[0-9]*) dB$'),
+    'track_gain': (str, r'^[+-]?[0-9]*(\.[0-9]*) dB$'),
     'cue_in':  (float, lambda n: n >= 0.0),
     'cue_out': (float, lambda n: n >= 0.0),
 
     'play_count': (int, lambda n: n >= 0),
-    'last_play': (text_type, r'^(^$)|(^{}$)'.format(ISO8601_RE)),
+    'last_play': (str, r'^(^$)|(^{}$)'.format(ISO8601_RE)),
 }
 
 UPDATE_KEYS = 'artist title album weight'.split()
@@ -175,7 +170,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         raw_output = subprocess.check_output(command, stdin=file_,
                                              stderr=subprocess.STDOUT)
         # Non-ASCII characters can safely be ignored
-        output = text_type(raw_output, 'ascii', errors='ignore')
+        output = str(raw_output, 'ascii', errors='ignore')
     except subprocess.CalledProcessError:
         raise UnprocessableEntity('Cannot process audio data')
 
@@ -304,7 +299,7 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
-            if isinstance(file_, text_type):
+            if isinstance(file_, str):
                 shutil.copy(file_, path)
             else:
                 with open(path, 'wb') as dest:
@@ -365,7 +360,7 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
                     FileType = SUPPORTED_FILE_TYPES[ext]
                     mutagenfile = FileType(path)
 
-                mutagenfile[key] = text_type(value)
+                mutagenfile[key] = str(value)
 
     if mutagenfile:
         with locked_open(path):
@@ -542,7 +537,7 @@ class KlangbeckenAPI:
             uploadFile = request.files['file']
 
             ext = os.path.splitext(uploadFile.filename)[1].lower()
-            fileId = text_type(uuid.uuid4())   # Generate new file id
+            fileId = str(uuid.uuid4())   # Generate new file id
 
             actions = []
             for analyzer in self.upload_analyzers:
@@ -561,11 +556,11 @@ class KlangbeckenAPI:
         return JSONResponse({fileId: response})
 
     def on_update(self, request, playlist, fileId, ext):
-        fileId = text_type(fileId)
+        fileId = str(fileId)
 
         actions = []
         try:
-            data = json.loads(text_type(request.data, 'utf-8'))
+            data = json.loads(str(request.data, 'utf-8'))
             for analyzer in self.update_analyzers:
                 actions += analyzer(playlist, fileId, ext, data)
 
@@ -582,7 +577,7 @@ class KlangbeckenAPI:
         return JSONResponse({'status': 'OK'})
 
     def on_delete(self, request, playlist, fileId, ext):
-        fileId = text_type(fileId)
+        fileId = str(fileId)
 
         change = [FileDeletion()]
         for processor in self.processors:
@@ -592,7 +587,7 @@ class KlangbeckenAPI:
 
     def on_play_next(self, request):
         try:
-            data = json.loads(text_type(request.data, 'utf-8'))
+            data = json.loads(str(request.data, 'utf-8'))
             playnext_processor(self.data_dir, data)
 
         except (UnicodeDecodeError, TypeError):
@@ -623,7 +618,7 @@ class JSONSerializer:
     @staticmethod
     def loads(serialized):
         # UTF-8 encoding is default in Python 3+
-        return json.loads(text_type(serialized, 'utf-8'))
+        return json.loads(str(serialized, 'utf-8'))
 
 
 class JSONSecureCookie(SecureCookie):
@@ -749,7 +744,7 @@ def _analyze_one_file(data_dir, playlist, filename):
         raise UnprocessableEntity('File extension not supported: ' + ext)
 
     with open(filename, 'rb') as importFile:
-        fileId = text_type(uuid.uuid4())
+        fileId = str(uuid.uuid4())
         actions = []
         for analyzer in DEFAULT_UPLOAD_ANALYZERS:
             actions += analyzer(playlist, fileId, ext, importFile)
@@ -789,21 +784,12 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
     Entry point for import script
     """
     def err(*args):
-        print(*(arg if isinstance(arg, text_type) else text_type(arg, 'utf-8')
-                for arg in args), file=sys.stderr)
-
-    def _convert(x):   # pragma: no cover
-        if isinstance(x, text_type):
-            return x
-        else:
-            return text_type(x, sys.stdin.encoding, 'ignore')
-
-    files = [_convert(f) for f in files]
+        print(*args, file=sys.stderr)
 
     try:
         _check_data_dir(data_dir)
     except Exception as e:
-        err('ERROR: Problem with data directory.', text_type(e))
+        err('ERROR: Problem with data directory.', str(e))
         sys.exit(1)
 
     if playlist not in PLAYLISTS:
@@ -819,11 +805,11 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
         except UnprocessableEntity as e:
             err('WARNING: File cannot be analyzed: ' + filename)
             err('WARNING: ' + e.description if hasattr(e, 'description')
-                else text_type(e))
+                else str(e))
         except Exception as e:  # pragma: no cover
             err('WARNING: Unknown error when analyzing file: ' + filename)
             err('WARNING: ' + e.description if hasattr(e, 'description')
-                else text_type(e))
+                else str(e))
 
     print('Successfully analyzed {} of {} files.'.format(len(analysis_data),
                                                          len(files)))
@@ -838,7 +824,7 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
             except Exception as e:  # pragma: no cover
                 err('WARNING: File cannot be imported: ' + filename,
                     e.description if hasattr(e, 'description')
-                    else text_type(e))
+                    else str(e))
 
     print('Successfully imported {} of {} files.'.format(count, len(files)))
     sys.exit(1 if count < len(files) else 0)
@@ -860,14 +846,14 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
     try:
         _check_data_dir(data_dir)
     except Exception as e:
-        err('ERROR: Problem with data directory.', text_type(e))
+        err('ERROR: Problem with data directory.', str(e))
         sys.exit(1)
 
     with locked_open(os.path.join(data_dir, 'index.json')) as f:
         try:
             data = json.load(f)
         except ValueError as e:
-            err('ERROR: Cannot read index.json', text_type(e))
+            err('ERROR: Cannot read index.json', str(e))
             sys.exit(1)  # abort
 
         files = set()
@@ -893,17 +879,17 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                                 (MetadataChange(key, val)
                                     for key, val in entries.items()))
             except UnprocessableEntity as e:
-                err('ERROR:', text_type(e))
+                err('ERROR:', str(e))
             if song_id != entries['id']:
                 err('ERROR: Id missmatch', song_id, entries['id'])
             if entries['cue_in'] > entries['cue_out']:
                 err('ERROR: cue_in larger than cue_out',
-                    text_type(entries['cue_in']),
-                    text_type(entries['cue_out']))
+                    str(entries['cue_in']),
+                    str(entries['cue_out']))
             if entries['cue_out'] > entries['length']:
                 err('ERROR: cue_out larger than length',
-                    text_type(entries['cue_out']),
-                    text_type(entries['length']))
+                    str(entries['cue_out']),
+                    str(entries['length']))
             file_path = os.path.join(entries['playlist'],
                                      entries['id'] + entries['ext'])
             file_full_path = os.path.join(data_dir, file_path)
@@ -915,7 +901,7 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                 mutagenfile = FileType(file_full_path)
                 for key in TAG_KEYS:
                     tag_value = mutagenfile.get(key, [''])[0]
-                    if text_type(entries[key]) != tag_value:
+                    if str(entries[key]) != tag_value:
                         err('ERROR: Tag value mismatch "{}": {} != {}'
                             .format(key, entries[key], tag_value))
 

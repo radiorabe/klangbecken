@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals, print_function
-
 import json
 import os
 import shutil
-import six
 import tempfile
 import unittest
 import uuid
@@ -75,7 +71,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         # Login
         resp = self.client.get('/api/login/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(six.text_type(resp.data, 'ascii')),
+        self.assertEqual(json.loads(resp.data),
                          {'status': 'OK', 'user': 'dummyuser'})
         resp.close()
 
@@ -88,9 +84,9 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
                 data={'file': (f, 'silence-unicode-jointstereo.mp3')},
             )
         self.assertEqual(resp.status_code, 200)
-        data = json.loads(six.text_type(resp.data, 'ascii'))
+        data = json.loads(resp.data)
         fileId = list(data.keys())[0]
-        self.assertEqual(fileId, six.text_type(uuid.UUID(fileId)))
+        self.assertEqual(fileId, str(uuid.UUID(fileId)))
         expected = {
             'original_filename': 'silence-unicode-jointstereo.mp3',
             'length': 1.0,
