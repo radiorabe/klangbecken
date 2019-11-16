@@ -257,7 +257,7 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
                             '(value: "{}").'
                             .format(key, val)
                         )
-                elif isinstance(check, text_type):
+                elif isinstance(check, str):
                     if re.match(check, val) is None:
                         raise UnprocessableEntity(
                             'Invalid data format for "{}": Regex check failed '
@@ -405,10 +405,10 @@ DEFAULT_PROCESSORS = [
 
 def playnext_processor(data_dir, data):
     if not isinstance(data, dict):
-        raise UnprocessableEntity('Invalid data format: ' +
+        raise UnprocessableEntity('Invalid data format: '
                                   'associative array expected')
     if 'file' not in data:
-        raise UnprocessableEntity('Invalid data format: ' +
+        raise UnprocessableEntity('Invalid data format: '
                                   'Key "file" not found')
 
     filename = data['file']
@@ -531,7 +531,7 @@ class KlangbeckenAPI:
 
     def on_upload(self, request, playlist):
         if 'file' not in request.files:
-            raise UnprocessableEntity('No attribute named \'file\' found.')
+            raise UnprocessableEntity("No attribute named 'file' found.")
 
         try:
             uploadFile = request.files['file']
@@ -565,10 +565,10 @@ class KlangbeckenAPI:
                 actions += analyzer(playlist, fileId, ext, data)
 
         except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
+            raise UnprocessableEntity('Cannot parse PUT request: '
                                       'invalid UTF-8 data')
         except ValueError:
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
+            raise UnprocessableEntity('Cannot parse PUT request: '
                                       'invalid JSON')
 
         for processor in self.processors:
@@ -591,11 +591,11 @@ class KlangbeckenAPI:
             playnext_processor(self.data_dir, data)
 
         except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid UTF-8 data')
+            raise UnprocessableEntity('Cannot parse PUT request: '
+                                      'invalid UTF-8 data')
         except ValueError:
-            raise UnprocessableEntity('Cannot parse PUT request: ' +
-                                      ' not valid JSON')
+            raise UnprocessableEntity('Cannot parse PUT request: '
+                                      'invalid JSON')
 
         return JSONResponse({'status': 'OK'})
 
@@ -659,7 +659,7 @@ class StandaloneWebApplication:
             subprocess.check_output('ffmpeg -version'.split())
             upload_analyzers.append(ffmpeg_audio_analyzer)
         except (OSError, subprocess.CalledProcessError):  # pragma: no cover
-            print('WARNING: ffmpeg binary not found. ' +
+            print('WARNING: ffmpeg binary not found. '
                   'No audio analysis is performed.', file=sys.stderr)
 
         # Slightly modify processors, such that index.json is pretty printed
