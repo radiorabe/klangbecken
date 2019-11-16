@@ -20,7 +20,7 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testNoFFmpegWarning(self):
-        from klangbecken_api import StandaloneWebApplication, init_cmd
+        from klangbecken import StandaloneWebApplication, init_cmd
 
         init_cmd(self.tempdir)
         with capture(StandaloneWebApplication, self.tempdir) \
@@ -28,7 +28,7 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
             self.assertNotIn("WARNING", out)
 
     def testDirStructure(self):
-        from klangbecken_api import StandaloneWebApplication, init_cmd
+        from klangbecken import StandaloneWebApplication, init_cmd
         self.assertFalse(os.path.isdir(os.path.join(self.tempdir, 'music')))
 
         with self.assertRaises(Exception):
@@ -49,7 +49,7 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
 
 class StandaloneWebApplicationTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken_api import StandaloneWebApplication, init_cmd
+        from klangbecken import StandaloneWebApplication, init_cmd
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
@@ -154,7 +154,7 @@ class DataDirCreatorTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testDataDirCheckOnly(self):
-        from klangbecken_api import _check_data_dir, PLAYLISTS
+        from klangbecken import _check_data_dir, PLAYLISTS
 
         for playlist in PLAYLISTS + ('prio',):
             path = os.path.join(self.tempdir, playlist)
@@ -179,7 +179,7 @@ class DataDirCreatorTestCase(unittest.TestCase):
         _check_data_dir(self.tempdir, False)
 
     def testDataDirCreation(self):
-        from klangbecken_api import _check_data_dir, PLAYLISTS
+        from klangbecken import _check_data_dir, PLAYLISTS
         _check_data_dir(self.tempdir, create=True)
         for playlist in PLAYLISTS:
             path = os.path.join(self.tempdir, playlist)

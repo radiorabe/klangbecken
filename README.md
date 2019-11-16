@@ -29,20 +29,25 @@
 
 To get a working test environment with Docker, you need one container with Icecast and another with liquidsoap
 
-1. Start Klangbecken
+0. Init Klangbecken data directory
+    ```bash
+    python klangbecken.py init
     ```
-    python klangbecken_api.py
+
+1. Start Klangbecken backend
+    ```bash
+    python klangbecken.py serve
     ```
 2. Start the Icecast container
-    ```
+    ```bash
     sudo docker run --net host moul/icecast
     ```
 3. Execute `klangbecken.liq`
-    ```
+    ```bash
     sudo docker run -ti --rm -v $PWD:/var/lib/liquidsoap -e KLANGBECKEN_DATA=data --net host radiorabe/liquidsoap klangbecken.liq
     ```
 4. Also have a look at the logs
-    ```
+    ```bash
     sudo docker exec $(sudo docker ps -lq) tail -f /var/log/liquidsoap/klangbecken.log
     ```
 5. Now you can open Klangbecken on http://localhost:5000 and the stream on http://localhost:8000
