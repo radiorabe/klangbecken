@@ -980,15 +980,16 @@ Options:
         exit(1)
 
     if args['init']:
-        init_cmd(data_dir)
+        init_cmd(data_dir, dev_mode=dev_mode)
     elif args['serve']:
-        serve_cmd(data_dir)
+        serve_cmd(data_dir, dev_mode=dev_mode)
     elif args['import']:
-        import_cmd(data_dir, args['PLAYLIST'], args['FILE'], yes=args['--yes'])
+        import_cmd(data_dir, args['PLAYLIST'], args['FILE'], yes=args['--yes'],
+                   dev_mode=dev_mode)
     elif args['fsck']:
-        fsck_cmd(data_dir, repair=args['--repair'])
+        fsck_cmd(data_dir, repair=args['--repair'], dev_mode=dev_mode)
     elif args['playlog']:
-        playlog_cmd(data_dir, args['FILE'][0])
+        playlog_cmd(data_dir, args['FILE'][0], dev_mode=dev_mode)
 
 
 if __name__ == '__main__':
