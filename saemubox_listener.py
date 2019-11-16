@@ -18,8 +18,8 @@ def main():
     valid_ids = set(map(str, range(1, 7)))
 
     print("Starting ...")
-    print("Forwarding changes from {}:{} to {}".format(mcast_host, mcast_port,
-                                                       liquidsoap_sock))
+    print(f"Forwarding changes from {mcast_host}:{mcast_port} to "
+          f"{liquidsoap_sock}")
 
     try:
         sock = None
@@ -35,8 +35,8 @@ def main():
                 try:
                     sock.bind((mcast_host, int(mcast_port)))
                 except socket.error:
-                    print("ERROR: could not connect to {}:{}"
-                          .format(mcast_host, mcast_port))
+                    print(f"ERROR: could not connect to {mcast_host}:"
+                          f"{mcast_port}")
                     sock = None
                     time.sleep(10)
                     continue
@@ -68,8 +68,7 @@ def main():
 
                 new_status = int(output)
                 if status != new_status:
-                    print('New status: {} (old: {})'
-                          .format(new_status, status))
+                    print(f'New status: {new_status} (old: {status})')
                     print('Setting new status ...')
                     try:
                         ls_sock = socket.socket(socket.AF_UNIX,

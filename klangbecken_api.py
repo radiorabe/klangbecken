@@ -122,7 +122,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
         raise UnprocessableEntity('No File found')
 
     if ext not in SUPPORTED_FILE_TYPES.keys():
-        raise UnprocessableEntity('Unsupported file extension: %s' % ext)
+        raise UnprocessableEntity(f'Unsupported file extension: {ext}')
 
     # Be compatible with werkzeug.datastructures.FileStorage and plain files
     filename = file_.filename if hasattr(file_, 'filename') else file_.name
@@ -216,7 +216,7 @@ def update_data_analyzer(playlist, fileId, ext, data):
     for key, value in data.items():
         if key not in UPDATE_KEYS:
             raise UnprocessableEntity('Invalid data format: ' +
-                                      'Key not allowed: ' + key)
+                                      f'Key not allowed: {key}')
         changes.append(MetadataChange(key, value))
     return changes
 
@@ -235,8 +235,7 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
             key, val = change
 
             if key not in ALLOWED_METADATA.keys():
-                raise UnprocessableEntity('Invalid metadata key: {}'
-                                          .format(key))
+                raise UnprocessableEntity(f'Invalid metadata key: {key}')
 
             checks = ALLOWED_METADATA[key]
             if not isinstance(checks, (list, tuple)):
@@ -246,23 +245,21 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
                 if isinstance(check, type):
                     if not isinstance(val, check):
                         raise UnprocessableEntity(
-                            'Invalid data format for "{}": Type error '
-                            '(expected {}, got {}).'
-                            .format(key, check.__name__, type(val).__name__)
+                            f'Invalid data format for "{key}": Type error '
+                            f'(expected {check.__name__}, '
+                            f'got {type(val).__name__}).'
                         )
                 elif callable(check):
                     if not check(val):
                         raise UnprocessableEntity(
-                            'Invalid data format for "{}": Check failed '
-                            '(value: "{}").'
-                            .format(key, val)
+                            f'Invalid data format for "{key}": Check failed '
+                            f'(value: "{val}").'
                         )
                 elif isinstance(check, str):
                     if re.match(check, val) is None:
                         raise UnprocessableEntity(
-                            'Invalid data format for "{}": Regex check failed '
-                            '(value: "{}", regex: "{}").'
-                            .format(key, val, check)
+                            f'Invalid data format for "{key}": Regex check '
+                            f'failed (value: "{val}", regex: "{check}").'
                         )
                 else:
                     raise NotImplementedError()
@@ -715,8 +712,7 @@ def _check_data_dir(data_dir, create=False):
             if create:
                 os.mkdir(path)
             else:
-                raise Exception('Directory "{}" does not exist'
-                                .format(path))
+                raise Exception(f"Directory '{path}' does not exist")
     for path in [os.path.join(data_dir, d + '.m3u') for d in
                  PLAYLISTS + ('prio',)]:
         if not os.path.isfile(path):
@@ -724,8 +720,7 @@ def _check_data_dir(data_dir, create=False):
                 with open(path, 'a'):
                     pass
             else:
-                raise Exception('Playlist "{}" does not exist'
-                                .format(path))
+                raise Exception(f"Playlist '{path}'' does not exist")
     path = os.path.join(data_dir, 'index.json')
     if not os.path.isfile(path):
         if create:
@@ -764,8 +759,7 @@ def _analyze_one_file(data_dir, playlist, filename):
 def init_cmd(data_dir):
     if os.path.exists(data_dir):
         if os.path.isdir(data_dir) and len(os.listdir(data_dir)) != 0:
-            print('ERROR: Data directory {} exists but is not empty.'
-                  .format(data_dir))
+            print(f'ERROR: Data directory {data_dir} exists but is not empty.')
             exit(1)
     else:
         os.mkdir(data_dir)
@@ -793,7 +787,7 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
         sys.exit(1)
 
     if playlist not in PLAYLISTS:
-        err('ERROR: Invalid playlist name: {}'.format(playlist))
+        err('ERROR: Invalid playlist name: {playlist}')
         sys.exit(1)
 
     analysis_data = []
@@ -811,8 +805,7 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
             err('WARNING: ' + e.description if hasattr(e, 'description')
                 else str(e))
 
-    print('Successfully analyzed {} of {} files.'.format(len(analysis_data),
-                                                         len(files)))
+    print(f'Successfully analyzed {len(analysis_data)} of {len(files)} files.')
     count = 0
     print('Start import now? [y/N]', end=' ')
     if yes or input().strip().lower() == 'y':
@@ -826,7 +819,7 @@ def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
                     e.description if hasattr(e, 'description')
                     else str(e))
 
-    print('Successfully imported {} of {} files.'.format(count, len(files)))
+    print(f'Successfully imported {count} of {len(files)} files.')
     sys.exit(1 if count < len(files) else 0)
 
 
@@ -902,14 +895,14 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                 for key in TAG_KEYS:
                     tag_value = mutagenfile.get(key, [''])[0]
                     if str(entries[key]) != tag_value:
-                        err('ERROR: Tag value mismatch "{}": {} != {}'
-                            .format(key, entries[key], tag_value))
+                        err(f"ERROR: Tag value mismatch '{key}': "
+                            f'{entries[key]} != {tag_value}')
 
                 count = playlist_counts[file_path]
                 del playlist_counts[file_path]
                 if count != entries['weight']:
-                    err('ERROR: Playlist weight mismatch: {} != {}'
-                        .format(entries['weight'], count))
+                    err(f'ERROR: Playlist weight mismatch: '
+                        f"{entries['weight']} != {count}")
 
         if files:
             err('ERROR: Dangling files:', ', '.join(files))
@@ -940,7 +933,7 @@ def playlog_cmd(data_dir, filename, dev_mode=False):
     with open(os.path.join(data_dir, 'log', 'current.json'), 'w') as f:
         json.dump(entry, f, **json_opts)
 
-    log_file_name = '{}-{}.csv'.format(now.year, now.month)
+    log_file_name = f'{now.year}-{now.month}.csv'
     log_file_path = os.path.join(data_dir, 'log', log_file_name)
 
     if not os.path.exists(log_file_path):
@@ -973,18 +966,17 @@ Options:
 
 '''
     from docopt import docopt
-    args = docopt(main.__doc__, version='Klangbecken {}'.format(__version__))
+    args = docopt(main.__doc__, version=f'Klangbecken {__version__}')
 
     data_dir = args['--data']
 
     if os.path.exists(data_dir) and not os.path.isdir(data_dir):
-        print('ERROR: Data directory "{}" exists, but is not a directory.'
-              .format(data_dir), file=sys.stderr)
+        print(f"ERROR: Data directory '{data_dir}' exists, but is not a "
+              'directory.')
         exit(1)
 
     if not os.path.isdir(data_dir) and not args['init']:
-        print('ERROR: Data directory "{}" does not exist.'.format(data_dir),
-              file=sys.stderr)
+        print(f"ERROR: Data directory '{data_dir}' does not exist.")
         exit(1)
 
     if args['init']:
