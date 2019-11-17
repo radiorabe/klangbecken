@@ -292,8 +292,14 @@ class AuthTestCase(unittest.TestCase):
         method_func = getattr(self.client, method.lower())
         resp = method_func('/login/', environ_base={'REMOTE_USER': 'xyz'})
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data),
-                         {'status': 'OK', 'user': 'xyz'})
+        response_data = json.loads(resp.data)
+        self.assertIn('status', response_data)
+        self.assertIn('token', response_data)
+        self.assertIn('user', response_data)
+        self.assertEqual(response_data['status'], 'OK'),
+        self.assertEqual(response_data['user'], 'xyz'),
+        self.assertRegex(response_data['token'],
+                         r'([a-zA-Z0-9+/=]+\.){2}[a-zA-Z0-9+/=]+')
         self.assertIn('Set-Cookie', resp.headers)
         self.assertIn('session', resp.headers['Set-Cookie'])
         self.assertIn('user', resp.headers['Set-Cookie'])
@@ -301,14 +307,21 @@ class AuthTestCase(unittest.TestCase):
         # See if we're still logged in
         resp = self.client.get('/login/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data),
-                         {'status': 'OK', 'user': 'xyz'})
+        response_data = json.loads(resp.data)
+        self.assertIn('status', response_data)
+        self.assertIn('token', response_data)
+        self.assertIn('user', response_data)
+        self.assertEqual(response_data['status'], 'OK'),
+        self.assertEqual(response_data['user'], 'xyz'),
 
         # Funny user name
         resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'äöü'})
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data),
-                         {'status': 'OK', 'user': 'äöü'})
+        response_data = json.loads(resp.data)
+        self.assertIn('status', response_data)
+        self.assertIn('token', response_data)
+        self.assertIn('user', response_data)
+        self.assertEqual(response_data['user'], 'äöü'),
 
     def testLoginGet(self):
         self._testLogin('get')

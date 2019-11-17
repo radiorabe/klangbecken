@@ -29,6 +29,7 @@ import datetime
 import fcntl
 import functools
 import json
+import jwt
 import os
 import pkg_resources
 import random
@@ -468,6 +469,7 @@ class KlangbeckenAPI:
 
         self.url_map = Map(rules=(
             Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
+            Rule('/renew_token/', methods=('POST',), endpoint='renew'),
             Rule('/logout/', methods=('POST',), endpoint='logout'),
 
             Rule(playlist_url, methods=('POST',), endpoint='upload'),
@@ -481,11 +483,21 @@ class KlangbeckenAPI:
         request = Request(environ)
         session = JSONSecureCookie.load_cookie(request, secret_key=self.secret)
         request.client_session = session
+        claims = {}
+        if request.headers.get('Authorization', '').startswith('Bearer '):
+            token = request.headers['Authorization'][len('Bearer '):]
+            try:
+                claims = jwt.decode(token, self.secret, algorithms=['HS256'],
+                                    options={'require_exp': True,
+                                             'require_iat': True})
+            except jwt.InvalidTokenError:
+                pass
+
         try:
             endpoint, values = adapter.match()
-            if self.do_auth and endpoint != 'login' and \
-                    (session.new or 'user' not in session):
-                raise Unauthorized()
+            if self.do_auth and endpoint not in ('login', 'renew)'):
+                if (session.new or 'user' not in session) and not claims:
+                    raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
             response = JSONResponse({'code': e.code,
@@ -498,8 +510,17 @@ class KlangbeckenAPI:
         if self.do_auth:
             session = request.client_session
 
+            token = ''
             if request.remote_user is not None:  # Auth successful
                 user = request.environ['REMOTE_USER']
+                now = datetime.datetime.utcnow()
+                claims = {
+                    'user': user,
+                    'iat': now,
+                    'exp': now + datetime.timedelta(minutes=15)
+                }
+                token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
+                            'ascii')
             elif 'user' in session:              # Already logged in
                 user = session['user']
             else:                                # None of both
@@ -507,7 +528,8 @@ class KlangbeckenAPI:
 
             session['user'] = user
 
-            response = JSONResponse({'status': 'OK', 'user': user})
+            response = JSONResponse({'status': 'OK', 'user': user,
+                                     'token': token})
             session.save_cookie(
                 response,
                 httponly=True,
@@ -517,6 +539,52 @@ class KlangbeckenAPI:
         else:
             response = JSONResponse({'status': 'OK'})
         return response
+
+    def on_renew(self, request):
+        try:
+            data = json.loads(str(request.data, 'utf-8'))
+        except (UnicodeDecodeError, TypeError):
+            raise UnprocessableEntity('Cannot parse POST request: '
+                                      'invalid UTF-8 data')
+        except ValueError:
+            raise UnprocessableEntity('Cannot parse POST request: '
+                                      'invalid JSON')
+        if not isinstance(data, dict):
+            raise UnprocessableEntity('Invalid data format: '
+                                      'associative array expected')
+        if 'token' not in data:
+            raise UnprocessableEntity('Invalid data format: '
+                                      'Key "token" not found')
+
+        token = data['token']
+        try:
+            # Valid tokens can always be renewed withing their short lifetime
+            claims = jwt.decode(token, self.secret, algorithms=['HS256'],
+                                options={'require_exp': True,
+                                         'require_iat': True})
+
+        except jwt.ExpiredSignatureError:
+            try:
+                # Expired tokens can be renew for at most one week after the
+                # first issuing date
+                claims = jwt.decode(token, self.secret, algorithms=['HS256'],
+                                    options={'require_exp': True,
+                                             'require_iat': True,
+                                             'verify_exp': False})
+                if claims['iat'] < (int(time.time()) - 7 * 24 * 60 * 60):
+                    raise Unauthorized()
+            except jwt.InvalidTokenError:
+                raise Unauthorized()
+        except jwt.InvalidTokenError:
+            raise Unauthorized()
+
+        now = datetime.datetime.utcnow()
+        claims['exp'] = now + datetime.timedelta(minutes=15)
+
+        token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
+                    'ascii')
+
+        return JSONResponse({'token': token})
 
     def on_logout(self, request):
         response = JSONResponse({'status': 'OK'})

@@ -10,6 +10,7 @@
 * Unix-like operating system environment
 * **Python** 2.7 or >= 3.5
 * **Werkzeug** library for the WSGI application
+* **PyJWT** library for creating and verify JWT authentication tokens
 * **mutagen** library for audio tag editing
 * **six** library for Python 2.7 and 3 compatibility
 * **docopt** library for parsing command line arguments

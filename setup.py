@@ -22,7 +22,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Topic :: Internet :: WWW/HTTP :: WSGI',
     ],
-    install_requires=['docopt', 'mutagen', 'six', 'Werkzeug'],
+    install_requires=['docopt', 'mutagen', 'PyJWT', 'six', 'Werkzeug'],
     extras_require={
         'test': ['tox', 'coverage', 'mock', 'flake8'],
     },

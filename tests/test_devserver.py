@@ -71,8 +71,9 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         # Login
         resp = self.client.get('/api/login/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(json.loads(resp.data),
-                         {'status': 'OK', 'user': 'dummyuser'})
+        data = json.loads(resp.data)
+        for key in 'status user token'.split():
+            self.assertIn(key, data)
         resp.close()
 
         # Upload
