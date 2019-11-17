@@ -26,7 +26,6 @@ script:
   - klangbecken init -d $KLANGBECKEN_DATA
   - liquidsoap --check klangbecken.liq
   - coverage run --source=klangbecken_api -m unittest discover
-  - coverage report --fail-under=90 -m
   - flake8
 after_success:
   - codecov
