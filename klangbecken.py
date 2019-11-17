@@ -716,7 +716,7 @@ class StandaloneWebApplication:
         _check_data_dir(data_full_path)
 
         # Create random application session cookie secret
-        secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz', 20))
+        secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz' * 2, 32))
 
         # Only add ffmpeg_audio_analyzer to analyzers if binary is present
         upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
@@ -834,11 +834,16 @@ def init_cmd(data_dir):
     _check_data_dir(data_dir, create=True)
 
 
-def serve_cmd(data_dir):
+def serve_cmd(data_dir, dev_mode=False):
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
-    run_simple('127.0.0.1', 5000, StandaloneWebApplication(data_dir),
-               use_debugger=True, use_reloader=True, threaded=True)
+
+    app = StandaloneWebApplication(data_dir)
+    if dev_mode:
+        print(f' * JWT secret key: {app.secret}')
+
+    run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True,
+               threaded=True)
 
 
 def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
@@ -1048,7 +1053,7 @@ Options:
         exit(1)
 
     if args['init']:
-        init_cmd(data_dir, dev_mode=dev_mode)
+        init_cmd(data_dir)
     elif args['serve']:
         serve_cmd(data_dir, dev_mode=dev_mode)
     elif args['import']:
