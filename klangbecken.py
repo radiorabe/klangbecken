@@ -1021,6 +1021,7 @@ def main(dev_mode=False):
     '''Klangbecken
 
 Usage:
+  klangbecken (--help | --version)
   klangbecken init [-d DATA_DIR]
   klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
   klangbecken import [-d DATA_DIR] [-y] PLAYLIST FILE...
@@ -1029,6 +1030,10 @@ Usage:
   klangbecken nextlog [-d DATA_DIR] FILE
 
 Options:
+  -h, --help
+        Show this help message and exit.
+  --version
+        Show version and exit.
   -d DIR, --data=DIR
         Set data directory location [default: ./data/].
   -p PORT, --port=PORT
