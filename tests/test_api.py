@@ -299,7 +299,7 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(response_data['status'], 'OK'),
         self.assertEqual(response_data['user'], 'xyz'),
         self.assertRegex(response_data['token'],
-                         r'([a-zA-Z0-9+/=]+\.){2}[a-zA-Z0-9+/=]+')
+                         r'([a-zA-Z0-9_-]+\.){2}[a-zA-Z0-9_-]+')
         self.assertIn('Set-Cookie', resp.headers)
         self.assertIn('session', resp.headers['Set-Cookie'])
         self.assertIn('user', resp.headers['Set-Cookie'])
