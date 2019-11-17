@@ -704,19 +704,12 @@ class StandaloneWebApplication:
     if ffmpeg binary is missing.
     """
 
-    def __init__(self, data_path=None):
+    def __init__(self, data_dir, secret):
         from werkzeug.middleware.dispatcher import DispatcherMiddleware
         from werkzeug.middleware.shared_data import SharedDataMiddleware
 
-        # Assemble useful paths
-        current_path = os.path.dirname(os.path.realpath(__file__))
-        data_full_path = data_path or os.path.join(current_path, 'data')
-
         # Check data dirrectory structure
-        _check_data_dir(data_full_path)
-
-        # Create random application session cookie secret
-        secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz' * 2, 32))
+        _check_data_dir(data_dir)
 
         # Only add ffmpeg_audio_analyzer to analyzers if binary is present
         upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
@@ -739,14 +732,14 @@ class StandaloneWebApplication:
         ]
 
         # Create customized KlangbeckenAPI application
-        api = KlangbeckenAPI(data_full_path, secret,
+        api = KlangbeckenAPI(data_dir, secret,
                              upload_analyzers=upload_analyzers,
                              processors=processors)
 
         # Return 404 Not Found by default
         app = NotFound()
         # Serve static files from the data directory
-        app = SharedDataMiddleware(app, {'/data': data_full_path})
+        app = SharedDataMiddleware(app, {'/data': data_dir})
         # Relay requests to /api to the KlangbeckenAPI instance
         app = DispatcherMiddleware(app, {'/api': api})
 
@@ -834,16 +827,20 @@ def init_cmd(data_dir):
     _check_data_dir(data_dir, create=True)
 
 
-def serve_cmd(data_dir, dev_mode=False):
+def serve_cmd(data_dir, address='localhost', port=5000, dev_mode=False):
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
 
-    app = StandaloneWebApplication(data_dir)
-    if dev_mode:
-        print(f' * JWT secret key: {app.secret}')
+    # Create random application secret
+    secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz' * 2, 32))
 
-    run_simple('127.0.0.1', 5000, app, use_debugger=True, use_reloader=True,
-               threaded=True)
+    if dev_mode:
+        print(f' * Application secret key: {secret}')
+
+    app = StandaloneWebApplication(data_dir, secret)
+
+    run_simple(address, port, app, threaded=True,
+               use_reloader=dev_mode, use_debugger=dev_mode)
 
 
 def import_cmd(data_dir, playlist, files, yes, dev_mode=False):
@@ -1025,16 +1022,23 @@ def main(dev_mode=False):
 
 Usage:
   klangbecken init [-d DATA_DIR]
-  klangbecken serve [-d DATA_DIR]
+  klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
   klangbecken import [-d DATA_DIR] [-y] PLAYLIST FILE...
   klangbecken fsck [-d DATA_DIR] [-R]
   klangbecken playlog [-d DATA_DIR] FILE
   klangbecken nextlog [-d DATA_DIR] FILE
 
 Options:
-  -d DIR, --data=DIR   Set data directory [default: ./data/]
-  -y, --yes            Automatically answer yes for all questions.
-  -R, --repair         Try to repair index.
+  -d DIR, --data=DIR
+        Set data directory location [default: ./data/].
+  -p PORT, --port=PORT
+        Specify alternate port [default: 5000].
+  -b ADDRESS, --bind=ADDRESS
+        Specify alternate bind address [default: localhost].
+  -y, --yes
+        Automatically answer yes for all questions.
+  -R, --repair
+        Try to repair index.
 
 '''
     from docopt import docopt
@@ -1055,7 +1059,8 @@ Options:
     if args['init']:
         init_cmd(data_dir)
     elif args['serve']:
-        serve_cmd(data_dir, dev_mode=dev_mode)
+        serve_cmd(data_dir, address=args['--bind'], port=int(args['--port']),
+                  dev_mode=dev_mode)
     elif args['import']:
         import_cmd(data_dir, args['PLAYLIST'], args['FILE'], yes=args['--yes'],
                    dev_mode=dev_mode)

@@ -23,7 +23,7 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
         from klangbecken import StandaloneWebApplication, init_cmd
 
         init_cmd(self.tempdir)
-        with capture(StandaloneWebApplication, self.tempdir) \
+        with capture(StandaloneWebApplication, self.tempdir, 'secret') \
                 as (out, err, ret):
             self.assertNotIn("WARNING", out)
 
@@ -32,16 +32,16 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(self.tempdir, 'music')))
 
         with self.assertRaises(Exception):
-            StandaloneWebApplication(self.tempdir)
+            StandaloneWebApplication(self.tempdir, 'secret')
 
         init_cmd(self.tempdir)
-        StandaloneWebApplication(self.tempdir)
+        StandaloneWebApplication(self.tempdir, 'secret')
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
 
         with open(os.path.join(self.tempdir, 'music', 'abc.txt'), 'w'):
             pass
 
-        StandaloneWebApplication(self.tempdir)
+        StandaloneWebApplication(self.tempdir, 'secret')
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, 'music')))
         self.assertTrue(os.path.isfile(os.path.join(self.tempdir, 'music',
                                                     'abc.txt')))
@@ -54,7 +54,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
         init_cmd(self.tempdir)
-        app = StandaloneWebApplication(self.tempdir)
+        app = StandaloneWebApplication(self.tempdir, 'secret')
         self.client = Client(app, BaseResponse)
 
     def tearDown(self):
