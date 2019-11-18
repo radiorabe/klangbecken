@@ -33,6 +33,8 @@ if not is_directory(DATA_DIR) then
     shutdown()
 end
 
+# Get the logger command
+PLAY_LOGGER_CMD = getenv("KLANGBECKEN_PLAY_LOGGER_CMD")
 
 # ================================================= #
 # PLAYLISTS                                         #
@@ -140,65 +142,29 @@ radio = fallback(track_sensitive=false,
 # ================================================= #
 # LOGGING METADATA                                  #
 # ================================================= #
-have_metadata = ref false
-artist = ref ''
-title = ref ''
-length = ref 0
 
-def log_md_func(m) =
-  log("Metadata: ")
-  list.iter(fun (el) -> log("   #{fst(el)}: #{snd(el)}"), m)
+have_new_metadata = ref false
+filename = ref ''
 
-  if !current_saemubox_id == SAEMUBOX_KLANGBECKEN_ID then
+def log_metadata_func(m) =
+  # Log to stdout
+  print('Playing: ', newline=false)
+  print(m['filename'])
 
-    # Prepare sending metadata to nowplaying server
-    have_metadata := true
-    artist := m['artist']
-    title := m['title']
-    length := int_of_float(float_of_string(m['cue_out']) - float_of_string(m['cue_in']))
-
-
-    # Run logger
-    system("/usr/local/venvs/klangbecken/bin/klangbecken-play-logger")
-  else
-    system("/usr/local/venvs/klangbecken/bin/klangbecken-play-logger")
+  if !onair then
+    # Prepare play logger
+    have_new_metadata := true
+    filename := m['filename']
   end
 end
-radio = on_track(log_md_func, radio)
+radio = on_track(log_metadata_func, radio)
 
-def upload_metadata() =
-  have_metadata := false
-  system("ssh endlosplayer@10.1.1.71 'cat > Eingang/now-playing-new.xml' <<EOF
-<?xml version=\"1.0\"?>
-<now_playing playing=\"1\" timestamp=\"$(date -Iseconds)\">
-  <song timestamp=\"$(date -Iseconds)\">
-    <title>#{!title}</title>
-    <artist>#{!artist}</artist>
-    <album/>
-    <genre>Other</genre>
-    <kind>MPEG-Audiodatei</kind>
-    <track>1</track>
-    <numTracks/>
-    <year></year>
-    <comments/>
-    <time>#{!length}</time>
-    <bitrate>320</bitrate>
-    <rating/>
-    <disc/>
-    <numDiscs/>
-    <playCount>1</playCount>
-    <compilation/>
-    <composer/>
-    <grouping/>
-    <urlSource/>
-    <file/>
-    <artworkID/>
-  </song>
-</now_playing>
-EOF")
+def run_play_logger() =
+  have_new_metadata := false
+  system("#{PLAY_LOGGER_CMD} #{!filename}")
 end
 
-exec_at(pred=fun() -> !have_metadata, upload_metadata)
+exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
 
 
 # ================================================= #
