@@ -33,7 +33,6 @@ if not is_directory(DATA_DIR) then
     shutdown()
 end
 
-SAEMUBOX_KLANGBECKEN_ID = 1
 
 # ================================================= #
 # PLAYLISTS                                         #
@@ -94,28 +93,29 @@ radio = fallback([prio, radio])
 # ================================================= #
 
 restart = ref true
-current_saemubox_id = ref 0
+onair = ref false
 
-def set_saemubox_id_fun(id) =
-  current_saemubox_id := int_of_string(id)
+def onair_func(state) =
+  onair := bool_of_string(state)
   onair_path = path.concat(path.concat(DATA_DIR, 'log'), 'onair.json')
-  if !current_saemubox_id == SAEMUBOX_KLANGBECKEN_ID then
+  if !onair then
     log("Starting Klangbecken")
     restart := true
     source.skip(radio)
     system("echo true > #{onair_path}")
     "Klangbecken started"
   else
+    log("Stopping Klangbecken")
     system("echo false > #{onair_path}")
     "Klangbecken stopped"
   end
 end
 
 server.register(namespace='klangbecken',
-                description="Set the current Saemubox channel id",
-                usage="set_saemubox_id ID",
-                "set_saemubox_id",
-                set_saemubox_id_fun)
+                description="Control, if the player is on air",
+                usage="onair (true|false)",
+                "onair",
+                onair_func)
 
 # Have restart delay and fade dynamically reconfigurable
 # for debugging purpose

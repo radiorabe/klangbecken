@@ -1,11 +1,11 @@
-from __future__ import print_function, unicode_literals, division
-
 import os
 import select
 import socket
 import time
 
-LS_COMMAND = b'klangbecken.set_saemubox_id {}\n'
+LS_COMMAND = b'klangbecken.onair {}\n'
+
+KLANGBECKEN_SAEMUBOX_ID = 1
 
 
 def main():
@@ -69,12 +69,16 @@ def main():
                 new_status = int(output)
                 if status != new_status:
                     print(f'New status: {new_status} (old: {status})')
-                    print('Setting new status ...')
+                    onair = new_status == KLANGBECKEN_SAEMUBOX_ID
+                    if onair:
+                        print('Starting Klangbecken ...')
+                    else:
+                        print('Stopping Klangbecken ...')
                     try:
                         ls_sock = socket.socket(socket.AF_UNIX,
                                                 socket.SOCK_STREAM)
                         ls_sock.connect(liquidsoap_sock)
-                        ls_sock.sendall(LS_COMMAND.format(new_status))
+                        ls_sock.sendall(LS_COMMAND.format(onair))
                         print(ls_sock.recv(1000))
                         ls_sock.sendall(b'quit\n')
                         print(ls_sock.recv(1000))
