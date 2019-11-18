@@ -8,16 +8,15 @@
 ### Dependencies
 
 * Unix-like operating system environment
-* **Python** 2.7 or >= 3.5
+* **Python** >= 3.6
+* **docopt** library for parsing command line arguments
 * **Werkzeug** library for the WSGI application
 * **PyJWT** library for creating and verify JWT authentication tokens
 * **mutagen** library for audio tag editing
-* **docopt** library for parsing command line arguments
 * **ffmpeg** binary (>=4.0) for audio analysis
 
 ### Development dependencies:
 
- * virtualenv/venv, setuptools, pip
  * tox
  * coverage
  * mock
