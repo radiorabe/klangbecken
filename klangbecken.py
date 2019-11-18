@@ -837,9 +837,6 @@ def serve_cmd(data_dir, address='localhost', port=5000, dev_mode=False):
     # Create random application secret
     secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz' * 2, 32))
 
-    if dev_mode:
-        print(f' * Application secret key: {secret}')
-
     app = StandaloneWebApplication(data_dir, secret)
 
     run_simple(address, port, app, threaded=True,
