@@ -1023,7 +1023,7 @@ def playlog_cmd(data_dir, filename, dev_mode=False):
 ADDITIONAL_EXTERNAL_PLAY_LOGGER_CMD = \
     """ssh endlosplayer@10.1.1.71 'cat > Eingang/now-playing-new.xml' <<EOF
 <?xml version="1.0"?>
-<now_playing playing="1" timestamp="$(date -Iseconds)}">
+<now_playing playing="1" timestamp="$(date -Iseconds)">
   <song timestamp="$(date -Iseconds)">
     <title>{title}</title>
     <artist>{artist}</artist>
