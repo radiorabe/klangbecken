@@ -36,6 +36,10 @@ end
 # Get the logger command
 PLAY_LOGGER_CMD = getenv("KLANGBECKEN_PLAY_LOGGER_CMD")
 
+# Get alsa device
+ALSA_DEVICE = getenv("KLANGBECKEN_ALSA_DEVICE")
+
+
 # ================================================= #
 # PLAYLISTS                                         #
 # ================================================= #
@@ -185,4 +189,4 @@ radio = amplify(0.5, radio)
 # OUTPUT                                            #
 # ================================================= #
 
-output.alsa(id="out", device="default:CARD=Axia", radio)
+output.alsa(id="out", device=ALSA_DEVICE, radio)
