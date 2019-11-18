@@ -81,6 +81,9 @@ ISO8601_RE = \
     r'(Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?'
    )
 
+# Attention: The order of metadata keys is used when writing CSV log files.
+# Do not reorder or delete metadata keys. Renaming or addition at the end is
+# okay.
 ALLOWED_METADATA = {
     'id': (str, r'^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$'),
     'ext': (str, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
@@ -1007,12 +1010,12 @@ def playlog_cmd(data_dir, filename, dev_mode=False):
 
     if not os.path.exists(log_file_path):
         with open(log_file_path, 'w', newline='') as csv_file:
-            fieldnames = sorted(ALLOWED_METADATA.keys())
+            fieldnames = ALLOWED_METADATA.keys()
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()
 
     with open(log_file_path, 'a', newline='') as csv_file:
-        fieldnames = sorted(ALLOWED_METADATA.keys())
+        fieldnames = ALLOWED_METADATA.keys()
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writerow(entry)
 
