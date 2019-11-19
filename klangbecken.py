@@ -498,7 +498,7 @@ class KlangbeckenAPI:
 
         try:
             endpoint, values = adapter.match()
-            if self.do_auth and endpoint not in ('login', 'renew)'):
+            if self.do_auth and endpoint not in ('login', 'renew'):
                 if (session.new or 'user' not in session) and not claims:
                     raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
