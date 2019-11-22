@@ -69,11 +69,11 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
 
     def testApi(self):
         # Login
-        resp = self.client.get('/api/login/')
+        resp = self.client.post('/api/login/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        for key in 'status user token'.split():
-            self.assertIn(key, data)
+        self.assertIn('token', data)
+        token = data['token']
         resp.close()
 
         # Upload
@@ -83,6 +83,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
             resp = self.client.post(
                 '/api/music/',
                 data={'file': (f, 'silence-unicode-jointstereo.mp3')},
+                headers=[('Authorization', f'Bearer {token}')]
             )
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -106,7 +107,8 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp = self.client.put(
             '/api/music/' + fileId + '.mp3',
             data=json.dumps({'weight': 4}),
-            content_type='text/json'
+            content_type='text/json',
+            headers=[('Authorization', f'Bearer {token}')]
         )
         self.assertEqual(resp.status_code, 200)
         resp.close()
@@ -120,7 +122,8 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp = self.client.post(
             '/api/playnext/',
             data=json.dumps({'file': 'music/' + fileId + '.mp3'}),
-            content_type='text/json'
+            content_type='text/json',
+            headers=[('Authorization', f'Bearer {token}')]
         )
         self.assertEqual(resp.status_code, 200)
         resp.close()
@@ -131,12 +134,10 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp.close()
 
         # Delete file
-        resp = self.client.delete('/api/music/' + fileId + '.mp3',)
-        self.assertEqual(resp.status_code, 200)
-        resp.close()
-
-        # Logout
-        resp = self.client.post('/api/logout/')
+        resp = self.client.delete(
+            '/api/music/' + fileId + '.mp3',
+            headers=[('Authorization', f'Bearer {token}')]
+        )
         self.assertEqual(resp.status_code, 200)
         resp.close()
 

@@ -473,7 +473,6 @@ class KlangbeckenAPI:
         self.url_map = Map(rules=(
             Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
             Rule('/renew_token/', methods=('POST',), endpoint='renew'),
-            Rule('/logout/', methods=('POST',), endpoint='logout'),
 
             Rule(playlist_url, methods=('POST',), endpoint='upload'),
             Rule(file_url, methods=('PUT',), endpoint='update'),
@@ -484,8 +483,6 @@ class KlangbeckenAPI:
     def __call__(self, environ, start_response):
         adapter = self.url_map.bind_to_environ(environ)
         request = Request(environ)
-        session = JSONSecureCookie.load_cookie(request, secret_key=self.secret)
-        request.client_session = session
         claims = {}
         if request.headers.get('Authorization', '').startswith('Bearer '):
             token = request.headers['Authorization'][len('Bearer '):]
@@ -499,7 +496,7 @@ class KlangbeckenAPI:
         try:
             endpoint, values = adapter.match()
             if self.do_auth and endpoint not in ('login', 'renew'):
-                if (session.new or 'user' not in session) and not claims:
+                if not claims:
                     raise Unauthorized()
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
@@ -510,38 +507,21 @@ class KlangbeckenAPI:
         return response(environ, start_response)
 
     def on_login(self, request):
-        if self.do_auth:
-            session = request.client_session
+        token = ''
+        if request.remote_user is not None:  # Auth successful
+            user = request.environ['REMOTE_USER']
+            now = datetime.datetime.utcnow()
+            claims = {
+                'user': user,
+                'iat': now,
+                'exp': now + datetime.timedelta(minutes=15)
+            }
+            token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
+                        'ascii')
+        else:                                # None of both
+            raise Unauthorized()
 
-            token = ''
-            if request.remote_user is not None:  # Auth successful
-                user = request.environ['REMOTE_USER']
-                now = datetime.datetime.utcnow()
-                claims = {
-                    'user': user,
-                    'iat': now,
-                    'exp': now + datetime.timedelta(minutes=15)
-                }
-                token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
-                            'ascii')
-            elif 'user' in session:              # Already logged in
-                user = session['user']
-            else:                                # None of both
-                raise Unauthorized()
-
-            session['user'] = user
-
-            response = JSONResponse({'status': 'OK', 'user': user,
-                                     'token': token})
-            session.save_cookie(
-                response,
-                httponly=True,
-                expires=datetime.datetime.now() + datetime.timedelta(days=7),
-                max_age=7 * 24 * 60 * 60  # one week
-            )
-        else:
-            response = JSONResponse({'status': 'OK'})
-        return response
+        return JSONResponse({'token': token})
 
     def on_renew(self, request):
         try:
@@ -588,14 +568,6 @@ class KlangbeckenAPI:
                     'ascii')
 
         return JSONResponse({'token': token})
-
-    def on_logout(self, request):
-        response = JSONResponse({'status': 'OK'})
-        if self.do_auth:
-            session = request.client_session
-            del session['user']
-            session.save_cookie(response)
-        return response
 
     def on_upload(self, request, playlist):
         if 'file' not in request.files:

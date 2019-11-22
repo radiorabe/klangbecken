@@ -44,12 +44,6 @@ class APITestCase(unittest.TestCase):
     def testUrls(self):
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.get('/login/')
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/login/')
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/logout/')
-        self.assertEqual(resp.status_code, 200)
         resp = self.client.get('/music/')
         self.assertEqual(resp.status_code, 405)
         resp = self.client.get('/jingles/')
@@ -276,8 +270,6 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         resp = self.client.delete('/music/' + str(uuid.uuid4()) + '.ogg')
         self.assertEqual(resp.status_code, 401)
-        resp = self.client.post('/logout/')
-        self.assertEqual(resp.status_code, 401)
 
     def testFailingLogin(self):
         resp = self.client.get('/login/')
@@ -288,70 +280,13 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         self.assertNotIn('Set-Cookie', resp.headers)
 
-    def _testLogin(self, method):
-        method_func = getattr(self.client, method.lower())
-        resp = method_func('/login/', environ_base={'REMOTE_USER': 'xyz'})
+    def testLogin(self):
+        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'xyz'})
         self.assertEqual(resp.status_code, 200)
         response_data = json.loads(resp.data)
-        self.assertIn('status', response_data)
         self.assertIn('token', response_data)
-        self.assertIn('user', response_data)
-        self.assertEqual(response_data['status'], 'OK'),
-        self.assertEqual(response_data['user'], 'xyz'),
         self.assertRegex(response_data['token'],
                          r'([a-zA-Z0-9_-]+\.){2}[a-zA-Z0-9_-]+')
-        self.assertIn('Set-Cookie', resp.headers)
-        self.assertIn('session', resp.headers['Set-Cookie'])
-        self.assertIn('user', resp.headers['Set-Cookie'])
-
-        # See if we're still logged in
-        resp = self.client.get('/login/')
-        self.assertEqual(resp.status_code, 200)
-        response_data = json.loads(resp.data)
-        self.assertIn('status', response_data)
-        self.assertIn('token', response_data)
-        self.assertIn('user', response_data)
-        self.assertEqual(response_data['status'], 'OK'),
-        self.assertEqual(response_data['user'], 'xyz'),
-
-        # Funny user name
-        resp = self.client.get('/login/', environ_base={'REMOTE_USER': 'äöü'})
-        self.assertEqual(resp.status_code, 200)
-        response_data = json.loads(resp.data)
-        self.assertIn('status', response_data)
-        self.assertIn('token', response_data)
-        self.assertIn('user', response_data)
-        self.assertEqual(response_data['user'], 'äöü'),
-
-    def testLoginGet(self):
-        self._testLogin('get')
-
-    def testLoginPost(self):
-        self._testLogin('post')
-
-    def testLogout(self):
-        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/logout/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertIn('Set-Cookie', resp.headers)
-        self.assertIn('session', resp.headers['Set-Cookie'])
-        self.assertNotIn('user', resp.headers['Set-Cookie'])
-
-    def testAuthorization(self):
-        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'abc'})
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/music/',
-                                data={'file': (io.BytesIO(b'xyz'),
-                                               'test.mp3')})
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.put('/jingles/' + str(uuid.uuid4()) + '.mp3',
-                               data=json.dumps({}))
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete('/music/' + str(uuid.uuid4()) + '.ogg')
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.post('/logout/')
-        self.assertEqual(resp.status_code, 200)
 
 
 class AnalyzersTestCase(unittest.TestCase):
