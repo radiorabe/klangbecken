@@ -471,8 +471,8 @@ class KlangbeckenAPI:
             ', '.join(SUPPORTED_FILE_TYPES.keys()) + '):ext>'
 
         self.url_map = Map(rules=(
-            Rule('/login/', methods=('GET', 'POST'), endpoint='login'),
-            Rule('/renew_token/', methods=('POST',), endpoint='renew'),
+            Rule('/auth/login/', methods=('GET', 'POST'), endpoint='login'),
+            Rule('/auth/renew/', methods=('POST',), endpoint='renew'),
 
             Rule(playlist_url, methods=('POST',), endpoint='upload'),
             Rule(file_url, methods=('PUT',), endpoint='update'),

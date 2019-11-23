@@ -272,16 +272,17 @@ class AuthTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
 
     def testFailingLogin(self):
-        resp = self.client.get('/login/')
+        resp = self.client.get('/auth/login/')
         self.assertEqual(resp.status_code, 401)
         self.assertNotIn('Set-Cookie', resp.headers)
 
-        resp = self.client.post('/login/')
+        resp = self.client.post('/auth/login/')
         self.assertEqual(resp.status_code, 401)
         self.assertNotIn('Set-Cookie', resp.headers)
 
     def testLogin(self):
-        resp = self.client.post('/login/', environ_base={'REMOTE_USER': 'xyz'})
+        resp = self.client.post('/auth/login/',
+                                environ_base={'REMOTE_USER': 'xyz'})
         self.assertEqual(resp.status_code, 200)
         response_data = json.loads(resp.data)
         self.assertIn('token', response_data)

@@ -69,7 +69,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
 
     def testApi(self):
         # Login
-        resp = self.client.post('/api/login/')
+        resp = self.client.post('/api/auth/login/')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         self.assertIn('token', data)
