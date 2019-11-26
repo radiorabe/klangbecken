@@ -57,6 +57,13 @@ jingles = audio_to_stereo(jingles)
 
 
 # ================================================= #
+# PLAY FROM PRIORITY PLAYLIST IF AVAILABLE          #
+# ================================================= #
+
+music = fallback([prio, music])
+
+
+# ================================================= #
 # INSERT JINGLE EVERY 15 MINUTES                    #
 # ================================================= #
 
@@ -85,13 +92,6 @@ radio = switch(id="radio", [
   (check_jingle, jingles),
   ({true}, music),
 ])
-
-
-# ================================================= #
-# PLAY FROM PRIORITY PLAYLIST IF AVAILABLE          #
-# ================================================= #
-
-radio = fallback([prio, radio])
 
 
 # ================================================= #
