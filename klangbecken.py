@@ -954,7 +954,12 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
     sys.exit(1 if err.count else 0)
 
 
-def playlog_cmd(data_dir, filename, dev_mode=False):
+def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
+    if off_air:
+        with open(os.path.join(data_dir, 'log', 'current.json'), 'w') as f:
+            json.dump(False, f)
+        return
+
     file_id = filename.split('/')[-1].split('.')[0]
 
     json_opts = {'indent': 2, 'sort_keys': True} if dev_mode else {}
@@ -1033,7 +1038,7 @@ Usage:
   klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
   klangbecken import [-d DATA_DIR] [-y] PLAYLIST FILE...
   klangbecken fsck [-d DATA_DIR] [-R]
-  klangbecken playlog [-d DATA_DIR] FILE
+  klangbecken playlog [-d DATA_DIR] (--off | FILE)
   klangbecken nextlog [-d DATA_DIR] FILE
 
 Options:
@@ -1079,7 +1084,8 @@ Options:
     elif args['fsck']:
         fsck_cmd(data_dir, repair=args['--repair'], dev_mode=dev_mode)
     elif args['playlog']:
-        playlog_cmd(data_dir, args['FILE'][0], dev_mode=dev_mode)
+        playlog_cmd(data_dir, args['FILE'][0], args['--off'],
+                    dev_mode=dev_mode)
 
 
 if __name__ == '__main__':

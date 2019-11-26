@@ -33,8 +33,8 @@ if not is_directory(DATA_DIR) then
     shutdown()
 end
 
-# Get the logger command
-PLAY_LOGGER_CMD = getenv("KLANGBECKEN_PLAY_LOGGER_CMD")
+# Get the klangecken command
+CMD_PATH = getenv("KLANGBECKEN_PATH")
 
 # Get alsa device
 ALSA_DEVICE = getenv("KLANGBECKEN_ALSA_DEVICE")
@@ -108,11 +108,10 @@ def onair_func(state) =
     log("Starting Klangbecken")
     restart := true
     source.skip(radio)
-    system("echo true > #{onair_path}")
     "Klangbecken started"
   else
     log("Stopping Klangbecken")
-    system("echo false > #{onair_path}")
+    system("#{CMD_PATH} playlog --off")
     "Klangbecken stopped"
   end
 end
@@ -165,7 +164,7 @@ radio = on_track(log_metadata_func, radio)
 
 def run_play_logger() =
   have_new_metadata := false
-  system("#{PLAY_LOGGER_CMD} #{!filename}")
+  system("#{CMD_PATH} playlog #{!filename}")
 end
 
 exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
