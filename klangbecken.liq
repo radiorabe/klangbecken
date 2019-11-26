@@ -103,7 +103,6 @@ onair = ref false
 
 def onair_func(state) =
   onair := bool_of_string(state)
-  onair_path = path.concat(path.concat(DATA_DIR, 'log'), 'onair.json')
   if !onair then
     log("Starting Klangbecken")
     restart := true
