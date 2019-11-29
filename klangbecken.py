@@ -289,7 +289,8 @@ def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
         for entry in data.values():
             if (entry['original_filename'] == filename and
                     entry['artist'] == artist and
-                    entry['title'] == title):
+                    entry['title'] == title and
+                    entry['playlist'] == playlist):
                 raise UnprocessableEntity('Duplicate file entry:\n' +
                                           artist + ' - ' + title +
                                           ' (' + filename + ')')
