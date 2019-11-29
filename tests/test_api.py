@@ -566,6 +566,7 @@ class ProcessorsTestCase(unittest.TestCase):
             MetadataChange('original_filename', 'filename.mp3'),
             MetadataChange('artist', 'Artist'),
             MetadataChange('title', 'Title'),
+            MetadataChange('playlist', 'music'),
         ]
         filter_duplicates_processor(self.tempdir, 'music', 'id1', '.mp3',
                                     changes)
