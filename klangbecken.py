@@ -1057,7 +1057,8 @@ Options:
         Automatically answer yes for all questions.
   -R, --repair
         Try to repair index.
-
+  --off
+        Take klangbecken off air
 '''
     from docopt import docopt
     args = docopt(main.__doc__, version=f'Klangbecken {__version__}')
