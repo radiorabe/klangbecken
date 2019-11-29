@@ -274,7 +274,7 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
 
 
 def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
-    with open(os.path.join(data_dir, 'index.json')) as f:
+    with locked_open(os.path.join(data_dir, 'index.json')) as f:
         data = json.load(f)
 
     addition = [c for c in changes if isinstance(c, FileAddition)]
