@@ -939,6 +939,8 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                 err('ERROR: cue_out larger than length',
                     str(entries['cue_out']),
                     str(entries['length']))
+            if entries['playlist'] != 'jingles' and entries['length'] < 30:
+                err('WARNING: very short song found:', entries['length'])
             file_path = os.path.join(entries['playlist'],
                                      entries['id'] + entries['ext'])
             file_full_path = os.path.join(data_dir, file_path)
