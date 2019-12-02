@@ -927,7 +927,9 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                 err('ERROR: cue_in larger than cue_out',
                     str(entries['cue_in']),
                     str(entries['cue_out']))
-            if entries['cue_out'] > entries['length']:
+            # Tolerate small differences, as the length calculation is not
+            # perfectly accurate.
+            if entries['cue_out'] > entries['length'] + 0.1:
                 err('ERROR: cue_out larger than length',
                     str(entries['cue_out']),
                     str(entries['length']))
