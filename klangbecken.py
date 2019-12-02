@@ -923,6 +923,12 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):
                 err('ERROR:', str(e))
             if song_id != entries['id']:
                 err('ERROR: Id missmatch', song_id, entries['id'])
+            if entries['cue_in'] > 10:
+                err('WARNING: cue_in after more than ten seconds:',
+                    entries['cue_in'])
+            if entries['cue_out'] < entries['length'] - 10:
+                err('WARNING: cue_out earlier than ten seconds before end of '
+                    'song:', entries['cue_out'])
             if entries['cue_in'] > entries['cue_out']:
                 err('ERROR: cue_in larger than cue_out',
                     str(entries['cue_in']),
