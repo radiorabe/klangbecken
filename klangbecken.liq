@@ -110,7 +110,7 @@ def onair_func(state) =
     "Klangbecken started"
   else
     log("Stopping Klangbecken")
-    system("#{CMD_PATH} playlog --off")
+    system("#{CMD_PATH} playlog -d #{DATA_DIR} --off")
     "Klangbecken stopped"
   end
 end
@@ -163,7 +163,7 @@ radio = on_track(log_metadata_func, radio)
 
 def run_play_logger() =
   have_new_metadata := false
-  system("#{CMD_PATH} playlog #{!filename}")
+  system("#{CMD_PATH} playlog -d #{DATA_DIR} #{!filename}")
 end
 
 exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
