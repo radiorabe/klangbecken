@@ -332,7 +332,8 @@ class AnalyzersTestCase(unittest.TestCase):
         )
 
     def testRawFileAnalyzer(self):
-        import time
+        import datetime
+        import dateutil.parser
         from klangbecken import (raw_file_analyzer, FileAddition,
                                  MetadataChange)
 
@@ -360,7 +361,9 @@ class AnalyzersTestCase(unittest.TestCase):
                         result)
         t = [ch for ch in result if (isinstance(ch, MetadataChange) and
                                      ch.key == 'import_timestamp')][0]
-        self.assertTrue(time.time() - t.value < 1)
+        t = dateutil.parser.parse(t.value)
+        self.assertTrue(datetime.datetime.now() - t
+                        < datetime.timedelta(seconds=2))
         self.assertTrue(MetadataChange('weight', 1) in result)
 
     def testMutagenTagAnalyzer(self):

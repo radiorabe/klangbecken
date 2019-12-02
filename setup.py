@@ -24,7 +24,7 @@ setup(
     ],
     install_requires=['docopt', 'mutagen', 'PyJWT', 'Werkzeug'],
     extras_require={
-        'test': ['tox', 'coverage', 'mock', 'flake8'],
+        'test': ['tox', 'coverage', 'mock', 'flake8', 'python-dateutil'],
     },
     entry_points={
         'console_scripts': [

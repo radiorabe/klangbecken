@@ -1,3 +1,4 @@
+import datetime
 import json
 import mock
 import os
@@ -22,10 +23,14 @@ class ImporterTestCase(unittest.TestCase):
 
     def testImport(self):
         from klangbecken import import_cmd
+        import dateutil.parser
+
         audio_path = os.path.join(self.current_path, 'audio')
         audio1_path = os.path.join(audio_path, 'silence.mp3')
         audio2_path = os.path.join(audio_path, 'padded.ogg')
-        audio1_mtime = os.stat(audio1_path).st_mtime
+        audio1_mtime = datetime.datetime.fromtimestamp(
+            os.stat(audio1_path).st_mtime
+        )
 
         # Import nothing -> usage
         args = [self.tempdir, 'music', [], True]
@@ -46,8 +51,10 @@ class ImporterTestCase(unittest.TestCase):
         with open(os.path.join(self.tempdir, 'index.json')) as file:
             data = json.load(file)
             self.assertEqual(len(data.keys()), 1)
-            self.assertEqual(list(data.values())[0]['import_timestamp'],
-                             audio1_mtime)
+            ts = list(data.values())[0]['import_timestamp']
+            ts = dateutil.parser.parse(ts)
+            self.assertTrue(abs(ts - audio1_mtime)
+                            < datetime.timedelta(seconds=1))
             self.assertEqual(list(data.values())[0]['original_filename'],
                              'silence.mp3')
 

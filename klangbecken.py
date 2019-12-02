@@ -89,7 +89,7 @@ ALLOWED_METADATA = {
     'ext': (str, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
     'playlist': (str, lambda pl: pl in PLAYLISTS),
     'original_filename': str,
-    'import_timestamp': float,
+    'import_timestamp': ISO8601_RE,
     'weight': (int, lambda c: c >= 0),
 
     'artist': str,
@@ -137,7 +137,8 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
         MetadataChange('ext', ext),
         MetadataChange('playlist', playlist),
         MetadataChange('original_filename', filename),
-        MetadataChange('import_timestamp', time.time()),
+        MetadataChange('import_timestamp',
+                       datetime.datetime.now().isoformat()),
         MetadataChange('weight', 1),
         MetadataChange('play_count', 0),
         MetadataChange('last_play', ''),
@@ -783,8 +784,9 @@ def _analyze_one_file(data_dir, playlist, filename):
 
         actions.append(MetadataChange('original_filename',
                                       os.path.basename(filename)))
-        actions.append(MetadataChange('import_timestamp',
-                                      os.stat(filename).st_mtime))
+
+        mtime = datetime.datetime.fromtimestamp(os.stat(filename).st_mtime)
+        actions.append(MetadataChange('import_timestamp', mtime.isoformat()))
 
         actions[0] = FileAddition(filename)
     return (filename, fileId, ext, actions)
