@@ -1002,40 +1002,11 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writerow(entry)
 
-    subprocess.check_call(ADDITIONAL_EXTERNAL_PLAY_LOGGER_CMD.format(**entry),
-                          shell=True)
+    if EXTERNAL_PLAY_LOGGER:
+        subprocess.check_call(EXTERNAL_PLAY_LOGGER.format(**entry), shell=True)
 
 
-ADDITIONAL_EXTERNAL_PLAY_LOGGER_CMD = \
-    """ssh endlosplayer@10.1.1.71 'cat > Eingang/now-playing-new.xml' <<EOF
-<?xml version="1.0"?>
-<now_playing playing="1" timestamp="$(date -Iseconds)">
-  <song timestamp="$(date -Iseconds)">
-    <title>{title}</title>
-    <artist>{artist}</artist>
-    <album/>
-    <genre>Other</genre>
-    <kind>MPEG-Audiodatei</kind>
-    <track>1</track>
-    <numTracks/>
-    <year></year>
-    <comments/>
-    <time>{length}</time>
-    <bitrate>320</bitrate>
-    <rating/>
-    <disc/>
-    <numDiscs/>
-    <playCount>{play_count}</playCount>
-    <compilation/>
-    <composer/>
-    <grouping/>
-    <urlSource/>
-    <file/>
-    <artworkID/>
-  </song>
-</now_playing>
-EOF
-"""
+EXTERNAL_PLAY_LOGGER = os.environ.get('KLANGBECKEN_EXTERNAL_PLAY_LOGGER', '')
 
 
 def main(dev_mode=False):
