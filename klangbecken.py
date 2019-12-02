@@ -706,8 +706,8 @@ class StandaloneWebApplication:
         # Slightly modify processors, such that index.json is pretty printed
         processors = [
             check_processor,
-            raw_file_processor,
             filter_duplicates_processor,
+            raw_file_processor,
             functools.partial(index_processor,
                               json_opts={'indent': 2, 'sort_keys': True}),
             file_tag_processor,
