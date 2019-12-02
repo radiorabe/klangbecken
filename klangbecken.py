@@ -46,7 +46,6 @@ import mutagen.flac
 import mutagen.mp3
 import mutagen.oggvorbis
 
-from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.exceptions import (HTTPException, UnprocessableEntity, NotFound,
                                  Unauthorized)
 from werkzeug.routing import Map, Rule
@@ -667,10 +666,6 @@ class JSONSerializer:
     def loads(serialized):
         # UTF-8 encoding is default in Python 3+
         return json.loads(str(serialized, 'utf-8'))
-
-
-class JSONSecureCookie(SecureCookie):
-    serialization_method = JSONSerializer
 
 
 ###########################
