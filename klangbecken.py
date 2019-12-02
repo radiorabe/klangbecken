@@ -38,7 +38,6 @@ import shutil
 import subprocess
 import sys
 import threading
-import time
 import uuid
 
 import mutagen
@@ -483,23 +482,29 @@ class KlangbeckenAPI:
         ))
 
     def __call__(self, environ, start_response):
-        adapter = self.url_map.bind_to_environ(environ)
-        request = Request(environ)
-        claims = {}
-        if request.headers.get('Authorization', '').startswith('Bearer '):
-            token = request.headers['Authorization'][len('Bearer '):]
-            try:
-                claims = jwt.decode(token, self.secret, algorithms=['HS256'],
-                                    options={'require_exp': True,
-                                             'require_iat': True})
-            except jwt.InvalidTokenError:
-                pass
-
         try:
+            request = Request(environ)
+            adapter = self.url_map.bind_to_environ(environ)
             endpoint, values = adapter.match()
+
+            # Check authorization
             if self.do_auth and endpoint not in ('login', 'renew'):
-                if not claims:
-                    raise Unauthorized()
+                if 'Authorization' not in request.headers:
+                    raise Unauthorized('No authorization header supplied')
+
+                auth = request.headers['Authorization']
+                if not auth.startswith('Bearer '):
+                    raise Unauthorized('Invalid authorization header')
+
+                token = auth[len('Bearer '):]
+                try:
+                    jwt.decode(token, self.secret, algorithms=['HS256'],
+                               options={'require_exp': True,
+                                        'require_iat': True})
+                except jwt.InvalidTokenError:
+                    raise Unauthorized('Invalid token')
+
+            # Dispatch request
             response = getattr(self, 'on_' + endpoint)(request, **values)
         except HTTPException as e:
             response = JSONResponse({'code': e.code,
@@ -509,19 +514,18 @@ class KlangbeckenAPI:
         return response(environ, start_response)
 
     def on_login(self, request):
-        token = ''
-        if request.remote_user is not None:  # Auth successful
-            user = request.environ['REMOTE_USER']
-            now = datetime.datetime.utcnow()
-            claims = {
-                'user': user,
-                'iat': now,
-                'exp': now + datetime.timedelta(minutes=15)
-            }
-            token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
-                        'ascii')
-        else:                                # None of both
+        if request.remote_user is None:
             raise Unauthorized()
+
+        user = request.remote_user
+        now = datetime.datetime.utcnow()
+        claims = {
+            'user': user,
+            'iat': now,
+            'exp': now + datetime.timedelta(minutes=15)
+        }
+        token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
+                    'ascii')
 
         return JSONResponse({'token': token})
 
@@ -542,28 +546,30 @@ class KlangbeckenAPI:
                                       'Key "token" not found')
 
         token = data['token']
+
+        now = datetime.datetime.utcnow()
         try:
-            # Valid tokens can always be renewed withing their short lifetime
+            # Valid tokens can always be renewed withing their short lifetime,
+            # independent of the issuing date
             claims = jwt.decode(token, self.secret, algorithms=['HS256'],
                                 options={'require_exp': True,
                                          'require_iat': True})
-
         except jwt.ExpiredSignatureError:
             try:
-                # Expired tokens can be renew for at most one week after the
+                # Expired tokens can be renewed for at most one week after the
                 # first issuing date
                 claims = jwt.decode(token, self.secret, algorithms=['HS256'],
                                     options={'require_exp': True,
                                              'require_iat': True,
                                              'verify_exp': False})
-                if claims['iat'] < (int(time.time()) - 7 * 24 * 60 * 60):
+                issued_at = datetime.datetime.utcfromtimestamp(claims['iat'])
+                if issued_at + datetime.timedelta(days=7) < now:
                     raise Unauthorized()
             except jwt.InvalidTokenError:
                 raise Unauthorized()
         except jwt.InvalidTokenError:
             raise Unauthorized()
 
-        now = datetime.datetime.utcnow()
         claims['exp'] = now + datetime.timedelta(minutes=15)
 
         token = str(jwt.encode(claims, self.secret, algorithm='HS256'),
