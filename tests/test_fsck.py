@@ -10,29 +10,50 @@ from .utils import capture
 
 class FsckTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import PLAYLISTS
         from klangbecken import _check_data_dir, import_cmd
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
-        self.music_dir = os.path.join(self.tempdir, 'music')
         self.jingles_dir = os.path.join(self.tempdir, 'jingles')
         _check_data_dir(self.tempdir, create=True)
 
         # Correctly import a couple of files
         files = [os.path.join(self.current_path, 'audio', 'padded' + ext)
                  for ext in '.ogg .flac -stereo.mp3'.split()]
-        for playlist in PLAYLISTS:
-            try:
-                args = [self.tempdir, playlist, files, True]
-                with capture(import_cmd, *args) as (out, err, ret):
-                    pass
-            except SystemExit as e:
-                if e.code != 0:
-                    print(err, file=sys.stderr)
-                    raise(RuntimeError('Command execution failed'))
+        try:
+            args = [self.tempdir, 'jingles', files, True]
+            with capture(import_cmd, *args) as (out, err, ret):
+                pass
+        except SystemExit as e:
+            if e.code != 0:
+                print(err, file=sys.stderr)
+                raise(RuntimeError('Command execution failed'))
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
+
+    def testTooShortMusicFile(self):
+        from klangbecken import main, import_cmd
+
+        # Correctly import a couple of files
+        file_path = os.path.join(self.current_path, 'audio', 'padded.ogg')
+        try:
+            args = [self.tempdir, 'music', [file_path], True]
+            with capture(import_cmd, *args) as (out, err, ret):
+                pass
+        except SystemExit as e:
+            if e.code != 0:
+                print(err, file=sys.stderr)
+                raise(RuntimeError('Command execution failed'))
+        argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(main) as (out, err, ret):
+                    self.assertIn('ERROR', err)
+                    self.assertIn('WARNING', err)
+                    self.assertIn('very short', err)
+            self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
 
     def testFsckCorruptIndexJson(self):
         from klangbecken import main
@@ -53,8 +74,7 @@ class FsckTestCase(unittest.TestCase):
     def testFsckCorruptDataDir(self):
         from klangbecken import main
 
-        music_path = os.path.join(self.tempdir, 'music')
-        shutil.rmtree(music_path)
+        shutil.rmtree(self.jingles_dir)
 
         argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
         try:
@@ -205,7 +225,8 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken import main
         argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
-        os.remove(os.path.join(self.music_dir, os.listdir(self.music_dir)[0]))
+        os.remove(os.path.join(self.jingles_dir,
+                               os.listdir(self.jingles_dir)[0]))
 
         try:
             with self.assertRaises(SystemExit) as cm:
@@ -220,7 +241,8 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken import main, SUPPORTED_FILE_TYPES
         argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
-        file_path = os.path.join(self.music_dir, os.listdir(self.music_dir)[0])
+        file_path = os.path.join(self.jingles_dir,
+                                 os.listdir(self.jingles_dir)[0])
         FileType = SUPPORTED_FILE_TYPES['.' + file_path.split('.')[-1]]
         mutagenfile = FileType(file_path)
         mutagenfile['artist'] = 'Whatever'
@@ -239,7 +261,7 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken import main
         argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
-        playlist_path = os.path.join(self.tempdir, 'music.m3u')
+        playlist_path = os.path.join(self.tempdir, 'jingles.m3u')
         with open(playlist_path) as f:
             lines = f.readlines()
         with open(playlist_path, 'w') as f:
@@ -258,9 +280,9 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken import main
         argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
-        playlist_path = os.path.join(self.tempdir, 'music.m3u')
+        playlist_path = os.path.join(self.tempdir, 'jingles.m3u')
         with open(playlist_path, 'a') as f:
-            f.write('music/not_an_uuid.mp3\n')
+            f.write('jingles/not_an_uuid.mp3\n')
 
         try:
             with self.assertRaises(SystemExit) as cm:
@@ -276,7 +298,7 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken import main
         argv, sys.argv = sys.argv, ['', 'fsck', '-d', self.tempdir]
 
-        with open(os.path.join(self.tempdir, 'music', 'not_an_uuid'), 'w'):
+        with open(os.path.join(self.tempdir, 'jingles', 'not_an_uuid'), 'w'):
             pass
 
         try:
