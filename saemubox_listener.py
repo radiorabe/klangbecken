@@ -3,7 +3,7 @@ import select
 import socket
 import time
 
-LS_COMMAND = b'klangbecken.onair {}\n'
+LS_COMMAND = 'klangbecken.onair {}\n'
 
 KLANGBECKEN_SAEMUBOX_ID = 1
 
@@ -54,7 +54,9 @@ def main():
                 # (non-blocking)
                 while select.select([sock], [], [], 0)[0]:
                     data, addr = sock.recvfrom(1024)
-                    ids = data.split()   # several ids might come in one packet
+
+                    # several ids might come in one packet
+                    ids = data.decode('ascii').split()
                     if ids:
                         if ids[-1] in valid_ids:  # only take last id
                             output = ids[-1]
@@ -78,7 +80,7 @@ def main():
                         ls_sock = socket.socket(socket.AF_UNIX,
                                                 socket.SOCK_STREAM)
                         ls_sock.connect(liquidsoap_sock)
-                        ls_sock.sendall(LS_COMMAND.format(onair))
+                        ls_sock.sendall(LS_COMMAND.format(onair).encode())
                         print(ls_sock.recv(1000))
                         ls_sock.sendall(b'quit\n')
                         print(ls_sock.recv(1000))
