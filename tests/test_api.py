@@ -450,7 +450,7 @@ class AnalyzersTestCase(unittest.TestCase):
             # Don't fade in late, or fade out early!
             self.assertGreater(float(changes['cue_in']), cue_in - 0.1)
             self.assertLess(float(changes['cue_in']), cue_in + 0.01)
-            self.assertGreater(float(changes['cue_out']), cue_out - 0.01)
+            self.assertGreater(float(changes['cue_out']), cue_out - 0.02)
             self.assertLess(float(changes['cue_out']), cue_out + 0.1)
 
             # Assure file is reset correctly
