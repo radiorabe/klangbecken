@@ -46,12 +46,16 @@ ALSA_DEVICE = getenv("KLANGBECKEN_ALSA_DEVICE")
 
 # Priority playlist
 prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio.m3u"))
+prio = cue_cut(prio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Music playlist
 music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(DATA_DIR, "music.m3u"))
+music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Jingles playlist
 jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(DATA_DIR, "jingles.m3u"))
+jingles = cue_cut(jingles, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
+
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
 
@@ -173,8 +177,6 @@ exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
 # AUDIO PROCESSING                                  #
 # ================================================= #
 
-# Cut silence at beginning and end
-radio = cue_cut(radio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 # Apply calculated replay gain
 radio = amplify(1., override="replaygain_track_gain", radio)
 # Moderate cross-fading
