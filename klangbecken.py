@@ -186,14 +186,16 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     cue_out = next((t[1] for t in reversed_times
                     if t[0] == 'start'))                # pragma: no cover
 
-    if -0.05 < cue_out < 0.0:  # pragma: no cover
-        cue_out = 0.0
-
     # From remaining times, first 'end' time is cue_in, otherwise 0.0
     remaining_times = reversed(list(reversed_times))
     cue_in = next((t[1] for t in remaining_times if t[0] == 'end'), 0.0)
 
+    # Fix small negative values for cue_in
     if -0.05 < cue_in < 0.0:  # pragma: no cover
+        cue_in = 0.0
+
+    # Fix clearly too large cue_in values
+    if cue_in > (cue_out / 2):
         cue_in = 0.0
 
     file_.seek(0)
