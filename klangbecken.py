@@ -198,7 +198,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         cue_in = 0.0
 
     # Fix clearly too large cue_in values
-    if cue_in > (cue_out / 2):
+    if cue_in > (cue_out * .75):
         cue_in = 0.0
 
     file_.seek(0)
