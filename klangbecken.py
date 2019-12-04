@@ -820,10 +820,7 @@ def serve_cmd(data_dir, address='localhost', port=5000, dev_mode=False):
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
 
-    # Create random application secret
-    secret = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz' * 2, 32))
-
-    app = StandaloneWebApplication(data_dir, secret)
+    app = StandaloneWebApplication(data_dir, 'no secret')
 
     run_simple(address, port, app, threaded=True,
                use_reloader=dev_mode, use_debugger=dev_mode)
