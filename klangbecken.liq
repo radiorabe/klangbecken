@@ -44,20 +44,22 @@ ALSA_DEVICE = getenv("KLANGBECKEN_ALSA_DEVICE")
 # PLAYLISTS                                         #
 # ================================================= #
 
-# Priority playlist
+# Priority playlist for 'play next' feature
 prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio.m3u"))
+# Cut silence at start and end
 prio = cue_cut(prio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Music playlist
 music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(DATA_DIR, "music.m3u"))
+# Cut silence at start and end
 music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Jingles playlist
 jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(DATA_DIR, "jingles.m3u"))
-jingles = cue_cut(jingles, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
-
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
+# Cut silence at start and end
+jingles = cue_cut(jingles, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 
 # ================================================= #
@@ -170,6 +172,7 @@ def run_play_logger() =
   system("#{CMD_PATH} playlog -d #{DATA_DIR} #{!filename}")
 end
 
+# Run the logging command in the background, not to lock up the player
 exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
 
 
