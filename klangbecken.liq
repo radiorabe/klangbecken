@@ -106,7 +106,7 @@ restart = ref true
 onair = ref false
 
 def onair_func(state) =
-  onair := bool_of_string(state)
+  onair := bool_of_string(string.case(state))
   if !onair then
     log("Starting Klangbecken")
     restart := true
