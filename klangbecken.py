@@ -61,7 +61,7 @@ except pkg_resources.DistributionNotFound:   # pragma: no cover
 ############
 # Settings #
 ############
-PLAYLISTS = ('music', 'jingles')
+PLAYLISTS = ('music', 'classics', 'jingles')
 
 SUPPORTED_FILE_TYPES = {
     '.mp3': mutagen.mp3.EasyMP3,

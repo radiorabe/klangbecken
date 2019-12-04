@@ -54,12 +54,24 @@ music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat
 # Cut silence at start and end
 music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
+# Classics playlist
+classics = playlist(id="classics", mode="randomize", reload_mode="watch",  path.concat(DATA_DIR, "classics.m3u"))
+# Cut silence at start and end
+classics = cue_cut(classics, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
+
 # Jingles playlist
 jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(DATA_DIR, "jingles.m3u"))
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
 # Cut silence at start and end
 jingles = cue_cut(jingles, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
+
+
+# ================================================= #
+# MIX MUSIC AND CASSICS                             #
+# ================================================= #
+
+music = random(weights=[5, 1], [music, classics])
 
 
 # ================================================= #
