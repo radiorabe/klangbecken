@@ -829,7 +829,8 @@ def serve_cmd(data_dir, address='localhost', port=5000, dev_mode=False):
                use_reloader=dev_mode, use_debugger=dev_mode)
 
 
-def import_cmd(data_dir, playlist, files, yes, use_mtime=True, dev_mode=False):
+def import_cmd(data_dir, playlist, files, yes, meta=None, use_mtime=True,
+               dev_mode=False):
     """
     Entry point for import script
     """
@@ -846,12 +847,25 @@ def import_cmd(data_dir, playlist, files, yes, use_mtime=True, dev_mode=False):
         err('ERROR: Invalid playlist name: {playlist}')
         sys.exit(1)
 
+    if meta:
+        metadata = json.load(open(meta))
+
     analysis_data = []
     for filename in files:
         try:
-            analysis_data.append(
-                _analyze_one_file(data_dir, playlist, filename)
-            )
+            if filename in metadata or not meta:
+                song_data = _analyze_one_file(data_dir, playlist, filename)
+
+                if filename in metadata:
+                    song_data[3].extend(
+                        MetadataChange(key, metadata[filename][key])
+                        for key in 'artist title'.split()
+                    )
+
+                analysis_data.append(song_data)
+            else:
+                print('Ignoring', filename)
+
         except UnprocessableEntity as e:
             err('WARNING: File cannot be analyzed: ' + filename)
             err('WARNING: ' + e.description if hasattr(e, 'description')
@@ -1031,7 +1045,7 @@ Usage:
   klangbecken (--help | --version)
   klangbecken init [-d DATA_DIR]
   klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
-  klangbecken import [-d DATA_DIR] [-y] [-m] PLAYLIST FILE...
+  klangbecken import [-d DATA_DIR] [-y] [-m] [-M FILE] PLAYLIST FILE...
   klangbecken fsck [-d DATA_DIR] [-R]
   klangbecken playlog [-d DATA_DIR] (--off | FILE)
   klangbecken nextlog [-d DATA_DIR] FILE
@@ -1051,6 +1065,8 @@ Options:
         Automatically answer yes for all questions.
   -m, --mtime
         Use file modification date as import timestamp.
+  -M FILE, --meta=FILE
+        Read metadata from JSON file. Missing entries will be skipped.
   -R, --repair
         Try to repair index.
   --off
@@ -1078,7 +1094,8 @@ Options:
                   dev_mode=dev_mode)
     elif args['import']:
         import_cmd(data_dir, args['PLAYLIST'], args['FILE'], yes=args['--yes'],
-                   use_mtime=args['--mtime'], dev_mode=dev_mode)
+                   meta=args['--meta'], use_mtime=args['--mtime'],
+                   dev_mode=dev_mode)
     elif args['fsck']:
         fsck_cmd(data_dir, repair=args['--repair'], dev_mode=dev_mode)
     elif args['playlog']:
