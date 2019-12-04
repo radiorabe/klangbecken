@@ -441,11 +441,11 @@ _mutagenLock = threading.Lock()
 
 
 @contextlib.contextmanager
-def locked_open(path):
+def locked_open(path, mode='r+'):
     if path not in _locks:
         _locks[path] = threading.Lock()
     with _locks[path]:   # Prevent more than one thread accessing the file
-        with open(path, 'r+') as f:
+        with open(path, mode) as f:
             # Prevent more than one process accessing the file (voluntarily)
             fcntl.lockf(f, fcntl.LOCK_EX)
             try:
