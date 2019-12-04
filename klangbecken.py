@@ -1099,8 +1099,10 @@ Options:
     elif args['fsck']:
         fsck_cmd(data_dir, repair=args['--repair'], dev_mode=dev_mode)
     elif args['playlog']:
-        playlog_cmd(data_dir, args['FILE'][0], args['--off'],
-                    dev_mode=dev_mode)
+        if args['--off']:
+            playlog_cmd(data_dir, '', args['--off'], dev_mode=dev_mode)
+        else:
+            playlog_cmd(data_dir, args['FILE'][0], dev_mode=dev_mode)
 
 
 if __name__ == '__main__':
