@@ -196,8 +196,6 @@ exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
 radio = amplify(1., override="replaygain_track_gain", radio)
 # Moderate cross-fading
 radio = crossfade(start_next=.5, fade_out=1., fade_in=0., radio)
-# Create some additional head room
-radio = amplify(0.5, radio)
 
 
 # ================================================= #
