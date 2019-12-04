@@ -697,7 +697,10 @@ class StandaloneWebApplication:
         _check_data_dir(data_dir)
 
         # Only add ffmpeg_audio_analyzer to analyzers if binary is present
-        upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
+        upload_analyzers = [
+          raw_file_analyzer,
+          mutagen_tag_analyzer,
+        ]
         try:
             subprocess.check_output('ffmpeg -version'.split())
             upload_analyzers.append(ffmpeg_audio_analyzer)
