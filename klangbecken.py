@@ -144,18 +144,19 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
 
 
 def mutagen_tag_analyzer(playlist, fileId, ext, file_):
-    MutagenFileType = SUPPORTED_FILE_TYPES[ext]
-    try:
-        mutagenfile = MutagenFileType(file_)
-    except mutagen.MutagenError:
-        raise UnprocessableEntity('Unsupported file type: ' +
-                                  'Cannot read metadata.')
-    changes = [
-        MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
-        MetadataChange('title', mutagenfile.get('title', [''])[0]),
-        MetadataChange('album', mutagenfile.get('album', [''])[0]),
-        MetadataChange('length', mutagenfile.info.length),
-    ]
+    with _mutagenLock:
+        MutagenFileType = SUPPORTED_FILE_TYPES[ext]
+        try:
+            mutagenfile = MutagenFileType(file_)
+        except mutagen.MutagenError:
+            raise UnprocessableEntity('Unsupported file type: ' +
+                                      'Cannot read metadata.')
+        changes = [
+            MetadataChange('artist', mutagenfile.get('artist', [''])[0]),
+            MetadataChange('title', mutagenfile.get('title', [''])[0]),
+            MetadataChange('album', mutagenfile.get('album', [''])[0]),
+            MetadataChange('length', mutagenfile.info.length),
+        ]
     # Seek back to the start of the file for whoever comes next
     file_.seek(0)
     return changes
@@ -356,20 +357,20 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(key='import_timestamp',
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
-    mutagenfile = None
-    for change in changes:
-        if isinstance(change, MetadataChange):
-            key, value = change
-            if key in TAG_KEYS:
-                if mutagenfile is None:
-                    path = os.path.join(data_dir, playlist, fileId + ext)
-                    FileType = SUPPORTED_FILE_TYPES[ext]
-                    mutagenfile = FileType(path)
+    with _mutagenLock:
+        mutagenfile = None
+        for change in changes:
+            if isinstance(change, MetadataChange):
+                key, value = change
+                if key in TAG_KEYS:
+                    if mutagenfile is None:
+                        path = os.path.join(data_dir, playlist, fileId + ext)
+                        FileType = SUPPORTED_FILE_TYPES[ext]
+                        mutagenfile = FileType(path)
 
-                mutagenfile[key] = str(value)
+                    mutagenfile[key] = str(value)
 
-    if mutagenfile:
-        with locked_open(path):
+        if mutagenfile:
             mutagenfile.save()
 
 
@@ -436,6 +437,7 @@ def playnext_processor(data_dir, data):
 # Locking Helper
 
 _locks = {}
+_mutagenLock = threading.Lock()
 
 
 @contextlib.contextmanager
