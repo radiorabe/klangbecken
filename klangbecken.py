@@ -849,6 +849,8 @@ def import_cmd(data_dir, playlist, files, yes, meta=None, use_mtime=True,
 
     if meta:
         metadata = json.load(open(meta))
+    else:
+        metadata = {}
 
     analysis_data = []
     for filename in files:
