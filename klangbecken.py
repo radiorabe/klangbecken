@@ -1040,6 +1040,30 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
 EXTERNAL_PLAY_LOGGER = os.environ.get('KLANGBECKEN_EXTERNAL_PLAY_LOGGER', '')
 
 
+def reanalyze_cmd(data_dir, ids, all=False, yes=False, dev_mode=False):
+    with locked_open(os.path.join(data_dir, 'index.json')) as f:
+        data = json.load(f)
+    if all:
+        ids = data.keys()
+
+    changes = []
+    for id in ids:
+        playlist = data[id]['playlist']
+        ext = data[id]['ext']
+        path = os.path.join(data_dir, playlist, id + ext)
+        print(f'File: {path} ({data[id]["artist"]} - {data[id]["title"]})')
+        with open(path) as f:
+            file_changes = ffmpeg_audio_analyzer(playlist, id, ext, f)
+        changes.append((playlist, id, ext, file_changes))
+        for key, val in file_changes:
+            print(f' * {key}: {val}')
+
+    if yes or input('Apply changes now? [y/N] ').strip().lower() == 'y':
+        for playlist, id, ext, file_changes in changes:
+            for processor in DEFAULT_PROCESSORS:
+                processor(data_dir, playlist, id, ext, file_changes)
+
+
 def main(dev_mode=False):
     '''Klangbecken
 
@@ -1050,7 +1074,7 @@ Usage:
   klangbecken import [-d DATA_DIR] [-y] [-m] [-M FILE] PLAYLIST FILE...
   klangbecken fsck [-d DATA_DIR] [-R]
   klangbecken playlog [-d DATA_DIR] (--off | FILE)
-  klangbecken nextlog [-d DATA_DIR] FILE
+  klangbecken reanalyze [-d DATA_DIR] [-y] (--all | ID...)
 
 Options:
   -h, --help
@@ -1072,7 +1096,9 @@ Options:
   -R, --repair
         Try to repair index.
   --off
-        Take klangbecken off air
+        Take klangbecken off the air.
+  --all
+        Reanalyze all files.
 '''
     from docopt import docopt
     args = docopt(main.__doc__, version=f'Klangbecken {__version__}')
@@ -1105,6 +1131,9 @@ Options:
             playlog_cmd(data_dir, '', args['--off'], dev_mode=dev_mode)
         else:
             playlog_cmd(data_dir, args['FILE'][0], dev_mode=dev_mode)
+    elif args['reanalyze']:
+        reanalyze_cmd(data_dir, args['ID'], args['--all'], args['--yes'],
+                      dev_mode=dev_mode)
 
 
 if __name__ == '__main__':
