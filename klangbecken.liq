@@ -97,19 +97,20 @@ def jingle_timeout() =
 end
 add_timeout(0.0, jingle_timeout)
 
-def check_jingle() =
-  if (!insert_jingle) then
-    insert_jingle := false
-    true
-  else
-    false
-  end
-end
-
 radio = switch(id="radio", [
-  (check_jingle, jingles),
+  ({!insert_jingle}, jingles),
   ({true}, music),
 ])
+
+
+def on_track_func(m) =
+  # Reset jingle playing flag
+  insert_jingle := false
+
+  # Clear prio playlist
+  system("echo > #{DATA_DIR}/prio.m3u")
+end
+radio = on_track(on_track_func, radio)
 
 
 # ================================================= #
