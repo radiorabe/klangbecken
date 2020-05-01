@@ -38,7 +38,7 @@ cd klangbecken
 ```bash
 mkvirtualenv klangbecken
 # or
-python3 -m venv venv && source vev/bin/activate
+python3 -m venv venv && source venv/bin/activate
 ```
 
 ### Install dependencies:
