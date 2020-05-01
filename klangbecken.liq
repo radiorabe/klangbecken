@@ -1,43 +1,56 @@
 # ================================================= #
 # SETTINGS                                          #
+#                                                   #
+# Environment Variables:                            #
+#   - KLANGBECKEN_ALSA_DEVICE                       #
+#     ALSA device to send sound to                  #
+#   - KLANGBECKEN_DATA                              #
+#     Directory with data                           #
+#   - KLANGBECKEN_PATH                              #
+#     Path to klangbecken.py                        #
+#   - KLANGBECKEN_SOCKET_PATH                       #
+#     Path to socket to listen on                   #
 # ================================================= #
 
+# set setting to getenv(var) if set
+def set_if_env(setting, var) =
+  if getenv(var) != "" then
+    set(setting, getenv(var))
+  end
+end
+
+# return value of environment variable if set, otherwise fallback
+def getenv_fallback(var, fallback) =
+  if getenv(var) != "" then
+    getenv(var)
+  else
+    fallback
+  end
+end
+
+# log file
 set("log.file", false)
 set("log.stdout", true)
 set("server.telnet", false)
 set("server.telnet.port", 1234)
 set("log.level", 3)
 
-# set("log.syslog.facility","DAEMON")
-# set("log.syslog.program","liquidsoap")
-# set("log.unix_timestamps",false)
-
+# socket
 set("server.socket", true)
-#set("server.socket.path", "/tmp/klangbecken.sock")
-#set("server.socket.path","<sysrundir>/<script>.sock")
-#set("server.socket.permissions",384)
-#set("server.timeout",30.)
-
-#set("init.daemon.pidfile",true)
-#set("init.daemon.pidfile.path","<sysrundir>/<script>.pid")
-
-#set("harbor.bind_addr","0.0.0.0")
-#set("harbor.max_connections",2)
-#set("harbor.reverse_dns",true)
+set_if_env("server.socket.path", "KLANGBECKEN_SOCKET_PATH")
 
 # Get the Klangbecken data directory
-DATA_DIR = getenv("KLANGBECKEN_DATA")
+DATA_DIR = getenv_fallback("KLANGBECKEN_DATA", "data")
 if not is_directory(DATA_DIR) then
     log(level=2, "ERROR: Cannot find data directory: " ^ DATA_DIR)
     shutdown()
 end
 
 # Get the klangecken command
-CMD_PATH = getenv("KLANGBECKEN_PATH")
+CMD_PATH = getenv_fallback("KLANGBECKEN_PATH", "./klangbecken.py")
 
-# Get alsa device
-ALSA_DEVICE = getenv("KLANGBECKEN_ALSA_DEVICE")
-
+# Get the alsa device
+ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
 
 # ================================================= #
 # PLAYLISTS                                         #
