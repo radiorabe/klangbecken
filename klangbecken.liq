@@ -2,9 +2,8 @@
 # SETTINGS                                          #
 # ================================================= #
 
-set("log.file", true)
-set("log.file.path","<syslogdir>/<script>.log")
-set("log.stdout", false)
+set("log.file", false)
+set("log.stdout", true)
 set("server.telnet", false)
 set("server.telnet.port", 1234)
 set("log.level", 3)
