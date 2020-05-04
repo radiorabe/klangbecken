@@ -1,6 +1,6 @@
 # Klangbecken: The RaBe Endless Music Player
 
-[![Build Status](https://travis-ci.org/radiorabe/klangbecken.svg)](https://travis-ci.org/radiorabe/klangbecken)
+[![Build Status](https://travis-ci.org/radiorabe/klangbecken.svg?branch=master)](https://travis-ci.org/radiorabe/klangbecken)
 [![Coverage Status](https://codecov.io/gh/radiorabe/klangbecken/branch/master/graph/badge.svg)](https://codecov.io/gh/radiorabe/klangbecken)
 
 ## Description
