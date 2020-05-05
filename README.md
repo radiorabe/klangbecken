@@ -63,7 +63,6 @@ python3 -m venv venv && source venv/bin/activate
   ```bash
   export KLANGBECKEN_ALSA_DEVICE="default"
   export KLANGBECKEN_DATA="data"
-  export KLANGBECKEN_LOG_FILE="/tmp/klangbecken.liq.log"
   export KLANGBECKEN_PATH="./klangbecken.py"
   export KLANGBECKEN_SOCKET_PATH="/tmp/klangbecken.liq.sock"
   liquidsoap klangbecken.liq
