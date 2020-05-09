@@ -4,12 +4,13 @@
 [![Coverage Status](https://codecov.io/gh/radiorabe/klangbecken/branch/master/graph/badge.svg)](https://codecov.io/gh/radiorabe/klangbecken)
 
 ## Description
-This repo contains three parts of the RaBe-Klangbecken infrastructure:
+This repo contains two parts of the RaBe-Klangbecken infrastructure:
+* The API (`klangbecken.py`).
+* The script for the playout (`klangbecken.liq`).
 
-* The API (`klangbecken.py`)
-* The script for the playout (`klangbecken.liq`)
-* The listener for the current status (`saemubox_listener.py`)
-* An additional part is the UI, located in its own [repo](https://github.com/radiorabe/klangbecken-ui)
+Some additional parts are in their own repository:
+* The listener for the current status, the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox).
+* The [UI](https://github.com/radiorabe/klangbecken-ui).
 
 How they interact can be seen in the [system overview diagram](doc/system-overview.svg):
 
@@ -67,15 +68,9 @@ python3 -m venv venv && source venv/bin/activate
   export KLANGBECKEN_SOCKET_PATH="/tmp/klangbecken.liq.sock"
   liquidsoap klangbecken.liq
   ```
-* `saemubox_listener.py`
+* If you want to set the onair status manually you can connect to the socket using `netcat`
   ```bash
-  export SAEMUBOX_MCAST_IF="<IP>"
-  export LIQUIDSOAP_SOCK="/tmp/klangbecken.liq.sock"
-  python3 saemubox_listener.py
-  ```
-* `saemubox_simulator.py` (optional, only if not nearby the real Sämubox)
-  ```bash
-  python3 saemubox_simulator.py
+  echo "klangbecken.onair True" | nc -U -w 1 /tmp/klangbecken.liq.sock
   ```
 
 ## Notes
@@ -83,12 +78,6 @@ python3 -m venv venv && source venv/bin/activate
 ### Authentication
 
 The API does not handle authentication by itself. It is expected that GET or POST requests to `/api/login` are intercepted by an authentication layer, and then forwarded to the app with a valid `REMOTE_USER` parameter in the request environment, in case the authentication was successful. This can for example be achieved by an additional WSGI middleware, or an Apache module like FIXME.
-
-
-### Debugging
-
-* You can connect to the Liquidsoap script using `nc -U $SOCKET`.
-  * For example you can manually send `klangbecken.onair true`.
 
 
 ### Run test suite

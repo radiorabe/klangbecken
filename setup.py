@@ -7,7 +7,7 @@ setup(
     url='https://github.com/radiorabe/klangbecken',
     author='Marco Schmalz',
     author_email='marco@schess.ch ',
-    py_modules=['klangbecken', 'saemubox_listener'],
+    py_modules=['klangbecken'],
     license='AGPLv3',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -27,9 +27,6 @@ setup(
         'test': ['tox', 'coverage', 'mock', 'flake8', 'python-dateutil'],
     },
     entry_points={
-        'console_scripts': [
-            'klangbecken=klangbecken:main',
-            'saemubox-listener=saemubox_listener:main',
-        ],
+        'console_scripts': ['klangbecken=klangbecken:main'],
     }
 )
