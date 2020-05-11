@@ -1,5 +1,6 @@
 [Unit]
 Description=Virtual Saemubox Service
+After=liquidsoap@klangbecken.service
 
 [Service]
 Type=simple
