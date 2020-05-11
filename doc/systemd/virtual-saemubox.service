@@ -1,0 +1,14 @@
+[Unit]
+Description=Virtual Saemubox Service
+
+[Service]
+Type=simple
+User=liquidsoap
+Group=liquidsoap
+ExecStart=/usr/local/bin/virtual-saemubox --udp=false --socket=true --socket-path=/var/run/liquidsoap/klangbecken.sock --pathfinder=pathfinder-01.audio.int.rabe.ch:9600
+StandardOutput=syslog
+StandardError=syslog
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
