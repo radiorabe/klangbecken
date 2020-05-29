@@ -771,7 +771,7 @@ class ProcessorsTestCase(unittest.TestCase):
 
         with open(music_path) as f:
             lines = f.read().split('\n')
-        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        entries = [ln for ln in lines if ln.endswith('music/fileId1.mp3')]
         self.assertEqual(len(entries), 2)
 
         with open(jingles_path) as f:
@@ -784,7 +784,7 @@ class ProcessorsTestCase(unittest.TestCase):
 
         with open(music_path) as f:
             lines = f.read().split('\n')
-        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        entries = [ln for ln in lines if ln.endswith('music/fileId1.mp3')]
         self.assertEqual(len(entries), 4)
 
         with open(jingles_path) as f:
@@ -816,31 +816,31 @@ class ProcessorsTestCase(unittest.TestCase):
                            [MetadataChange('weight', 3)])
 
         with open(music_path) as f:
-            lines = [l.strip() for l in f.readlines()]
-        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+            lines = [ln.strip() for ln in f.readlines()]
+        entries = [ln for ln in lines if ln.endswith('music/fileId1.mp3')]
         self.assertEqual(len(entries), 2)
-        entries = [l for l in lines if l.endswith('music/fileId2.ogg')]
+        entries = [ln for ln in lines if ln.endswith('music/fileId2.ogg')]
         self.assertEqual(len(entries), 1)
-        entries = [l for l in lines if l.endswith('music/fileId3.flac')]
+        entries = [ln for ln in lines if ln.endswith('music/fileId3.flac')]
         self.assertEqual(len(entries), 3)
 
         with open(jingles_path) as f:
-            lines = [l.strip() for l in f.readlines()]
-        entries = [l for l in lines if l.endswith('jingles/fileId4.mp3')]
+            lines = [ln.strip() for ln in f.readlines()]
+        entries = [ln for ln in lines if ln.endswith('jingles/fileId4.mp3')]
         self.assertEqual(len(entries), 2)
-        entries = [l for l in lines if l.endswith('jingles/fileId5.mp3')]
+        entries = [ln for ln in lines if ln.endswith('jingles/fileId5.mp3')]
         self.assertEqual(len(entries), 3)
 
         # Delete non existing file (must be possible)
         playlist_processor(self.tempdir, 'music', 'fileIdXY', '.ogg',
                            [FileDeletion()])
         with open(music_path) as f:
-            lines = [l.strip() for l in f.readlines()]
+            lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 6)
         self.assertTrue(all(lines))
 
         with open(jingles_path) as f:
-            lines = [l.strip() for l in f.readlines()]
+            lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 5)
         self.assertTrue(all(lines))
 
@@ -848,14 +848,14 @@ class ProcessorsTestCase(unittest.TestCase):
         playlist_processor(self.tempdir, 'music', 'fileId1', '.mp3',
                            [FileDeletion()])
         with open(music_path) as f:
-            lines = [l.strip() for l in f.readlines()]
+            lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 4)
         self.assertTrue(all(lines))
-        entries = [l for l in lines if l.endswith('music/fileId1.mp3')]
+        entries = [ln for ln in lines if ln.endswith('music/fileId1.mp3')]
         self.assertListEqual(entries, [])
 
         with open(jingles_path) as f:
-            lines = [l.strip() for l in f.readlines()]
+            lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 5)
         self.assertTrue(all(lines))
 
@@ -868,7 +868,7 @@ class ProcessorsTestCase(unittest.TestCase):
                            [FileDeletion()])
 
         with open(music_path) as f:
-            lines = [l.strip() for l in f.readlines()]
+            lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 1)
         self.assertTrue(lines[0].endswith('music/fileId2.ogg'))
 
