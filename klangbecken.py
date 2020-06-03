@@ -1048,12 +1048,12 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
     log_file_path = os.path.join(data_dir, "log", log_file_name)
 
     if not os.path.exists(log_file_path):
-        with open(log_file_path, "w", newline="") as csv_file:
+        with open(log_file_path, "w", encoding="utf-8", newline="") as csv_file:
             fieldnames = ALLOWED_METADATA.keys()
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
             writer.writeheader()
 
-    with open(log_file_path, "a", newline="") as csv_file:
+    with open(log_file_path, "a", encoding="utf-8", newline="") as csv_file:
         fieldnames = ALLOWED_METADATA.keys()
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writerow(entry)
