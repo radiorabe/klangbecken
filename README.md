@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/radiorabe/klangbecken.svg?branch=master)](https://travis-ci.org/radiorabe/klangbecken)
 [![Coverage Status](https://codecov.io/gh/radiorabe/klangbecken/branch/master/graph/badge.svg)](https://codecov.io/gh/radiorabe/klangbecken)
+[![Codestyle Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Description
 This repo contains two parts of the RaBe-Klangbecken infrastructure:
@@ -46,6 +47,7 @@ python3 -m venv venv && source venv/bin/activate
 * Python
   ```bash
   pip install -r requirements.txt
+  pip install -r requirements-dev.txt
   ```
 * Liquidsoap (on CentOS 7 you can also use our prebuilt [package](https://github.com/radiorabe/centos-rpm-liquidsoap))
   ```bash
@@ -98,11 +100,28 @@ tox -p auto
 python -m unittest discover
 ```
 
+#### Format code
+
+```bash
+black .
+```
+
 #### Check your style
+
 ```bash
 flake8
 ```
 
+#### Automate formatting using pre-commit
+
+After registering hooks with `init` pre-commit will abort commits if there are black, isort or flake8 changes to be made. If machine fixable (ie. black and isort) pre-commit usually applies those changes leaving you to stage them using `git add` before retrying your commit.
+```bash
+pre-commit init
+```
+You can also run black, isort and flake8 on all content without comitting:
+```bash
+pre-commit run -a
+```
 
 ### Automatically activate and deactivate virtualenvs when changing directories
 
