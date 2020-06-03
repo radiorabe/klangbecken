@@ -19,7 +19,7 @@ install:
   - pip install  ".[test]" .
 script:
   - klangbecken init -d $KLANGBECKEN_DATA
-  - coverage run --source=klangbecken_api -m unittest discover
+  - coverage run --source=klangbecken -m unittest discover
   - flake8
 after_success:
   - codecov
