@@ -38,6 +38,6 @@ matrix:
       script:
         - docker run --rm -ti radiorabe/liquidsoap --version
         - mkdir $KLANGBECKEN_DATA
-        - touch $KLANGBECKEN_DATA/prio.m3u $KLANGBECKEN_DATA/music.m3u $KLANGBECKEN_DATA/classics.m3u $KLANGBECKEN_DATA/jingles.m3u
+        - touch $KLANGBECKEN_DATA/prio.m3u $KLANGBECKEN_DATA/music.m3u $KLANGBECKEN_DATA/classics.m3u $KLANGBECKEN_DATA/jingles.m3u $KLANGBECKEN_DATA/index.json
         - docker run --rm -ti -e KLANGBECKEN_DATA=$KLANGBECKEN_DATA -v $KLANGBECKEN_DATA:$KLANGBECKEN_DATA -v `pwd`:/var/lib/liquidsoap radiorabe/liquidsoap --check klangbecken.liq
       after_success:
