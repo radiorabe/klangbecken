@@ -236,6 +236,21 @@ def update_data_analyzer(playlist, fileId, ext, data):
 DEFAULT_UPDATE_ANALYZERS = [update_data_analyzer]
 
 
+def next_prio_track_analyzer(data_dir):
+    data = {}
+    with open(os.path.join(data_dir, "prio.m3u"), "r") as f:
+        contents = f.read().strip()
+        if contents:
+            _, ext = os.path.splitext(contents)
+            changes = mutagen_tag_analyzer(
+                "prio.m3u", None, ext, open(os.path.join(data_dir, contents), "rb")
+            )
+            for change in changes:
+                data[change.key] = change.value
+            data["next"] = True
+    return data
+
+
 ##############
 # Processors #
 ##############
@@ -469,6 +484,7 @@ class KlangbeckenAPI:
         secret,
         upload_analyzers=DEFAULT_UPLOAD_ANALYZERS,
         update_analyzers=DEFAULT_UPDATE_ANALYZERS,
+        next_prio_track_info=next_prio_track_analyzer,
         processors=DEFAULT_PROCESSORS,
         disable_auth=False,
     ):
@@ -476,6 +492,7 @@ class KlangbeckenAPI:
         self.secret = secret
         self.upload_analyzers = upload_analyzers
         self.update_analyzers = update_analyzers
+        self.next_prio_track_info = next_prio_track_info
         self.processors = processors
         self.do_auth = not disable_auth
 
@@ -495,6 +512,7 @@ class KlangbeckenAPI:
                 Rule(file_url, methods=("PUT",), endpoint="update"),
                 Rule(file_url, methods=("DELETE",), endpoint="delete"),
                 Rule("/playnext/", methods=("POST",), endpoint="play_next"),
+                Rule("/playnext/", methods=("GET",), endpoint="get_next"),
             )
         )
 
@@ -665,6 +683,13 @@ class KlangbeckenAPI:
             raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
 
         return JSONResponse({"status": "OK"})
+
+    def on_get_next(self, request):
+        resp = {"status": "OK", "next": False}
+
+        resp.update(self.next_prio_track_info(self.data_dir))
+
+        return JSONResponse(resp)
 
 
 class JSONResponse(Response):

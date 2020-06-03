@@ -34,11 +34,14 @@ class APITestCase(unittest.TestCase):
         self.update_analyzer = mock.Mock(return_value=["UpdateChange"])
         self.processor = mock.MagicMock()
 
+        self.next_prio_track_analyzer = mock.Mock(return_value=[])
+
         app = KlangbeckenAPI(
             "data_dir",
             "secret",
             upload_analyzers=[self.upload_analyzer],
             update_analyzers=[self.update_analyzer],
+            next_prio_track_info=self.next_prio_track_analyzer,
             processors=[self.processor],
             disable_auth=True,
         )
@@ -237,6 +240,11 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 422)
         self.assertTrue(b"invalid UTF-8 data" in resp.data)
         playnext_processor.assert_not_called()
+
+    def testGetNext(self):
+        resp = self.client.get("/playnext/")
+        self.assertEqual(resp.status_code, 200)
+        self.next_prio_track_analyzer.assert_called_with("data_dir")
 
 
 class AuthTestCase(unittest.TestCase):
@@ -474,6 +482,24 @@ class AnalyzersTestCase(unittest.TestCase):
             with open(self.invalid_file, "rb") as f:
                 fs = FileStorage(f)
                 ffmpeg_audio_analyzer("music", "id1", ".mp3", fs)
+
+    def testNextPrioTrackAnalyzer(self):
+        from klangbecken import next_prio_track_analyzer
+
+        # test empty file
+        path = os.path.join(self.current_path, "playlists", "empty")
+
+        data = next_prio_track_analyzer(path)
+
+        self.assertEquals(data, {})
+
+        # test file with track
+        path = os.path.join(self.current_path, "playlists", "single-track")
+
+        data = next_prio_track_analyzer(path)
+
+        self.assertEquals(data["artist"], "Silence Artist")
+        self.assertEquals(data["title"], "Silence Track")
 
 
 class ProcessorsTestCase(unittest.TestCase):
