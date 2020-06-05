@@ -56,79 +56,23 @@ ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
 # PLAYLISTS                                         #
 # ================================================= #
 
-# parse index.json and keep it up to date
-index = ref []
-index_filename = path.concat(DATA_DIR, "index.json")
-def read_index() =
-  log("updating index", label="update_index")
-  index := of_json(default=[("list", [("key", "value")])], file.contents(index_filename))
-end
-if file.exists(index_filename) then read_index() end
-file.watch(index_filename, read_index)
-
-# calculate waiting time for repeating a track depending on its playlist
-def calc_wait(playlist) =
-  if playlist == "music" then 259200 # 3 days
-  elsif playlist == "classics" then 86400 # 1 day
-  elsif playlist == "jingles" then 3600 # 1 hour
-  else 0 end
-end
-
-# check if track was played recently
-skipped = ref 0
-def check_next_func(r) = 
-  # get id from filename
-  id = basename(request.filename(r))
-  id = string.replace(pattern="\..*", fun(_) -> "", id)
-  # get info about track in index
-  meta = list.assoc(default=[], id, !index)
-  # get last_play as a unix timestamp
-  last_play = meta["last_play"]
-
-  if string.length(last_play) == 0 then
-    log("track was never played before: #{request.filename(r)}", label="check_next_func")
-    true
-  else
-    last_play_unix = int_of_string(string.trim(get_process_output("date --date=#{last_play} +%s")))
-    now_unix = int_of_float(gettimeofday())
-    diff = now_unix - last_play_unix
-    if diff < calc_wait(meta["playlist"]) then
-      skipped := !skipped + 1
-      log("track was recently played: #{request.filename(r)} (#{diff} seconds ago)", label="check_next_func")
-      if !skipped >= 10 then
-        skipped := 0
-        log("too many skipped tracks, playing #{request.filename(r)} anyway", label="check_next_func")
-        true
-      else
-        false
-      end
-    else
-      log("next: #{request.filename(r)} (track was last played #{diff} seconds ago)", label="check_next_func")
-      true
-    end
-  end
-end
-
 # Priority playlist for 'play next' feature
 prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio.m3u"))
 # Cut silence at start and end
 prio = cue_cut(prio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Music playlist
-music = playlist(id="music", mode="randomize", reload_mode="watch",
-                 check_next=check_next_func, path.concat(DATA_DIR, "music.m3u"))
+music = playlist(id="music", mode="randomize", reload_mode="watch",  path.concat(DATA_DIR, "music.m3u"))
 # Cut silence at start and end
 music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Classics playlist
-classics = playlist(id="classics", mode="randomize", reload_mode="watch",
-                    check_next=check_next_func, path.concat(DATA_DIR, "classics.m3u"))
+classics = playlist(id="classics", mode="randomize", reload_mode="watch",  path.concat(DATA_DIR, "classics.m3u"))
 # Cut silence at start and end
 classics = cue_cut(classics, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Jingles playlist
-jingles = playlist(id="jingles", mode="randomize", reload_mode="watch",
-                   check_next=check_next_func, path.concat(DATA_DIR, "jingles.m3u"))
+jingles = playlist(id="jingles", mode="randomize", reload_mode="watch", path.concat(DATA_DIR, "jingles.m3u"))
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
 # Cut silence at start and end
