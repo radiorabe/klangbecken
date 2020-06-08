@@ -59,9 +59,14 @@ ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
 # parse index.json and keep it up to date
 index = ref []
 index_filename = path.concat(DATA_DIR, "index.json")
+index_last_update = ref 0.0
 def read_index() =
-  log("updating index", label="update_index")
-  index := of_json(default=[("list", [("key", "value")])], file.contents(index_filename))
+  diff = gettimeofday() - !index_last_update
+  if diff > 1. then
+    log("updating index", label="update_index")
+    index := of_json(default=[("list", [("key", "value")])], file.contents(index_filename))
+    index_last_update := gettimeofday()
+  end
 end
 if file.exists(index_filename) then read_index() end
 file.watch(index_filename, read_index)
