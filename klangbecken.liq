@@ -45,6 +45,7 @@ if not is_directory(DATA_DIR) then
     log(level=2, "ERROR: Cannot find data directory: " ^ DATA_DIR)
     shutdown()
 end
+INDEX = path.concat(DATA_DIR, "index.json")
 
 # Get the klangecken command
 CMD_PATH = getenv_fallback("KLANGBECKEN_PATH", "./klangbecken.py")
@@ -55,21 +56,6 @@ ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
 # ================================================= #
 # PLAYLISTS                                         #
 # ================================================= #
-
-# parse index.json and keep it up to date
-index = ref []
-index_filename = path.concat(DATA_DIR, "index.json")
-index_last_update = ref 0.0
-def read_index() =
-  diff = gettimeofday() - !index_last_update
-  if diff > 1. then
-    log("updating index", label="update_index")
-    index := of_json(default=[("list", [("key", "value")])], file.contents(index_filename))
-    index_last_update := gettimeofday()
-  end
-end
-if file.exists(index_filename) then read_index() end
-file.watch(index_filename, read_index)
 
 # calculate waiting time for repeating a track depending on its playlist
 def calc_wait(playlist) =
@@ -83,32 +69,33 @@ end
 skipped = ref 0
 def check_next_func(r) = 
   # get id from filename
-  id = basename(request.filename(r))
+  filename = request.filename(r)
+  id = basename(filename)
   id = string.replace(pattern="\..*", fun(_) -> "", id)
-  # get info about track in index
-  meta = list.assoc(default=[], id, !index)
-  # get last_play as a unix timestamp
-  last_play = meta["last_play"]
-
-  if string.length(last_play) == 0 then
-    log("track was never played before: #{request.filename(r)}", label="check_next_func")
+  # parse last_play as unix timestamp from data/index.json
+  cmd = 'jq \'."#{id}".last_play | split(".")[0] | strptime("%Y-%m-%dT%H:%M:%S") | mktime\' #{INDEX}'
+  last_play_unix = int_of_string(string.trim(get_process_output(cmd)))
+  if last_play_unix == 0 then
+    log("track was never played before: #{filename}", label="check_next_func")
     true
   else
-    last_play_unix = int_of_string(string.trim(get_process_output("date --date=#{last_play} +%s")))
     now_unix = int_of_float(gettimeofday())
     diff = now_unix - last_play_unix
-    if diff < calc_wait(meta["playlist"]) then
+    # the playlist folder is the second last part of the file path
+    filename_split = string.split(filename, separator="/")
+    playlist = list.nth(filename_split, list.length(filename_split)-2, default="")
+    if diff < calc_wait(playlist) then
       skipped := !skipped + 1
-      log("track was recently played: #{request.filename(r)} (#{diff} seconds ago)", label="check_next_func")
+      log("track was recently played: #{filename} (#{diff} seconds ago)", label="check_next_func")
       if !skipped >= 10 then
         skipped := 0
-        log("too many skipped tracks, playing #{request.filename(r)} anyway", label="check_next_func")
+        log("too many skipped tracks, playing #{filename} anyway", label="check_next_func")
         true
       else
         false
       end
     else
-      log("next: #{request.filename(r)} (track was last played #{diff} seconds ago)", label="check_next_func")
+      log("next: #{filename} (track was last played #{diff} seconds ago)", label="check_next_func")
       true
     end
   end
