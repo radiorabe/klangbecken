@@ -72,15 +72,16 @@ def check_next_func(r) =
   filename = request.filename(r)
   id = basename(filename)
   id = string.replace(pattern="\..*", fun(_) -> "", id)
-  # parse last_play as unix timestamp from data/index.json
-  cmd = 'jq \'."#{id}".last_play | split(".")[0] | strptime("%Y-%m-%dT%H:%M:%S") | mktime\' #{INDEX}'
-  last_play_unix = int_of_string(string.trim(get_process_output(cmd)))
-  if last_play_unix == 0 then
+  # parse timestamp and subtract it from the current time
+  cmd = 'jq \'
+         (now | localtime | mktime) - 
+         (."#{id}".last_play | split(".")[0] | strptime("%Y-%m-%dT%H:%M:%S") | mktime)\' #{INDEX}'
+  # default to smallest 32-bit integer to be able to check later
+  diff = int_of_string(string.trim(get_process_output(cmd)), default=-2147483648)
+  if diff == -2147483648 then
     log("track was never played before: #{filename}", label="check_next_func")
     true
   else
-    now_unix = int_of_float(gettimeofday())
-    diff = now_unix - last_play_unix
     # the playlist folder is the second last part of the file path
     filename_split = string.split(filename, separator="/")
     playlist = list.nth(filename_split, list.length(filename_split)-2, default="")
