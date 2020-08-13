@@ -703,7 +703,7 @@ class StandaloneWebApplication:
         from werkzeug.middleware.dispatcher import DispatcherMiddleware
         from werkzeug.middleware.shared_data import SharedDataMiddleware
 
-        # Check data dirrectory structure
+        # Check data directory structure
         _check_data_dir(data_dir)
 
         # Only add ffmpeg_audio_analyzer to analyzers if binary is present
@@ -717,7 +717,7 @@ class StandaloneWebApplication:
                 file=sys.stderr,
             )
 
-        # Slightly modify processors, such that index.json is pretty printed
+        # Slightly modify processors, such that index.json is pretty-printed
         processors = [
             check_processor,
             filter_duplicates_processor,
@@ -1118,7 +1118,7 @@ def main(dev_mode=False):
       -b ADDRESS, --bind=ADDRESS
             Specify alternate bind address [default: localhost].
       -y, --yes
-            Automatically answer yes for all questions.
+            Automatically answer yes to all questions.
       -m, --mtime
             Use file modification date as import timestamp.
       -M FILE, --meta=FILE
