@@ -1043,6 +1043,7 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
     FileType = SUPPORTED_FILE_TYPES["." + filename.split(".")[-1]]
     mutagenfile = FileType(filename)
     mutagenfile["last_play"] = str(now.timestamp())
+    mutagenfile.save()
 
     # Overwrite current.json
     with open(os.path.join(data_dir, "log", "current.json"), "w") as f:
