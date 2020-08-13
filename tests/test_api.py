@@ -588,17 +588,6 @@ class ProcessorsTestCase(unittest.TestCase):
             NotFound, raw_file_processor, self.tempdir, "music", "id1", ".mp3", [delete]
         )
 
-        # Completely invalid change
-        self.assertRaises(
-            ValueError,
-            raw_file_processor,
-            self.tempdir,
-            "music",
-            "id1",
-            ".mp3",
-            ["invalid"],
-        )
-
     def testIndexProcessor(self):
         from klangbecken import index_processor
         from klangbecken import FileAddition, FileDeletion, MetadataChange
@@ -707,17 +696,6 @@ class ProcessorsTestCase(unittest.TestCase):
             data = json.load(f)
         self.assertTrue("fileId2" in data)
         self.assertTrue("fileXY" not in data)
-
-        # Completely invalid change
-        self.assertRaises(
-            ValueError,
-            index_processor,
-            self.tempdir,
-            "music",
-            "id1",
-            ".mp3",
-            ["invalid"],
-        )
 
     def testFileTagProcessor(self):
         from klangbecken import file_tag_processor
