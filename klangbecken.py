@@ -1044,7 +1044,7 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
         del data
 
     # Update file metadata
-    FileType = SUPPORTED_FILE_TYPES[filename.split(".")[-1]]
+    FileType = SUPPORTED_FILE_TYPES["." + filename.split(".")[-1]]
     mutagenfile = FileType(filename)
     mutagenfile["last_play"] = str(now.timestamp())
 
