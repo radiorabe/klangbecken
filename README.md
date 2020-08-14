@@ -27,6 +27,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
   * **ffmpeg** binary (>=4.0) for audio analysis
   * Development dependencies: **tox**, **coverage**, **mock**, **flake**
 * **Liquidsoap** for sending the audio
+  * **jq** for parsing the index
 
 ## Setup
 
