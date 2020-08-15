@@ -79,6 +79,7 @@ def check_next_func(r) =
   # default to smallest 32-bit integer to be able to check later
   diff = int_of_string(string.trim(get_process_output(cmd)), default=-2147483648)
   if diff == -2147483648 then
+    skipped := 0
     log("track was never played before: #{filename}", label="check_next_func")
     true
   else
@@ -96,6 +97,7 @@ def check_next_func(r) =
         false
       end
     else
+      skipped := 0
       log("next: #{filename} (track was last played #{diff} seconds ago)", label="check_next_func")
       true
     end
