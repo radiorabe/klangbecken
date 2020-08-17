@@ -59,32 +59,27 @@ ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
 
 # calculate waiting time for repeating a track depending on its playlist
 def calc_wait(playlist) =
-  if playlist == "music" then 259200 # 3 days
-  elsif playlist == "classics" then 86400 # 1 day
-  elsif playlist == "jingles" then 3600 # 1 hour
-  else 0 end
+  if playlist == "music" then 259200.0 # 3 days
+  elsif playlist == "classics" then 86400.0 # 1 day
+  elsif playlist == "jingles" then 3600.0 # 1 hour
+  else 0.0 end
 end
 
 # check if track was played recently
 skipped = ref 0
 def check_next_func(r) = 
-  # get id from filename
+  metadata = request.metadata(r)
   filename = request.filename(r)
-  id = basename(filename)
-  id = string.replace(pattern="\..*", fun(_) -> "", id)
-  # parse timestamp and subtract it from the current time
-  cmd = 'jq \'
-         (now | localtime | mktime) - 
-         (."#{id}".last_play | split(".")[0] | strptime("%Y-%m-%dT%H:%M:%S") | mktime)\' #{INDEX}'
-  # default to smallest 32-bit integer to be able to check later
-  diff = int_of_string(string.trim(get_process_output(cmd)), default=-2147483648)
-  if diff == -2147483648 then
+
+  last_play = float_of_string(metadata["last_play"])
+  if last_play == 0.0 then
     skipped := 0
     log("track was never played before: #{filename}", label="check_next_func")
     true
   else
-    # the playlist folder is the second last part of the file path
+    diff = gettimeofday() - last_play
     filename_split = string.split(filename, separator="/")
+    # the playlist folder is the penultimate part of the file path
     playlist = list.nth(filename_split, list.length(filename_split)-2, default="")
     if diff < calc_wait(playlist) then
       skipped := !skipped + 1
