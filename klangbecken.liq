@@ -222,9 +222,7 @@ have_new_metadata = ref false
 filename = ref ''
 
 def log_metadata_func(m) =
-  # Log to stdout
-  print('Playing: ', newline=false)
-  print(m['filename'])
+  log('Playing: #{m["filename"]}', label="log_metadata_func")
 
   if !onair then
     # Prepare play logger
