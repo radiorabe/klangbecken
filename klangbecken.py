@@ -1065,7 +1065,9 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
         writer.writerow(entry)
 
     if EXTERNAL_PLAY_LOGGER:
-        subprocess.check_call(EXTERNAL_PLAY_LOGGER.format(**entry), shell=True)
+        subprocess.check_call(
+            EXTERNAL_PLAY_LOGGER.format(**entry).encode("utf-8"), shell=True
+        )
 
 
 EXTERNAL_PLAY_LOGGER = os.environ.get("KLANGBECKEN_EXTERNAL_PLAY_LOGGER", "")
