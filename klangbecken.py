@@ -103,7 +103,7 @@ ALLOWED_METADATA = {
 
 UPDATE_KEYS = "artist title album weight".split()
 TAG_KEYS = (
-    "artist title album cue_in cue_out track_gain " "original_filename import_timestamp"
+    "artist title album cue_in cue_out track_gain original_filename import_timestamp"
 ).split()
 
 
@@ -221,14 +221,10 @@ DEFAULT_UPLOAD_ANALYZERS = [
 def update_data_analyzer(playlist, fileId, ext, data):
     changes = []
     if not isinstance(data, dict):
-        raise UnprocessableEntity(
-            "Invalid data format: " + "associative array expected"
-        )
+        raise UnprocessableEntity("Invalid data format: associative array expected")
     for key, value in data.items():
         if key not in UPDATE_KEYS:
-            raise UnprocessableEntity(
-                "Invalid data format: " + f"Key not allowed: {key}"
-            )
+            raise UnprocessableEntity(f"Invalid data format: Key not allowed: {key}")
         changes.append(MetadataChange(key, value))
     return changes
 
