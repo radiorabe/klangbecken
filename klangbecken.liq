@@ -131,7 +131,7 @@ jingles = cue_cut(jingles, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 
 # ================================================= #
-# MIX MUSIC AND CASSICS                             #
+# MIX MUSIC AND CLASSICS                            #
 # ================================================= #
 
 music = random(weights=[5, 1], [music, classics])
