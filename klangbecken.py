@@ -65,10 +65,11 @@ except pkg_resources.DistributionNotFound:  # pragma: no cover
 ############
 PLAYLISTS = ("music", "classics", "jingles")
 
+# Map file extension to mutagen class for all supported file types
 SUPPORTED_FILE_TYPES = {
-    ".mp3": mutagen.mp3.EasyMP3,
-    ".ogg": mutagen.oggvorbis.OggVorbis,
-    ".flac": mutagen.flac.FLAC,
+    "mp3": mutagen.mp3.EasyMP3,
+    "ogg": mutagen.oggvorbis.OggVorbis,
+    "flac": mutagen.flac.FLAC,
 }
 
 ISO8601_RE = (
@@ -306,7 +307,7 @@ def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
 
 
 def raw_file_processor(data_dir, playlist, fileId, ext, changes):
-    path = os.path.join(data_dir, playlist, fileId + ext)
+    path = os.path.join(data_dir, playlist, fileId + "." + ext)
     for change in changes:
         if isinstance(change, FileAddition):
             file_ = change.file
@@ -364,7 +365,7 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
                 key, value = change
                 if key in TAG_KEYS:
                     if mutagenfile is None:
-                        path = os.path.join(data_dir, playlist, fileId + ext)
+                        path = os.path.join(data_dir, playlist, fileId + "." + ext)
                         FileType = SUPPORTED_FILE_TYPES[ext]
                         mutagenfile = FileType(path)
 
@@ -383,15 +384,15 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
                 f.seek(0)
                 f.truncate()
                 for line in lines:
-                    if not line.endswith(os.path.join(playlist, fileId + ext)):
+                    if not line.endswith(os.path.join(playlist, fileId + "." + ext)):
                         print(line, file=f)
         elif isinstance(change, MetadataChange) and change.key == "weight":
             with locked_open(playlist_path) as f:
                 lines = (s.strip() for s in f.readlines() if s != "\n")
-                lines = [s for s in lines if s and not s.endswith(fileId + ext)]
+                lines = [s for s in lines if s and not s.endswith(fileId + "." + ext)]
 
                 weight = change.value
-                lines.extend([os.path.join(playlist, fileId + ext)] * weight)
+                lines.extend([os.path.join(playlist, fileId + "." + ext)] * weight)
                 random.shuffle(lines)  # TODO: custom shuffling?
                 f.seek(0)
                 f.truncate()
@@ -416,7 +417,7 @@ def playnext_processor(data_dir, data):
         raise UnprocessableEntity("Invalid data format: " 'Key "file" not found')
 
     filename = data["file"]
-    filename_re = r"^({0})/([^/.]+)({1})$".format(
+    filename_re = r"^({0})/([^/.]+)\.({1})$".format(
         "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
     )
     if not re.match(filename_re, filename):
@@ -475,7 +476,7 @@ class KlangbeckenAPI:
         playlist_url = "/<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
         file_url = (
             playlist_url
-            + "<uuid:fileId><any("
+            + "<uuid:fileId>.<any("
             + ", ".join(SUPPORTED_FILE_TYPES.keys())
             + "):ext>"
         )
@@ -600,7 +601,7 @@ class KlangbeckenAPI:
         try:
             uploadFile = request.files["file"]
 
-            ext = os.path.splitext(uploadFile.filename)[1].lower()
+            ext = os.path.splitext(uploadFile.filename)[1].lower()[1:]
             fileId = str(uuid.uuid4())  # Generate new file id
 
             actions = []
@@ -789,7 +790,7 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime=True):
     if not os.path.exists(filename):
         raise UnprocessableEntity("File not found: " + filename)
 
-    ext = os.path.splitext(filename)[1].lower()
+    ext = os.path.splitext(filename)[1].lower()[1:]
     if ext not in SUPPORTED_FILE_TYPES.keys():
         raise UnprocessableEntity("File extension not supported: " + ext)
 
@@ -979,7 +980,7 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):  # noqa: C901
             if entries["playlist"] != "jingles" and entries["length"] < 30:
                 err("WARNING: very short song found:", entries["length"])
             file_path = os.path.join(
-                entries["playlist"], entries["id"] + entries["ext"]
+                entries["playlist"], entries["id"] + "." + entries["ext"]
             )
             file_full_path = os.path.join(data_dir, file_path)
             if not os.path.isfile(file_full_path):
@@ -1018,7 +1019,7 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
             json.dump(False, f)
         return
 
-    file_id = filename.split("/")[-1].split(".")[0]
+    file_id, ext = filename.split("/")[-1].split(".")
 
     json_opts = {"indent": 2, "sort_keys": True} if dev_mode else {}
 
@@ -1036,7 +1037,7 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
         del data
 
     # Update file metadata
-    FileType = SUPPORTED_FILE_TYPES["." + filename.split(".")[-1]]
+    FileType = SUPPORTED_FILE_TYPES[ext]
     mutagenfile = FileType(filename)
     mutagenfile["last_play"] = str(now.timestamp())
     mutagenfile.save()
@@ -1079,7 +1080,7 @@ def reanalyze_cmd(data_dir, ids, all=False, yes=False, dev_mode=False):
     for id in ids:
         playlist = data[id]["playlist"]
         ext = data[id]["ext"]
-        path = os.path.join(data_dir, playlist, id + ext)
+        path = os.path.join(data_dir, playlist, id + "." + ext)
         print(f'File: {path} ({data[id]["artist"]} - {data[id]["title"]})')
         with open(path) as f:
             file_changes = ffmpeg_audio_analyzer(playlist, id, ext, f)
