@@ -3,7 +3,7 @@
 # klangbecken_api.py - Klangbecken API                                       #
 ##############################################################################
 #
-# Copyright 2017-2018 Radio Bern RaBe, Switzerland, https://rabe.ch
+# Copyright 2017-2020 Radio Bern RaBe, Switzerland, https://rabe.ch
 #
 # This program is free software: you can redistribute it and/or
 # modify it under the terms of the GNU Affero General Public
