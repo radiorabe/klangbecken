@@ -155,8 +155,8 @@ end
 add_timeout(0.0, jingle_timeout)
 
 radio = switch(id="radio", [
-  ({!onair}, prio),
   ({!insert_jingle}, jingles),
+  ({!onair}, prio),
   ({true}, music),
 ])
 
@@ -165,7 +165,7 @@ def on_track_func(m) =
   insert_jingle := false
 
   # Clear prio playlist if on air
-  if !onair then
+  if !onair and m['source'] == "prio" then
     log("resetting prio playlist", label="on_track_func")
     system("echo > #{DATA_DIR}/prio.m3u")
   end
