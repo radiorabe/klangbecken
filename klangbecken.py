@@ -326,6 +326,8 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
         elif isinstance(change, MetadataChange):
             if not os.path.isfile(path):
                 raise NotFound()
+        else:
+            raise ValueError("Invalid action class")
 
 
 def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
@@ -345,6 +347,8 @@ def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
                 if fileId not in data:
                     raise NotFound()
                 data[fileId][key] = value
+            else:
+                raise ValueError("Change not recognized")
         f.seek(0)
         f.truncate()
         json.dump(data, f, **json_opts)
@@ -357,7 +361,6 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(
     key="original_filename", desc="ORIGINAL_FILENAME"
 )
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key="import_timestamp", desc="IMPORT_TIMESTAMP")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play", desc="LAST_PLAY")
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
@@ -703,7 +706,7 @@ class StandaloneWebApplication:
         from werkzeug.middleware.dispatcher import DispatcherMiddleware
         from werkzeug.middleware.shared_data import SharedDataMiddleware
 
-        # Check data directory structure
+        # Check data dirrectory structure
         _check_data_dir(data_dir)
 
         # Only add ffmpeg_audio_analyzer to analyzers if binary is present
@@ -717,7 +720,7 @@ class StandaloneWebApplication:
                 file=sys.stderr,
             )
 
-        # Slightly modify processors, such that index.json is pretty-printed
+        # Slightly modify processors, such that index.json is pretty printed
         processors = [
             check_processor,
             filter_duplicates_processor,
@@ -1028,7 +1031,6 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
 
     now = datetime.datetime.now()
 
-    # Update index cache
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
         entry = data[file_id]
@@ -1039,17 +1041,9 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
         json.dump(data, f, **json_opts)
         del data
 
-    # Update file metadata
-    FileType = SUPPORTED_FILE_TYPES["." + filename.split(".")[-1]]
-    mutagenfile = FileType(filename)
-    mutagenfile["last_play"] = str(now.timestamp())
-    mutagenfile.save()
-
-    # Overwrite current.json
     with open(os.path.join(data_dir, "log", "current.json"), "w") as f:
         json.dump(entry, f, **json_opts)
 
-    # Append to CSV log files
     log_file_name = f"{now.year}-{now.month}.csv"
     log_file_path = os.path.join(data_dir, "log", log_file_name)
 
@@ -1121,7 +1115,7 @@ def main(dev_mode=False):
       -b ADDRESS, --bind=ADDRESS
             Specify alternate bind address [default: localhost].
       -y, --yes
-            Automatically answer yes to all questions.
+            Automatically answer yes for all questions.
       -m, --mtime
             Use file modification date as import timestamp.
       -M FILE, --meta=FILE
