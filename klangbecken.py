@@ -585,7 +585,7 @@ class KlangbeckenAPI:
         self.player_socket = player_socket
         self.do_auth = not disable_auth
 
-        playlist_url = "/<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
+        playlist_url = "<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
         file_url = (
             playlist_url
             + "<uuid:fileId><any("
@@ -593,21 +593,29 @@ class KlangbeckenAPI:
             + "):ext>"
         )
 
+        rules = (
+            # Authentication
+            (("GET", "POST"), "/auth/login/", "auth_login"),
+            ("POST", "/auth/renew/", "auth_renew"),
+            # Playlist management
+            ("POST", "/playlist/" + playlist_url, "playlist_upload",),
+            ("PUT", "/playlist/" + file_url, "playlist_update"),
+            ("DELETE", "/playlist/" + file_url, "playlist_delete"),
+            # Player interaction
+            ("GET", "/player/", "player_info"),
+            ("POST", "/player/", "player_queue_push"),
+            ("DELETE", "/player/<int:rid>", "player_queue_delete",),
+            ("DELETE", "/player/", "player_queue_clear"),
+        )
+
         self.url_map = Map(
             rules=(
-                Rule("/auth/login/", methods=("GET", "POST"), endpoint="login"),
-                Rule("/auth/renew/", methods=("POST",), endpoint="renew"),
-                Rule(playlist_url, methods=("POST",), endpoint="upload"),
-                Rule(file_url, methods=("PUT",), endpoint="update"),
-                Rule(file_url, methods=("DELETE",), endpoint="delete"),
-                Rule("/player/", methods=("GET",), endpoint="player_info"),
-                Rule("/player/", methods=("POST",), endpoint="player_queue_push"),
-                Rule("/player/", methods=("DELETE",), endpoint="player_queue_clear"),
                 Rule(
-                    "/player/<int:rid>",
-                    methods=("DELETE",),
-                    endpoint="player_queue_delete",
-                ),
+                    path,
+                    methods=(method,) if isinstance(method, str) else method,
+                    endpoint=endpoint,
+                )
+                for method, path, endpoint in rules
             )
         )
 
@@ -646,7 +654,7 @@ class KlangbeckenAPI:
             )
         return response(environ, start_response)
 
-    def on_login(self, request):
+    def on_auth_login(self, request):
         if request.remote_user is None:
             raise Unauthorized()
 
@@ -657,7 +665,7 @@ class KlangbeckenAPI:
 
         return JSONResponse({"token": token})
 
-    def on_renew(self, request):  # noqa: C901
+    def on_auth_renew(self, request):  # noqa: C901
         try:
             data = json.loads(str(request.data, "utf-8"))
         except (UnicodeDecodeError, TypeError):
@@ -713,7 +721,7 @@ class KlangbeckenAPI:
 
         return JSONResponse({"token": token})
 
-    def on_upload(self, request, playlist):
+    def on_playlist_upload(self, request, playlist):
         if "file" not in request.files:
             raise UnprocessableEntity("No attribute named 'file' found.")
 
@@ -739,7 +747,7 @@ class KlangbeckenAPI:
 
         return JSONResponse({fileId: response})
 
-    def on_update(self, request, playlist, fileId, ext):
+    def on_playlist_update(self, request, playlist, fileId, ext):
         fileId = str(fileId)
 
         actions = []
@@ -758,7 +766,7 @@ class KlangbeckenAPI:
 
         return JSONResponse({"status": "OK"})
 
-    def on_delete(self, request, playlist, fileId, ext):
+    def on_playlist_delete(self, request, playlist, fileId, ext):
         fileId = str(fileId)
 
         change = [FileDeletion()]
@@ -799,14 +807,14 @@ class KlangbeckenAPI:
         except ValueError:
             raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
 
-    def on_player_queue_clear(self, request):
-        with LiquidsoapClient(self.player_socket) as client:
-            client.clear_queue()
-        return JSONResponse({"status": "OK"})
-
     def on_player_queue_delete(self, request, rid):
         with LiquidsoapClient(self.player_socket) as client:
             client.delete(rid)
+        return JSONResponse({"status": "OK"})
+
+    def on_player_queue_clear(self, request):
+        with LiquidsoapClient(self.player_socket) as client:
+            client.clear_queue()
         return JSONResponse({"status": "OK"})
 
 
