@@ -33,8 +33,10 @@ import os
 import random
 import re
 import shutil
+import socket
 import subprocess
 import sys
+import telnetlib
 import threading
 import uuid
 
@@ -107,9 +109,9 @@ TAG_KEYS = (
 ).split()
 
 
-####################
-# Action-"Classes" #
-####################
+#############################
+# Playlist Action-"Classes" #
+#############################
 FileAddition = collections.namedtuple("FileAddition", ("file"))
 MetadataChange = collections.namedtuple("MetadataChange", ("key", "value"))
 FileDeletion = collections.namedtuple("FileDeletion", ())
@@ -459,6 +461,108 @@ def locked_open(path, mode="r+"):
                 fcntl.lockf(f, fcntl.LOCK_UN)
 
 
+class UnixDomainTelnet(telnetlib.Telnet):
+    def __init__(self, path=None):
+        super().__init__()
+        if path is not None:
+            self.open(path)
+
+    def open(self, path):
+        """Connect to a local UNIX domain socket."""
+        self.eof = 0
+        self.path = path
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.connect(path)
+
+
+class LiquidsoapClient:
+    def __init__(self, path):
+        if os.path.isfile(path):
+            self.tel = UnixDomainTelnet(path)
+        elif re.match(r"^.+:\d+$", path):
+            host, port = path.rsplit(":", maxsplit=1)
+            self.tel = telnetlib.Telnet(host, int(port))
+        else:
+            raise ValueError("`path` is not a valid UNIX domain socket or TCP address")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
+    def close(self):
+        self.tel.close()
+
+    def command(self, cmd):
+        self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
+        ans = self.tel.read_until(b"END")
+        ans = re.sub(b"[\r\n]*END$", b"", ans)
+        ans = re.sub(b"^[\r\n]*", b"", ans)
+        ans = re.subn(b"[\r\n]", b"\n", ans)[0]
+        return ans.decode("ascii", "ignore")
+
+    def metadata(self, rid):
+        ans = self.command(f"request.metadata {rid}")
+        return dict(re.findall(r'^(.*?)="(.*?)"$', ans, re.M))
+
+    def info(self):
+        info = {
+            "uptime": self.command("uptime"),
+            "version": self.command("version"),
+        }
+
+        for playlist in ("music",):  # PLAYLISTS:
+            info[playlist] = [
+                line
+                for line in self.command(f"{playlist}.next").split("\n")
+                if not line.startswith("[playing]")
+            ][:3]
+
+        on_air_rid = self.command("request.on_air").strip()
+        keys = {"filename", "source"}
+        info["on_air"] = {
+            key: val for key, val in self.metadata(on_air_rid).items() if key in keys
+        }
+        info["on_air"]["remaining"] = float(self.command("out.remaining"))
+
+        keys = {"filename", "rid", "queue", "status"}
+        info["queue"] = [
+            {key: val for key, val in self.metadata(rid).items() if key in keys}
+            for rid in self.command("queue.queue").strip().split()
+        ]
+        info["queue"] = [entry for entry in info["queue"] if entry["status"] == "ready"]
+
+        return info
+
+    def push(self, data_dir, filename):
+        path = os.path.join(data_dir, filename)
+        if not os.path.isfile(path):
+            raise NotFound(f"File not found: {filename}")
+
+        rid = self.command(f"queue.push {path}").strip()
+        if self.metadata(rid)["status"] != "ready":
+            try:
+                self.delete(rid)
+            except:
+                pass
+            raise UnprocessableEntity("msg")  # Actuall ERror 500 (maybe ignore)
+
+        return rid
+
+    def delete(self, rid):
+        if rid not in self.command("queue.secondary_queue").strip().split():
+            raise NotFound()
+
+        ans = self.command(f"queue.remove {rid}")
+        if ans.strip() != "OK" or self.metadata(rid)["status"] != "destroyed":
+            raise UnprocessableEntity("Error")
+
+    def clear_queue(self):
+        for rid in self.command("queue.secondary_queue").strip().split():
+            self.delete(rid)
+
+
 ############
 # HTTP API #
 ############
@@ -470,6 +574,7 @@ class KlangbeckenAPI:
         upload_analyzers=DEFAULT_UPLOAD_ANALYZERS,
         update_analyzers=DEFAULT_UPDATE_ANALYZERS,
         processors=DEFAULT_PROCESSORS,
+        player_socket="/var/run/liquidsoap.sock",
         disable_auth=False,
     ):
         self.data_dir = data_dir
@@ -477,6 +582,7 @@ class KlangbeckenAPI:
         self.upload_analyzers = upload_analyzers
         self.update_analyzers = update_analyzers
         self.processors = processors
+        self.player_socket = player_socket
         self.do_auth = not disable_auth
 
         playlist_url = "/<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
@@ -494,7 +600,14 @@ class KlangbeckenAPI:
                 Rule(playlist_url, methods=("POST",), endpoint="upload"),
                 Rule(file_url, methods=("PUT",), endpoint="update"),
                 Rule(file_url, methods=("DELETE",), endpoint="delete"),
-                Rule("/playnext/", methods=("POST",), endpoint="play_next"),
+                Rule("/player/", methods=("GET",), endpoint="player_info"),
+                Rule("/player/", methods=("POST",), endpoint="player_queue_push"),
+                Rule("/player/", methods=("DELETE",), endpoint="player_queue_clear"),
+                Rule(
+                    "/player/<int:rid>",
+                    methods=("DELETE",),
+                    endpoint="player_queue_delete",
+                ),
             )
         )
 
@@ -654,16 +767,46 @@ class KlangbeckenAPI:
 
         return JSONResponse({"status": "OK"})
 
-    def on_play_next(self, request):
+    def on_player_info(self, request):
+        with LiquidsoapClient(self.player_socket) as client:
+            return JSONResponse(client.info())
+
+    def on_player_queue_push(self, request):
         try:
             data = json.loads(str(request.data, "utf-8"))
-            playnext_processor(self.data_dir, data)
+            if not isinstance(data, dict):
+                raise UnprocessableEntity(
+                    "Invalid data format: " "associative array expected"
+                )
+            if "filename" not in data:
+                raise UnprocessableEntity(
+                    "Invalid data format: " 'Key "filename" not found'
+                )
+
+            filename = data["filename"]
+            filename_re = r"^({0})/([^/.]+)\.({1})$".format(
+                "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
+            )
+            if not re.match(filename_re, filename):
+                raise UnprocessableEntity("Invalid file path format")
+
+            with LiquidsoapClient(self.player_socket) as client:
+                rid = client.push(self.data_dir, filename)
+                return JSONResponse({"status": "OK", "rid": rid})
 
         except (UnicodeDecodeError, TypeError):
             raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
         except ValueError:
             raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
 
+    def on_player_queue_clear(self, request):
+        with LiquidsoapClient(self.player_socket) as client:
+            client.clear_queue()
+        return JSONResponse({"status": "OK"})
+
+    def on_player_queue_delete(self, request, rid):
+        with LiquidsoapClient(self.player_socket) as client:
+            client.delete(rid)
         return JSONResponse({"status": "OK"})
 
 
@@ -702,7 +845,7 @@ class StandaloneWebApplication:
     if ffmpeg binary is missing.
     """
 
-    def __init__(self, data_dir, secret):
+    def __init__(self, data_dir, secret, player_socket):
         from werkzeug.middleware.dispatcher import DispatcherMiddleware
         from werkzeug.middleware.shared_data import SharedDataMiddleware
 
@@ -734,7 +877,11 @@ class StandaloneWebApplication:
 
         # Create customized KlangbeckenAPI application
         api = KlangbeckenAPI(
-            data_dir, secret, upload_analyzers=upload_analyzers, processors=processors
+            data_dir,
+            secret,
+            upload_analyzers=upload_analyzers,
+            processors=processors,
+            player_socket=player_socket,
         )
 
         # Return 404 Not Found by default
@@ -831,11 +978,17 @@ def init_cmd(data_dir):
     _check_data_dir(data_dir, create=True)
 
 
-def serve_cmd(data_dir, address="localhost", port=5000, dev_mode=False):
+def serve_cmd(
+    data_dir,
+    address="localhost",
+    port=5000,
+    player_socket="./klangbecken.sock",
+    dev_mode=False,
+):
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
 
-    app = StandaloneWebApplication(data_dir, "no secret")
+    app = StandaloneWebApplication(data_dir, "no secret", player_socket)
 
     run_simple(
         address, port, app, threaded=True, use_reloader=dev_mode, use_debugger=dev_mode
@@ -1097,7 +1250,7 @@ def main(dev_mode=False):
     Usage:
       klangbecken (--help | --version)
       klangbecken init [-d DATA_DIR]
-      klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
+      klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS] [-s PLAYER_SOCKET]
       klangbecken import [-d DATA_DIR] [-y] [-m] [-M FILE] PLAYLIST FILE...
       klangbecken fsck [-d DATA_DIR] [-R]
       klangbecken playlog [-d DATA_DIR] (--off | FILE)
@@ -1114,6 +1267,11 @@ def main(dev_mode=False):
             Specify alternate port [default: 5000].
       -b ADDRESS, --bind=ADDRESS
             Specify alternate bind address [default: localhost].
+      -s PLAYER_SOCKET, --socket=PLAYER_SOCKET
+            Set the location or address of the liquisoap player socket.
+            This can either be the path to a UNIX domain socket file or
+            a domain name and port seperated by a colon (e.g. localhost:123)
+            [default: ./klangbecken.sock]
       -y, --yes
             Automatically answer yes for all questions.
       -m, --mtime
@@ -1151,6 +1309,7 @@ def main(dev_mode=False):
             data_dir,
             address=args["--bind"],
             port=int(args["--port"]),
+            player_socket=args["--socket"],
             dev_mode=dev_mode,
         )
     elif args["import"]:

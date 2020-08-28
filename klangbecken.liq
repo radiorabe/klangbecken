@@ -104,8 +104,10 @@ def check_next_func(r) =
   end
 end
 
-# Priority playlist for 'play next' feature
-prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio.m3u"))
+# Priority queue
+prio = request.equeue(id="queue", length=5.0)
+# Convert mono jingles to stereo
+prio = audio_to_stereo(prio)
 # Cut silence at start and end
 prio = cue_cut(prio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
@@ -138,13 +140,6 @@ music = random(weights=[5, 1], [music, classics])
 
 
 # ================================================= #
-# PLAY FROM PRIORITY PLAYLIST IF AVAILABLE          #
-# ================================================= #
-
-music = fallback([prio, music])
-
-
-# ================================================= #
 # INSERT JINGLE EVERY 15 MINUTES                    #
 # ================================================= #
 
@@ -169,11 +164,15 @@ radio = switch(id="radio", [
 def on_track_func(m) =
   # Reset jingle playing flag
   insert_jingle := false
-
-  # Clear prio playlist
-  system("echo > #{DATA_DIR}/prio.m3u")
 end
 radio = on_track(on_track_func, radio)
+
+
+# ============================================== #
+# PLAY FROM PRIORITY QUEUE IF AVAILABLE          #
+# ============================================== #
+
+radio = fallback([prio, radio])
 
 
 # ================================================= #
