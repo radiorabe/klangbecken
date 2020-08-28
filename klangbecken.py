@@ -418,30 +418,7 @@ DEFAULT_PROCESSORS = [
 ]
 
 
-def playnext_processor(data_dir, data):
-    if not isinstance(data, dict):
-        raise UnprocessableEntity("Invalid data format: " "associative array expected")
-    if "file" not in data:
-        raise UnprocessableEntity("Invalid data format: " 'Key "file" not found')
-
-    filename = data["file"]
-    filename_re = r"^({0})/([^/.]+)({1})$".format(
-        "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
-    )
-    if not re.match(filename_re, filename):
-        raise UnprocessableEntity("Invalid file path format")
-
-    path = os.path.join(data_dir, filename)
-    if not os.path.isfile(path):
-        raise NotFound()
-
-    with locked_open(os.path.join(data_dir, "prio.m3u")) as f:
-        f.seek(0)
-        f.truncate()
-        print(filename, file=f)
-
-
-# Locking Helper
+# Locking Helpers
 
 _locks = {}
 _mutagenLock = threading.Lock()
@@ -461,20 +438,9 @@ def locked_open(path, mode="r+"):
                 fcntl.lockf(f, fcntl.LOCK_UN)
 
 
-class UnixDomainTelnet(telnetlib.Telnet):
-    def __init__(self, path=None):
-        super().__init__()
-        if path is not None:
-            self.open(path)
-
-    def open(self, path):
-        """Connect to a local UNIX domain socket."""
-        self.eof = 0
-        self.path = path
-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.sock.connect(path)
-
-
+############################
+# Liquidsoap Telnet Client #
+############################
 class LiquidsoapClient:
     def __init__(self, path):
         if os.path.isfile(path):
@@ -512,7 +478,7 @@ class LiquidsoapClient:
             "version": self.command("version"),
         }
 
-        for playlist in ("music",):  # PLAYLISTS:
+        for playlist in PLAYLISTS:
             info[playlist] = [
                 line
                 for line in self.command(f"{playlist}.next").split("\n")
@@ -561,6 +527,23 @@ class LiquidsoapClient:
     def clear_queue(self):
         for rid in self.command("queue.secondary_queue").strip().split():
             self.delete(rid)
+
+    # def move(self, rid, pos):
+    #     raise NotImplemented
+
+
+class UnixDomainTelnet(telnetlib.Telnet):
+    def __init__(self, path=None):
+        super().__init__()
+        if path is not None:
+            self.open(path)
+
+    def open(self, path):
+        """Connect to a local UNIX domain socket."""
+        self.eof = 0
+        self.path = path
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.connect(path)
 
 
 ############
