@@ -983,6 +983,7 @@ def serve_cmd(
     address="localhost",
     port=5000,
     player_socket="./klangbecken.sock",
+    *,
     dev_mode=False,
 ):
     # Run locally in stand-alone development mode
@@ -996,7 +997,7 @@ def serve_cmd(
 
 
 def import_cmd(  # noqa: C901
-    data_dir, playlist, files, yes, meta=None, use_mtime=True, dev_mode=False
+    data_dir, playlist, files, yes, meta=None, use_mtime=True, *, dev_mode=False
 ):
     """Entry point for import script."""
 
@@ -1059,7 +1060,7 @@ def import_cmd(  # noqa: C901
     sys.exit(1 if count < len(files) else 0)
 
 
-def fsck_cmd(data_dir, repair=False, dev_mode=False):  # noqa: C901
+def fsck_cmd(data_dir, repair=False, *, dev_mode=False):  # noqa: C901
     """Entry point for fsck script."""
 
     song_id = None
@@ -1172,7 +1173,7 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):  # noqa: C901
     sys.exit(1 if err.count else 0)
 
 
-def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
+def playlog_cmd(data_dir, filename, off_air=False, *, dev_mode=False):
     if off_air:
         with open(os.path.join(data_dir, "log", "current.json"), "w") as f:
             json.dump(False, f)
@@ -1220,7 +1221,7 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
 EXTERNAL_PLAY_LOGGER = os.environ.get("KLANGBECKEN_EXTERNAL_PLAY_LOGGER", "")
 
 
-def reanalyze_cmd(data_dir, ids, all=False, yes=False, dev_mode=False):
+def reanalyze_cmd(data_dir, ids, all=False, yes=False, *, dev_mode=False):
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
     if all:
