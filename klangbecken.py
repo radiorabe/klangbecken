@@ -516,6 +516,21 @@ class LiquidsoapClient:
 
         return rid
 
+    def move(self, rid, pos):
+        queue = self.command("queue.secondary_queue").strip().split()
+        if rid not in queue:
+            raise NotFound()
+
+        if not 0 <= pos < len(queue):
+            raise IndexError()
+
+        if queue.index(rid) != pos:
+            if pos == (len(queue) - 1):
+                pos = -1
+            ans = self.tel.command(f"queue.move {rid} {pos}")
+            if ans.strip() != "OK":
+                raise "Internal Error, should not happen"
+
     def delete(self, rid):
         if rid not in self.command("queue.secondary_queue").strip().split():
             raise NotFound()
@@ -587,6 +602,7 @@ class KlangbeckenAPI:
             # Player interaction
             ("GET", "/player/", "player_info"),
             ("POST", "/player/", "player_queue_push"),
+            ("PUT", "/player/<int:rid>", "player_queue_move"),
             ("DELETE", "/player/<int:rid>", "player_queue_delete",),
             ("DELETE", "/player/", "player_queue_clear"),
         )
@@ -784,6 +800,33 @@ class KlangbeckenAPI:
             with LiquidsoapClient(self.player_socket) as client:
                 rid = client.push(self.data_dir, filename)
                 return JSONResponse({"status": "OK", "rid": rid})
+
+        except (UnicodeDecodeError, TypeError):
+            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
+        except ValueError:
+            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
+
+    def on_player_queue_move(self, request, rid):
+        try:
+            data = json.loads(str(request.data, "utf-8"))
+            if not isinstance(data, dict):
+                raise UnprocessableEntity(
+                    "Invalid data format: associative array expected"
+                )
+            if "position" not in data:
+                raise UnprocessableEntity(
+                    'Invalid data format: Key "position" not found'
+                )
+
+            position = data["position"]
+            if not isinstance(int, position):
+                raise UnprocessableEntity(
+                    'Invalid format: "position" must be an integer'
+                )
+
+            with LiquidsoapClient(self.player_socket) as client:
+                client.move(rid, position)
+                return JSONResponse({"status": "OK"})
 
         except (UnicodeDecodeError, TypeError):
             raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
