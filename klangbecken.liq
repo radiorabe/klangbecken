@@ -183,22 +183,32 @@ restart = ref true
 onair = ref false
 
 def onair_func(state) =
-  onair := bool_of_string(string.case(state))
-  if !onair then
+  state = string.case(state)
+  state = string.trim(state)
+  if state == "true" then
+    onair := true
     log("Starting Klangbecken")
     restart := true
     source.skip(radio)
     "Klangbecken started"
-  else
+  elsif state == "false" then
+    onair := false
     log("Stopping Klangbecken")
     system("#{CMD_PATH} playlog -d #{DATA_DIR} --off")
     "Klangbecken stopped"
+  elsif state != "" then
+    msg = "ERROR: Cannot set new 'onair' state: #{state}"
+    log(msg)
+    msg
+  else
+    # Return state
+    "#{!onair}"
   end
 end
 
 server.register(namespace='klangbecken',
-                description="Control, if the player is on air",
-                usage="onair (true|false)",
+                description="Control, if the player is on air. Returns the current state, if called without argument.",
+                usage="onair [true|false]",
                 "onair",
                 onair_func)
 
