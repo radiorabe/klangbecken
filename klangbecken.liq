@@ -37,7 +37,7 @@ set("log.level", 3)
 
 # socket
 set("server.socket", true)
-set_if_env("server.socket.path", "KLANGBECKEN_SOCKET_PATH")
+set("server.socket.path", getenv_fallback("KLANGBECKEN_SOCKET_PATH", "./klangbecken.sock"))
 
 # Get the Klangbecken data directory
 DATA_DIR = getenv_fallback("KLANGBECKEN_DATA", "data")
