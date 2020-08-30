@@ -564,6 +564,71 @@ class UnixDomainTelnet(telnetlib.Telnet):
 ############
 # HTTP API #
 ############
+def json_body(func=None, *, fields=None):
+    """Decorator func to validate HTTP body data containing JSON.
+
+    The decorator verifies:
+     - That the body is a valid UTF-8 string
+     - That the body is valid JSON
+     - That the body is a JSON object (dict)
+     - The presence of a list of fields in the JSON object (optional)
+     - The types of the specified fields (optional)
+
+    Usage:
+        @json_body
+        def on_my_endpoint(self, request, ..., data):
+            # data contains a valid dict containing the body data
+
+        @json_body(fields=['fooId', 'barId'])
+        def on_my_endpoint(self, request, ..., fooId, barId):
+            # Fields presence is checked
+
+        @json_body(fields={'fooId': int, 'barId': str})
+        def on_my_endpoint(self, request, ..., fooId, barId):
+            # Typechecked fields
+    """
+    if func is None:
+        return functools.partial(json_body, fields=fields)
+
+    @functools.wraps(func)
+    def wrapper(app, request, *args, **kwargs):
+        try:
+            data = json.loads(str(request.data, "utf-8"))
+            if not isinstance(data, dict):
+                raise UnprocessableEntity(
+                    "Invalid data format: associative array expected"
+                )
+            if fields is None:
+                kwargs["data"] = data
+            else:
+                if isinstance(fields, dict):
+                    types = fields
+                    keys = fields.keys()
+                else:
+                    types = None
+                    keys = fields
+                for field in keys:
+                    if field not in data:
+                        raise UnprocessableEntity(
+                            f"Invalid data format: Key '{field}' not found"
+                        )
+                    if types:
+                        if not isinstance(data[field], types[field]):
+                            raise UnprocessableEntity(
+                                f"Invalid format: '{field}' must be of type {types[field].__name__}."
+                            )
+                kwargs.update({field: data[field] for field in keys})
+
+        except (UnicodeDecodeError, TypeError):
+            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
+        except ValueError:
+            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
+
+        return func(app, request, *args, **kwargs)
+
+    return wrapper
+
+
 class KlangbeckenAPI:
     def __init__(
         self,
@@ -664,24 +729,8 @@ class KlangbeckenAPI:
 
         return JSONResponse({"token": token})
 
-    def on_auth_renew(self, request):  # noqa: C901
-        try:
-            data = json.loads(str(request.data, "utf-8"))
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity(
-                "Cannot parse POST request: " "invalid UTF-8 data"
-            )
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse POST request: " "invalid JSON")
-        if not isinstance(data, dict):
-            raise UnprocessableEntity(
-                "Invalid data format: " "associative array expected"
-            )
-        if "token" not in data:
-            raise UnprocessableEntity("Invalid data format: " 'Key "token" not found')
-
-        token = data["token"]
-
+    @json_body(fields={"token": str})
+    def on_auth_renew(self, request, token):  # noqa: C901
         now = datetime.datetime.utcnow()
         try:
             # Valid tokens can always be renewed withing their short lifetime,
@@ -746,19 +795,13 @@ class KlangbeckenAPI:
 
         return JSONResponse({fileId: response})
 
-    def on_playlist_update(self, request, playlist, fileId, ext):
+    @json_body
+    def on_playlist_update(self, request, playlist, fileId, ext, data):
         fileId = str(fileId)
 
         actions = []
-        try:
-            data = json.loads(str(request.data, "utf-8"))
-            for analyzer in self.update_analyzers:
-                actions += analyzer(playlist, fileId, ext, data)
-
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
+        for analyzer in self.update_analyzers:
+            actions += analyzer(playlist, fileId, ext, data)
 
         for processor in self.processors:
             processor(self.data_dir, playlist, fileId, ext, actions)
