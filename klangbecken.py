@@ -442,23 +442,32 @@ def locked_open(path, mode="r+"):
 # Liquidsoap Telnet Client #
 ############################
 class LiquidsoapClient:
-    def __init__(self, path):
-        if os.path.isfile(path):
+    def __init__(self, path=None):
+        if path is not None:
+            self.path = path
+        self.connected = False
+
+    def __enter__(self):
+        if not self.connected:
+            self.open(self.path)
+        return self
+
+    def __exit__(self, *exc_info):
+        self.close()
+
+    def open(self, path):
+        if os.path.exists(path):
             self.tel = UnixDomainTelnet(path)
         elif re.match(r"^.+:\d+$", path):
             host, port = path.rsplit(":", maxsplit=1)
             self.tel = telnetlib.Telnet(host, int(port))
         else:
             raise ValueError("`path` is not a valid UNIX domain socket or TCP address")
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc_info):
-        self.close()
+        self.connected = True
 
     def close(self):
         self.tel.close()
+        self.connected = False
 
     def command(self, cmd):
         self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
