@@ -477,29 +477,50 @@ class LiquidsoapClient:
             "uptime": self.command("uptime"),
             "version": self.command("version"),
         }
-
         for playlist in PLAYLISTS:
-            info[playlist] = [
-                line
-                for line in self.command(f"{playlist}.next").split("\n")
-                if not line.startswith("[playing]")
-            ][:3]
+            lines = self.command(f"{playlist}.next").split("\n")[:2]
+            line = lines[1] if lines[0].startswith("[playing] ") else lines[0]
+            info[playlist] = _fix_filename(line, playlist)
 
-        on_air_rid = self.command("request.on_air").strip()
-        keys = {"filename", "source"}
-        info["on_air"] = {
-            key: val for key, val in self.metadata(on_air_rid).items() if key in keys
-        }
-        info["on_air"]["remaining"] = float(self.command("out.remaining"))
+        on_air = self.command("klangbecken.onair")
+        if on_air == "true":
+            on_air_rid = self.command("request.on_air").strip()
+            keys = {"filename", "source"}
+            info["on_air"] = {
+                key: val
+                for key, val in self.metadata(on_air_rid).items()
+                if key in keys
+            }
+            info["on_air"]["filename"] = _fix_filename(info["on_air"]["filename"])
+            info["on_air"]["remaining"] = float(self.command("out.remaining"))
+        else:
+            info["on_air"] = {}
 
-        keys = {"filename", "rid", "queue", "status"}
-        info["queue"] = [
-            {key: val for key, val in self.metadata(rid).items() if key in keys}
-            for rid in self.command("queue.queue").strip().split()
+        queue = [
+            self.metadata(rid) for rid in self.command("queue.queue").strip().split()
         ]
-        info["queue"] = [entry for entry in info["queue"] if entry["status"] == "ready"]
+        queue = [entry for entry in queue if entry["status"] == "ready"]
+
+        info["queue"] = _fix_filename(queue[0]["filename"]) if queue else ""
 
         return info
+
+    def queue(self):
+        queue = [
+            self.metadata(rid) for rid in self.command("queue.queue").strip().split()
+        ]
+        for entry in queue:
+            if entry["status"] not in ("playing", "ready"):
+                print(
+                    f"WARNING: Queue entry ({entry['rid']}: {entry['filename']} with invalid status: {entry['status']}"
+                )
+
+        queue = [entry for entry in queue if entry["status"] == "ready"]
+        queue = [
+            {"filename": _fix_filename(entry["filename"]), "rid": entry["rid"]}
+            for entry in queue
+        ]
+        return queue
 
     def push(self, data_dir, filename):
         path = os.path.join(data_dir, filename)
@@ -545,6 +566,10 @@ class LiquidsoapClient:
 
     # def move(self, rid, pos):
     #     raise NotImplemented
+
+def _fix_filename(fname, playlist=r"(?:{})".format("|".join(PLAYLISTS))):
+    # FIXME: Correctly match file types
+    return re.match(r"^.*(" + playlist + r"/[^/.]+\..{3,4})$", fname).groups()[0]
 
 
 class UnixDomainTelnet(telnetlib.Telnet):
@@ -667,6 +692,7 @@ class KlangbeckenAPI:
             # Player
             ("GET", "/player/", "player_info"),
             # Queue
+            ("GET", "/player/queue/", "queue_list"),
             ("POST", "/player/queue/", "queue_push"),
             ("PUT", "/player/queue/<rid>", "queue_move"),
             ("DELETE", "/player/queue/<rid>", "queue_delete",),
