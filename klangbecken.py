@@ -548,7 +548,7 @@ class LiquidsoapClient:
         if queue.index(rid) != pos:
             if pos == (len(queue) - 1):
                 pos = -1
-            ans = self.tel.command(f"queue.move {rid} {pos}")
+            ans = self.command(f"queue.move {rid} {pos}")
             if ans.strip() != "OK":
                 raise "Internal Error, should not happen"
 
