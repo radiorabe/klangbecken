@@ -533,24 +533,26 @@ class LiquidsoapClient:
                 self.delete(rid)
             except:
                 pass
-            raise UnprocessableEntity("msg")  # Actuall ERror 500 (maybe ignore)
+            raise LiquidsoapClientError("Queue push failed")
 
         return rid
 
     def move(self, rid, pos):
         queue = self.command("queue.secondary_queue").strip().split()
         if rid not in queue:
-            raise NotFound()
+            raise NotFound(f"Request with ID '{rid}' not found.")
 
         if not 0 <= pos < len(queue):
-            raise IndexError()
+            raise UnprocessableEntity(
+                f"Position must be between 0 and {len(queue) - 1}: {pos}"
+            )
 
         if queue.index(rid) != pos:
             if pos == (len(queue) - 1):
                 pos = -1
             ans = self.command(f"queue.move {rid} {pos}")
             if ans.strip() != "OK":
-                raise "Internal Error, should not happen"
+                raise LiquidsoapClientError("Queue move failed")
 
     def delete(self, rid):
         if rid not in self.command("queue.secondary_queue").strip().split():
@@ -558,7 +560,7 @@ class LiquidsoapClient:
 
         ans = self.command(f"queue.remove {rid}")
         if ans.strip() != "OK" or self.metadata(rid)["status"] != "destroyed":
-            raise UnprocessableEntity("Error")
+            raise LiquidsoapClientError("Queue delete failed")
 
     def clear_queue(self):
         for rid in self.command("queue.secondary_queue").strip().split():
@@ -570,6 +572,10 @@ class LiquidsoapClient:
 def _fix_filename(fname, playlist=r"(?:{})".format("|".join(PLAYLISTS))):
     # FIXME: Correctly match file types
     return re.match(r"^.*(" + playlist + r"/[^/.]+\..{3,4})$", fname).groups()[0]
+
+
+class LiquidsoapClientError(Exception):
+    pass
 
 
 class UnixDomainTelnet(telnetlib.Telnet):
