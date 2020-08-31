@@ -466,7 +466,7 @@ class LiquidsoapClient:
         ans = re.sub(b"[\r\n]*END$", b"", ans)
         ans = re.sub(b"^[\r\n]*", b"", ans)
         ans = re.subn(b"[\r\n]", b"\n", ans)[0]
-        return ans.decode("ascii", "ignore")
+        return ans.decode("ascii", "ignore").strip()
 
     def metadata(self, rid):
         ans = self.command(f"request.metadata {rid}")
