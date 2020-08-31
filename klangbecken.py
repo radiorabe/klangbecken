@@ -730,7 +730,11 @@ class KlangbeckenAPI:
             endpoint, values = adapter.match()
 
             # Check authorization
-            if self.do_auth and endpoint not in ("login", "renew"):
+            if self.do_auth and endpoint not in (
+                "auth_login",
+                "auth_renew",
+                "player_info",
+            ):
                 if "Authorization" not in request.headers:
                     raise Unauthorized("No authorization header supplied")
 
