@@ -660,16 +660,17 @@ class KlangbeckenAPI:
             # Authentication
             (("GET", "POST"), "/auth/login/", "auth_login"),
             ("POST", "/auth/renew/", "auth_renew"),
-            # Playlist management
+            # Playlist
             ("POST", "/playlist/" + playlist_url, "playlist_upload",),
             ("PUT", "/playlist/" + file_url, "playlist_update"),
             ("DELETE", "/playlist/" + file_url, "playlist_delete"),
-            # Player interaction
+            # Player
             ("GET", "/player/", "player_info"),
-            ("POST", "/player/", "player_queue_push"),
-            ("PUT", "/player/<int:rid>", "player_queue_move"),
-            ("DELETE", "/player/<int:rid>", "player_queue_delete",),
-            ("DELETE", "/player/", "player_queue_clear"),
+            # Queue
+            ("POST", "/player/queue/", "queue_push"),
+            ("PUT", "/player/queue/<rid>", "queue_move"),
+            ("DELETE", "/player/queue/<rid>", "queue_delete",),
+            ("DELETE", "/player/queue/", "queue_clear"),
         )
 
         self.url_map = Map(
