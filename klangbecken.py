@@ -566,8 +566,6 @@ class LiquidsoapClient:
         for rid in self.command("queue.secondary_queue").strip().split():
             self.delete(rid)
 
-    # def move(self, rid, pos):
-    #     raise NotImplemented
 
 def _fix_filename(fname, playlist=r"(?:{})".format("|".join(PLAYLISTS))):
     # FIXME: Correctly match file types
@@ -896,18 +894,6 @@ class JSONResponse(Response):
         super(JSONResponse, self).__init__(
             json.dumps(data, **json_opts), status=status, mimetype="text/json"
         )
-
-
-class JSONSerializer:
-    @staticmethod
-    def dumps(obj):
-        # UTF-8 encoding is default in Python 3+
-        return json.dumps(obj).encode("utf-8")
-
-    @staticmethod
-    def loads(serialized):
-        # UTF-8 encoding is default in Python 3+
-        return json.loads(str(serialized, "utf-8"))
 
 
 ###########################
