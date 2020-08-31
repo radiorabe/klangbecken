@@ -848,67 +848,36 @@ class KlangbeckenAPI:
         with LiquidsoapClient(self.player_socket) as client:
             return JSONResponse(client.info())
 
-    def on_player_queue_push(self, request):
-        try:
-            data = json.loads(str(request.data, "utf-8"))
-            if not isinstance(data, dict):
-                raise UnprocessableEntity(
-                    "Invalid data format: " "associative array expected"
-                )
-            if "filename" not in data:
-                raise UnprocessableEntity(
-                    "Invalid data format: " 'Key "filename" not found'
-                )
 
-            filename = data["filename"]
-            filename_re = r"^({0})/([^/.]+)\.({1})$".format(
-                "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
-            )
-            if not re.match(filename_re, filename):
-                raise UnprocessableEntity("Invalid file path format")
 
-            with LiquidsoapClient(self.player_socket) as client:
-                rid = client.push(self.data_dir, filename)
-                return JSONResponse({"status": "OK", "rid": rid})
+    def on_queue_list(self, request):
+        with LiquidsoapClient(self.player_socket) as client:
+            return JSONResponse(client.queue())
 
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
+    @json_body(fields={"filename": str})
+    def on_queue_push(self, request, filename):
+        filename_re = r"^({0})/([^/.]+)\.({1})$".format(
+            "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
+        )
+        if not re.match(filename_re, filename):
+            raise UnprocessableEntity("Invalid file path format")
 
-    def on_player_queue_move(self, request, rid):
-        try:
-            data = json.loads(str(request.data, "utf-8"))
-            if not isinstance(data, dict):
-                raise UnprocessableEntity(
-                    "Invalid data format: associative array expected"
-                )
-            if "position" not in data:
-                raise UnprocessableEntity(
-                    'Invalid data format: Key "position" not found'
-                )
+        with LiquidsoapClient(self.player_socket) as client:
+            rid = client.push(self.data_dir, filename)
+            return JSONResponse({"status": "OK", "rid": rid})
 
-            position = data["position"]
-            if not isinstance(int, position):
-                raise UnprocessableEntity(
-                    'Invalid format: "position" must be an integer'
-                )
+    @json_body(fields={"position": int})
+    def on_queue_move(self, request, rid, position):
+        with LiquidsoapClient(self.player_socket) as client:
+            client.move(rid, position)
+            return JSONResponse({"status": "OK"})
 
-            with LiquidsoapClient(self.player_socket) as client:
-                client.move(rid, position)
-                return JSONResponse({"status": "OK"})
-
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
-
-    def on_player_queue_delete(self, request, rid):
+    def on_queue_delete(self, request, rid):
         with LiquidsoapClient(self.player_socket) as client:
             client.delete(rid)
         return JSONResponse({"status": "OK"})
 
-    def on_player_queue_clear(self, request):
+    def on_queue_clear(self, request):
         with LiquidsoapClient(self.player_socket) as client:
             client.clear_queue()
         return JSONResponse({"status": "OK"})
