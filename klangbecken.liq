@@ -131,24 +131,18 @@ jingles = cue_cut(jingles, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 
 # ================================================= #
-# MIX MUSIC AND CASSICS                             #
+# MIX MUSIC AND CLASSICS                            #
 # ================================================= #
 
 music = random(weights=[5, 1], [music, classics])
 
 
 # ================================================= #
-# PLAY FROM PRIORITY PLAYLIST IF AVAILABLE          #
-# ================================================= #
-
-music = fallback([prio, music])
-
-
-# ================================================= #
-# INSERT JINGLE EVERY 15 MINUTES                    #
+# INSERT JINGLE AND PRIO WHEN NEEDED                #
 # ================================================= #
 
 insert_jingle = ref false
+onair = ref false
 
 def jingle_timeout() =
   jingle_times = [5m0s, 20m0s, 35m0s, 50m0s]
@@ -162,16 +156,19 @@ add_timeout(0.0, jingle_timeout)
 
 radio = switch(id="radio", [
   ({!insert_jingle}, jingles),
+  ({!onair}, prio),
   ({true}, music),
 ])
-
 
 def on_track_func(m) =
   # Reset jingle playing flag
   insert_jingle := false
 
-  # Clear prio playlist
-  system("echo > #{DATA_DIR}/prio.m3u")
+  # Clear prio playlist if on air
+  if !onair and m['source'] == "prio" then
+    log("resetting prio playlist", label="on_track_func")
+    system("echo > #{DATA_DIR}/prio.m3u")
+  end
 end
 radio = on_track(on_track_func, radio)
 
@@ -181,17 +178,16 @@ radio = on_track(on_track_func, radio)
 # ================================================= #
 
 restart = ref true
-onair = ref false
 
 def onair_func(state) =
   onair := bool_of_string(string.case(state))
   if !onair then
-    log("Starting Klangbecken")
+    log("starting Klangbecken", label="onair_func")
     restart := true
     source.skip(radio)
     "Klangbecken started"
   else
-    log("Stopping Klangbecken")
+    log("stopping Klangbecken", label="onair_func")
     system("#{CMD_PATH} playlog -d #{DATA_DIR} --off")
     "Klangbecken stopped"
   end
