@@ -99,7 +99,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
             "album": "☀⚛♬",
             "title": "ÄÖÜ",
             "artist": "ÀÉÈ",
-            "ext": ".mp3",
+            "ext": "mp3",
             "weight": 1,
             "playlist": "music",
             "id": fileId,

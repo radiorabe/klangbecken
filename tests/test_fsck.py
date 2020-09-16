@@ -251,7 +251,7 @@ class FsckTestCase(unittest.TestCase):
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
         file_path = os.path.join(self.jingles_dir, os.listdir(self.jingles_dir)[0])
-        FileType = SUPPORTED_FILE_TYPES["." + file_path.split(".")[-1]]
+        FileType = SUPPORTED_FILE_TYPES[file_path.split(".")[-1]]
         mutagenfile = FileType(file_path)
         mutagenfile["artist"] = "Whatever"
         mutagenfile.save()
