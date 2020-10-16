@@ -105,19 +105,19 @@ prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio
 prio = cue_cut(prio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Music playlist
-music = playlist(id="music", mode="randomize", reload_mode="watch",
+music = playlist(id="music", mode="random", reload_mode="watch",
                  check_next=check_next_func, path.concat(DATA_DIR, "music.m3u"))
 # Cut silence at start and end
 music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Classics playlist
-classics = playlist(id="classics", mode="randomize", reload_mode="watch",
+classics = playlist(id="classics", mode="random", reload_mode="watch",
                     check_next=check_next_func, path.concat(DATA_DIR, "classics.m3u"))
 # Cut silence at start and end
 classics = cue_cut(classics, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Jingles playlist
-jingles = playlist(id="jingles", mode="randomize", reload_mode="watch",
+jingles = playlist(id="jingles", mode="random", reload_mode="watch",
                    check_next=check_next_func, path.concat(DATA_DIR, "jingles.m3u"))
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
