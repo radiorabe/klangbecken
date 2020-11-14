@@ -255,4 +255,4 @@ radio = crossfade(start_next=.5, fade_out=1., fade_in=0., radio)
 # OUTPUT                                            #
 # ================================================= #
 
-output.alsa(id="out", bufferize=false, device=ALSA_DEVICE, radio)
+output.alsa(id="out", device=ALSA_DEVICE, radio)
