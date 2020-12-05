@@ -201,7 +201,10 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         cue_in = 0.0
 
     # Fix clearly too large cue_in values
-    if cue_in > (cue_out * 0.75):
+    # Note: ffmpeg is not very reliable with it's cue point calculation,
+    # especially with cue_in. Any value, that is clearly to large (>5s) is
+    # reset.
+    if cue_in > 5.0:
         cue_in = 0.0
 
     file_.seek(0)
