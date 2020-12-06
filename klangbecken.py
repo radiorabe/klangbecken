@@ -193,29 +193,42 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     silence_times = re.findall(silence_re, output)
     silence_times = [(name, float(value)) for name, value in silence_times]
 
-    # Last 'start' time is cue_out
-    reversed_times = reversed(silence_times)
-    cue_out = next(
-        (t[1] for t in reversed_times if t[0] == "start")
-    )  # pragma: no cover
+    if len(silence_times) % 2 != 0:
+        raise UnprocessableEntity(
+            f"Silence analysis failed: Found uneven number "
+            f"({len(silence_times)}) of silence times."
+        )
+    if len(silence_times) == 0:
+        raise UnprocessableEntity("Silence analysis failed: No silence periods found.")
 
-    if -0.05 < cue_out < 0.0:  # pragma: no cover
-        cue_out = 0.0
+    # If only the silence period at the end has been detected, add default values.
+    if len(silence_times) == 2:
+        silence_times = [("start", 0.0), ("end", 0.0)] + silence_times
 
-    # From remaining times, first 'end' time is cue_in, otherwise 0.0
-    remaining_times = reversed(list(reversed_times))
-    cue_in = next((t[1] for t in remaining_times if t[0] == "end"), 0.0)
+    # First silence period: cue_in (?)
+    if silence_times[0][0] == "start" and silence_times[1][0] == "end":
+        start_time = silence_times[0][1]
+        end_time = silence_times[1][1]
 
-    # Fix small negative values for cue_in
-    if -0.05 < cue_in < 0.0:  # pragma: no cover
-        cue_in = 0.0
+        if start_time > 0.05:
+            # First silence period does not begin at the start of the track.
+            # Ignore it!
+            cue_in = 0.0
+        else:
+            # Fix negative values
+            cue_in = max(end_time, 0.0)
+    else:
+        raise UnprocessableEntity(
+            "Silence analysis failed: start and end times mixup for cue_in"
+        )
 
-    # Fix clearly too large cue_in values
-    # Note: ffmpeg is not very reliable with it's cue point calculation,
-    # especially with cue_in. Any value, that is clearly to large (>5s) is
-    # reset.
-    if cue_in > 5.0:
-        cue_in = 0.0
+    # Last silence period: cue_out
+    if silence_times[-2][0] == "start" and silence_times[-1][0] == "end":
+        cue_out = silence_times[-2][1]
+    else:
+        raise UnprocessableEntity(
+            "Silence analysis failed: start and end times mixup for cue_out"
+        )
 
     file_.seek(0)
     return [
