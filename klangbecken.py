@@ -167,6 +167,13 @@ trackgain_re = re.compile(r"replaygain.*track_gain = (\S* dB)")
 
 
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
+    # To make sure that we find the correct cue_out point, we append ~0.2 seconds
+    # of silence to the end of the track. This guarantees that we always find at
+    # least one silence period.
+    #
+    # Also, we have no a priori knowledge of the exact length of the track, to which
+    # we could fall back to. Whereas at the start of the track it is easy: we can
+    # always fall back to 0.0.
     command = """ffmpeg -i - -af
     replaygain,apad=pad_len=10000,silencedetect=d=0.01 -f null -""".split()
 
@@ -179,7 +186,10 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     except subprocess.CalledProcessError:
         raise UnprocessableEntity("Cannot process audio data")
 
+    # Extract ReplayGain value
     gain = trackgain_re.search(output).groups()[0]
+
+    # Extract silence periods
     silence_times = re.findall(silence_re, output)
     silence_times = [(name, float(value)) for name, value in silence_times]
 
