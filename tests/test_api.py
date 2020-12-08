@@ -460,13 +460,20 @@ class AnalyzersTestCase(unittest.TestCase):
             {"prefix": "padded", "gain": -17, "cue_in": 0.2, "cue_out": 0.8},
             {"prefix": "padded-start", "gain": -3.33, "cue_in": 1, "cue_out": 2},
             {"prefix": "padded-end", "gain": -3.55, "cue_in": 0, "cue_out": 1},
-            {"prefix": "silence-unicode", "gain": +64, "cue_in": 0, "cue_out": 0},
             {"prefix": "interleaved", "gain": -14.16, "cue_in": 0.2, "cue_out": 0.8},
         ]
 
         for data in test_data:
             for ext in "-jointstereo.mp3 -stereo.mp3 .ogg .flac".split():
                 self._analyzeOneFile(postfix=ext, **data)
+
+        # silence only file
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "silence-unicode.flac")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn("track only contains silence", cm.exception.description.lower())
 
         # invalid file
         with self.assertRaises(UnprocessableEntity):
