@@ -28,7 +28,7 @@ class ImporterTestCase(unittest.TestCase):
         import dateutil.parser
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "silence.mp3")
+        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
         audio2_path = os.path.join(audio_path, "padded.ogg")
         audio1_mtime = datetime.datetime.fromtimestamp(os.stat(audio1_path).st_mtime)
 
@@ -57,7 +57,9 @@ class ImporterTestCase(unittest.TestCase):
             ts = list(data.values())[0]["import_timestamp"]
             ts = dateutil.parser.parse(ts)
             self.assertTrue(abs(ts - audio1_mtime) < datetime.timedelta(seconds=1))
-            self.assertEqual(list(data.values())[0]["original_filename"], "silence.mp3")
+            self.assertEqual(
+                list(data.values())[0]["original_filename"], "sine-unicode.flac"
+            )
 
         # Import two file
         args = [self.tempdir, "music", [audio1_path, audio2_path], True]
@@ -116,7 +118,7 @@ class ImporterTestCase(unittest.TestCase):
         from klangbecken import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "silence.mp3")
+        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
 
         args = [self.tempdir, "music", [audio1_path], False]
         with self.assertRaises(SystemExit) as cm:
@@ -133,7 +135,7 @@ class ImporterTestCase(unittest.TestCase):
         from klangbecken import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "silence.mp3")
+        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
 
         args = [self.tempdir, "music", [audio1_path], False]
 
