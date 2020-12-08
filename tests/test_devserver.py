@@ -80,13 +80,11 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp.close()
 
         # Upload
-        path = os.path.join(
-            self.current_path, "audio", "silence-unicode-jointstereo.mp3"
-        )
+        path = os.path.join(self.current_path, "audio", "sine-unicode.flac")
         with open(path, "rb") as f:
             resp = self.client.post(
                 "/api/music/",
-                data={"file": (f, "silence-unicode-jointstereo.mp3")},
+                data={"file": (f, "sine-unicode.flac")},
                 headers=[("Authorization", f"Bearer {token}")],
             )
         self.assertEqual(resp.status_code, 200)
@@ -94,12 +92,12 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         fileId = list(data.keys())[0]
         self.assertEqual(fileId, str(uuid.UUID(fileId)))
         expected = {
-            "original_filename": "silence-unicode-jointstereo.mp3",
-            "length": 1.0,
-            "album": "☀⚛♬",
-            "title": "ÄÖÜ",
-            "artist": "ÀÉÈ",
-            "ext": "mp3",
+            "original_filename": "sine-unicode.flac",
+            "length": 5.0,
+            "album": "Sine Album 👌👍🖖",
+            "title": "Sine Title éàè",
+            "artist": "Sine Artist öäü",
+            "ext": "flac",
             "weight": 1,
             "playlist": "music",
             "id": fileId,
@@ -109,7 +107,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
 
         # Update
         resp = self.client.put(
-            "/api/music/" + fileId + ".mp3",
+            "/api/music/" + fileId + ".flac",
             data=json.dumps({"weight": 4}),
             content_type="text/json",
             headers=[("Authorization", f"Bearer {token}")],
@@ -118,14 +116,14 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
         resp.close()
 
         # Get file
-        resp = self.client.get("/data/music/" + fileId + ".mp3")
+        resp = self.client.get("/data/music/" + fileId + ".flac")
         self.assertEqual(resp.status_code, 200)
         resp.close()
 
         # Put file in prio list
         resp = self.client.post(
             "/api/playnext/",
-            data=json.dumps({"file": "music/" + fileId + ".mp3"}),
+            data=json.dumps({"file": "music/" + fileId + ".flac"}),
             content_type="text/json",
             headers=[("Authorization", f"Bearer {token}")],
         )
@@ -139,7 +137,7 @@ class StandaloneWebApplicationTestCase(unittest.TestCase):
 
         # Delete file
         resp = self.client.delete(
-            "/api/music/" + fileId + ".mp3",
+            "/api/music/" + fileId + ".flac",
             headers=[("Authorization", f"Bearer {token}")],
         )
         self.assertEqual(resp.status_code, 200)
