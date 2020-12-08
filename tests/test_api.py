@@ -459,7 +459,9 @@ class AnalyzersTestCase(unittest.TestCase):
             {"prefix": "padded", "gain": -17, "cue_in": 0.2, "cue_out": 0.8},
             {"prefix": "padded-start", "gain": -3.33, "cue_in": 1, "cue_out": 2},
             {"prefix": "padded-end", "gain": -3.55, "cue_in": 0, "cue_out": 1},
+            {"prefix": "sine-unicode", "gain": -14, "cue_in": 0, "cue_out": 5},
             {"prefix": "interleaved", "gain": -14.16, "cue_in": 0.2, "cue_out": 0.8},
+            {"prefix": "unpadded-interleaved", "gain": -14, "cue_in": 0, "cue_out": 10},
         ]
 
         for data in test_data:
