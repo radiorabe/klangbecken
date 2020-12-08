@@ -1,12 +1,5 @@
 from setuptools import setup
 
-
-def reqs(filename):
-    """Read reqs from files, hacky but ok since we don't distribute pypi packages."""
-    with open(filename) as f:
-        return f.read().splitlines()
-
-
 setup(
     name="klangbecken",
     version="0.0.12",
@@ -29,7 +22,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
     ],
-    install_requires=reqs("requirements.txt"),
-    extras_require={"test": reqs("requirements-dev.txt")},
+    install_requires=["docopt", "mutagen", "PyJWT", "Werkzeug"],
+    extras_require={"test": ["tox", "coverage", "flake8", "python-dateutil"]},
     entry_points={"console_scripts": ["klangbecken=klangbecken:main"]},
 )
