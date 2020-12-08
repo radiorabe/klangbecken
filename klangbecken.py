@@ -191,43 +191,41 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
 
     # Extract silence periods
     silence_times = re.findall(silence_re, output)
-    silence_times = [(name, float(value)) for name, value in silence_times]
 
-    if len(silence_times) % 2 != 0:
-        raise UnprocessableEntity(
-            f"Silence analysis failed: Found uneven number "
-            f"({len(silence_times)}) of silence times."
-        )
-    if len(silence_times) == 0:
-        raise UnprocessableEntity("Silence analysis failed: No silence periods found.")
+    # Start times of silence periods (there is at least one value)
+    start_times = [float(value) for name, value in silence_times if name == "start"]
 
-    # If only the silence period at the end has been detected, add default values.
-    if len(silence_times) == 2:
-        silence_times = [("start", 0.0), ("end", 0.0)] + silence_times
+    # End times for the silence periods (might be empty)
+    end_times = [float(value) for name, value in silence_times if name == "end"]
 
-    # First silence period: cue_in (?)
-    if silence_times[0][0] == "start" and silence_times[1][0] == "end":
-        start_time = silence_times[0][1]
-        end_time = silence_times[1][1]
+    # Cue in a the end of first silence period, if the track starts with silence
+    if start_times[0] < 0.05:
+        # First silence period begins at the beginning of the track
 
-        if start_time > 0.05:
-            # First silence period does not begin at the start of the track.
-            # Ignore it!
-            cue_in = 0.0
-        else:
-            # Fix negative values
-            cue_in = max(end_time, 0.0)
+        # Fix negative values from old ffmpeg versions:
+        # End_times might be empty for silence only tracks (and old ffmpeg versions)
+        # Also, old versions of ffmpeg return small negative values (-0.01) instead of 0.0
+        cue_in = max(end_times[:1] + [0.0])
     else:
-        raise UnprocessableEntity(
-            "Silence analysis failed: start and end times mixup for cue_in"
-        )
+        # First silence period begins somewehere in the middle of the track
+        # Cue in at the start of the track
+        cue_in = 0.0
 
-    # Last silence period: cue_out
-    if silence_times[-2][0] == "start" and silence_times[-1][0] == "end":
-        cue_out = silence_times[-2][1]
-    else:
+    # Cue out at the start of the last silence period.
+    # Fix small negative values (for old ffmpeg versions)
+    cue_out = max(start_times[-1], 0.0)
+
+    # Empty or almost empty track (there should be more than 0.5 seconds of audio)
+    if cue_in >= cue_out - 0.5:
+        # Nothing but silence found
+        raise UnprocessableEntity("The track only contains silence: Check your file.")
+
+    if cue_in > 10:
+        # Fail for unusually large cue_in values:
+        # This will generate an error when uploading, and thus make it easier to sort
+        # out bogus audio tracks, or catch clearly wrong audio file analysis results.
         raise UnprocessableEntity(
-            "Silence analysis failed: start and end times mixup for cue_out"
+            f"Too much silence ({cue_in}s) found at the start of the track: Check your file."
         )
 
     file_.seek(0)
