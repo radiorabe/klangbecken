@@ -421,8 +421,7 @@ class AnalyzersTestCase(unittest.TestCase):
         name = prefix + postfix.split(".")[0]
         ext = postfix.split(".")[1]
 
-        current_path = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(current_path, "audio", name + "." + ext)
+        path = os.path.join(self.current_path, "audio", name + "." + ext)
         with open(path, "rb") as f:
             fs = FileStorage(f)
 
