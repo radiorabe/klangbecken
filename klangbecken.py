@@ -99,7 +99,7 @@ ALLOWED_METADATA = {
     "cue_in": (float, lambda n: n >= 0.0),
     "cue_out": (float, lambda n: n >= 0.0),
     "play_count": (int, lambda n: n >= 0),
-    "last_play": (str, r"^(^$)|(^{0}$)".format(ISO8601_RE)),
+    "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_RE)),
 }
 
 UPDATE_KEYS = "artist title album weight".split()
