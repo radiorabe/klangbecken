@@ -327,7 +327,6 @@ class AnalyzersTestCase(unittest.TestCase):
 
     def testRawFileAnalyzer(self):
         import datetime
-        import dateutil.parser
         from klangbecken import raw_file_analyzer, FileAddition, MetadataChange
 
         # Missing file
@@ -358,7 +357,7 @@ class AnalyzersTestCase(unittest.TestCase):
             for ch in result
             if (isinstance(ch, MetadataChange) and ch.key == "import_timestamp")
         ][0]
-        t = dateutil.parser.parse(t.value)
+        t = datetime.datetime.fromisoformat(t.value)
         self.assertTrue(datetime.datetime.now() - t < datetime.timedelta(seconds=2))
         self.assertTrue(MetadataChange("weight", 1) in result)
 

@@ -25,7 +25,6 @@ class ImporterTestCase(unittest.TestCase):
 
     def testImport(self):
         from klangbecken import import_cmd
-        import dateutil.parser
 
         audio_path = os.path.join(self.current_path, "audio")
         audio1_path = os.path.join(audio_path, "sine-unicode.flac")
@@ -55,7 +54,7 @@ class ImporterTestCase(unittest.TestCase):
             data = json.load(file)
             self.assertEqual(len(data.keys()), 1)
             ts = list(data.values())[0]["import_timestamp"]
-            ts = dateutil.parser.parse(ts)
+            ts = datetime.datetime.fromisoformat(ts)
             self.assertTrue(abs(ts - audio1_mtime) < datetime.timedelta(seconds=1))
             self.assertEqual(
                 list(data.values())[0]["original_filename"], "sine-unicode.flac"

@@ -24,6 +24,6 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: WSGI",
     ],
     install_requires=["docopt", "mutagen", "PyJWT", "Werkzeug"],
-    extras_require={"test": ["tox", "coverage", "flake8", "python-dateutil"]},
+    extras_require={"test": ["tox", "coverage", "flake8"]},
     entry_points={"console_scripts": ["klangbecken=klangbecken:main"]},
 )
