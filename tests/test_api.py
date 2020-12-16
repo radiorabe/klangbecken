@@ -5,8 +5,8 @@ import shutil
 import tempfile
 import unittest
 import uuid
+from unittest import mock
 
-import mock
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 from werkzeug.test import Client

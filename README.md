@@ -25,7 +25,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
   * **PyJWT** library for creating and verify JWT authentication tokens
   * **mutagen** library for audio tag editing
   * **ffmpeg** binary (>=4.0) for audio analysis
-  * Development dependencies: **tox**, **coverage**, **mock**, **flake**
+  * Development dependencies: **tox**, **coverage**, **flake8**
 * **Liquidsoap** for sending the audio
   * **jq** for parsing the index
 
@@ -85,7 +85,7 @@ The API does not handle authentication by itself. It is expected that GET or POS
 
 ### Run test suite
 
-Run tox to run all unit test for multiple Python versions and make a code style check in the end. Make sure, that you have at least Python 2.7 and one supported Python 3 version installed locally.
+Run tox to run all unit test for multiple Python versions and make a code style check in the end. Make sure, that you have at least Python 3.6 installed locally.
 ```bash
 tox
 ```
