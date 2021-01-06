@@ -44,7 +44,6 @@ import mutagen.easyid3
 import mutagen.flac
 import mutagen.mp3
 import mutagen.oggvorbis
-import pkg_resources
 from werkzeug.exceptions import (
     HTTPException,
     NotFound,
@@ -55,8 +54,13 @@ from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
 try:
-    __version__ = pkg_resources.get_distribution("klangbecken").version
-except pkg_resources.DistributionNotFound:  # pragma: no cover
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import importlib_metadata
+
+try:
+    __version__ = importlib_metadata.version("klangbecken")
+except importlib_metadata.PackageNotFoundError:  # pragma: no cover
     __version__ = "development version"
 
 
