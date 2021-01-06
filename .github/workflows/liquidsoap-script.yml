@@ -1,0 +1,24 @@
+name: Liquidsoap script
+
+on: [push]
+
+env:
+  KLANGBECKEN_DATA=/tmp/data
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install liquidsoap
+      run: sudo apt-get install liquidsoap
+
+    - name: Prepare data directory
+      run: |
+        mkdir $KLANGBECKEN_DATA
+        touch $KLANGBECKEN_DATA/prio.m3u $KLANGBECKEN_DATA/music.m3u $KLANGBECKEN_DATA/classics.m3u $KLANGBECKEN_DATA/jingles.m3u $KLANGBECKEN_DATA/index.json
+
+    - name: Check liquidsoap file
+      run: liquidsoap --check klangbecken.liq
