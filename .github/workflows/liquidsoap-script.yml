@@ -6,19 +6,25 @@ env:
   KLANGBECKEN_DATA: /tmp/data
 
 jobs:
-  build:
+  check:
+    strategy:
+      matrix:
+        liquidsoap: [1.3.2, 1.3.7]
+
     runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install liquidsoap
-      run: sudo apt-get install liquidsoap
+    - name: Docker pull
+      run: docker pull radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}}
 
-    - name: Prepare data directory
+    - name: Docker prepare
       run: |
+        docker run --rm -ti radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --version
         mkdir $KLANGBECKEN_DATA
         touch $KLANGBECKEN_DATA/prio.m3u $KLANGBECKEN_DATA/music.m3u $KLANGBECKEN_DATA/classics.m3u $KLANGBECKEN_DATA/jingles.m3u $KLANGBECKEN_DATA/index.json
 
-    - name: Check liquidsoap file
-      run: liquidsoap --check klangbecken.liq
+    - name: Docker run check
+      run: |
+        docker run --rm -ti -e KLANGBECKEN_DATA=$KLANGBECKEN_DATA -v $KLANGBECKEN_DATA:$KLANGBECKEN_DATA -v `pwd`:/var/lib/liquidsoap radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --check /var/lib/liquidsoap/klangbecken.liq
