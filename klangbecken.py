@@ -53,15 +53,8 @@ from werkzeug.exceptions import (
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    import importlib_metadata
 
-try:
-    __version__ = importlib_metadata.version("klangbecken")
-except importlib_metadata.PackageNotFoundError:  # pragma: no cover
-    __version__ = "development version"
+__version__ = "0.0.12-dev"
 
 
 ############
