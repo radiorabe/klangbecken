@@ -1,5 +1,6 @@
 # Klangbecken: The RaBe Endless Music Player
 
+[![Python package](https://github.com/radiorabe/klangbecken/workflows/Python%20package/badge.svg)](https://github.com/radiorabe/klangbecken/actions?query=workflow%3A%22Python+package%22)
 [![Build Status](https://travis-ci.org/radiorabe/klangbecken.svg?branch=master)](https://travis-ci.org/radiorabe/klangbecken)
 [![Coverage Status](https://codecov.io/gh/radiorabe/klangbecken/branch/master/graph/badge.svg)](https://codecov.io/gh/radiorabe/klangbecken)
 [![Codestyle Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
