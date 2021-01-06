@@ -1,34 +1,11 @@
 os: linux
 dist: bionic
-language: python
-python:
-  - "3.6"
-  - "3.7"
-  - "3.8"
-addons:
-  apt:
-    packages:
-      - ffmpeg
-env:
-  global:
-    - KLANGBECKEN_DATA=/tmp/data
-before_install:
-  - python --version
-  - pip install -U pip
-install:
-  - pip install -r requirements-dev.txt
-  - pip install -e .
-script:
-  - pre-commit run -a
-  - klangbecken init -d $KLANGBECKEN_DATA
-  - coverage run --source=klangbecken -m unittest discover
-  - flake8
 
 # define liquidsoap anchor
 _liquidsoap: &liquidsoap
   language: shell
   services: docker
-  addons: 
+  addons:
     apt:
       packages:
   before_install: skip
