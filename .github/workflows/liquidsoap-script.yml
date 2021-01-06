@@ -21,10 +21,10 @@ jobs:
 
     - name: Docker prepare
       run: |
-        docker run --rm -ti radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --version
+        docker run --rm radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --version
         mkdir $KLANGBECKEN_DATA
         touch $KLANGBECKEN_DATA/prio.m3u $KLANGBECKEN_DATA/music.m3u $KLANGBECKEN_DATA/classics.m3u $KLANGBECKEN_DATA/jingles.m3u $KLANGBECKEN_DATA/index.json
 
     - name: Docker run check
       run: |
-        docker run --rm -ti -e KLANGBECKEN_DATA=$KLANGBECKEN_DATA -v $KLANGBECKEN_DATA:$KLANGBECKEN_DATA -v `pwd`:/var/lib/liquidsoap radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --check /var/lib/liquidsoap/klangbecken.liq
+        docker run --rm -e KLANGBECKEN_DATA=$KLANGBECKEN_DATA -v $KLANGBECKEN_DATA:$KLANGBECKEN_DATA -v `pwd`:/var/lib/liquidsoap radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --check /var/lib/liquidsoap/klangbecken.liq
