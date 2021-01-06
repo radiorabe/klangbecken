@@ -23,7 +23,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
     ],
-    install_requires=["docopt", "mutagen", "PyJWT", "Werkzeug"],
+    install_requires=["docopt", "mutagen", "PyJWT >= 2.0.0", "Werkzeug"],
     extras_require={"test": ["tox", "coverage", "flake8"]},
     entry_points={"console_scripts": ["klangbecken=klangbecken:main"]},
 )
