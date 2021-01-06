@@ -558,7 +558,7 @@ class KlangbeckenAPI:
         user = request.remote_user
         now = datetime.datetime.utcnow()
         claims = {"user": user, "iat": now, "exp": now + datetime.timedelta(minutes=15)}
-        token = str(jwt.encode(claims, self.secret, algorithm="HS256"), "ascii")
+        token = jwt.encode(claims, self.secret, algorithm="HS256")
 
         return JSONResponse({"token": token})
 
@@ -614,7 +614,7 @@ class KlangbeckenAPI:
 
         claims["exp"] = now + datetime.timedelta(minutes=15)
 
-        token = str(jwt.encode(claims, self.secret, algorithm="HS256"), "ascii")
+        token = jwt.encode(claims, self.secret, algorithm="HS256")
 
         return JSONResponse({"token": token})
 
