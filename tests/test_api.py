@@ -352,13 +352,14 @@ class AnalyzersTestCase(unittest.TestCase):
         self.assertTrue(MetadataChange("id", "fileId") in result)
         self.assertTrue(MetadataChange("ext", "ogg") in result)
         self.assertTrue(MetadataChange("original_filename", "filename-äöü") in result)
-        t = [
+        import_timestamp = [
             ch
             for ch in result
             if (isinstance(ch, MetadataChange) and ch.key == "import_timestamp")
-        ][0]
-        t = datetime.datetime.fromisoformat(t.value)
-        self.assertTrue(datetime.datetime.now() - t < datetime.timedelta(seconds=2))
+        ][0].value
+        two_seconds_ago = (datetime.datetime.now() - datetime.timedelta(seconds=2))
+        two_seconds_ago = two_seconds_ago.isoformat()
+        self.assertGreater(import_timestamp, two_seconds_ago)
         self.assertTrue(MetadataChange("weight", 1) in result)
 
     def testMutagenTagAnalyzer(self):

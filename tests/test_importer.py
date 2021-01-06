@@ -52,9 +52,15 @@ class ImporterTestCase(unittest.TestCase):
         with open(os.path.join(self.tempdir, "index.json")) as file:
             data = json.load(file)
             self.assertEqual(len(data.keys()), 1)
-            ts = list(data.values())[0]["import_timestamp"]
-            ts = datetime.datetime.fromisoformat(ts)
-            self.assertTrue(abs(ts - audio1_mtime) < datetime.timedelta(seconds=1))
+            import_timestamp = list(data.values())[0]["import_timestamp"]
+            self.assertLess(
+                (audio1_mtime - datetime.timedelta(seconds=1)).isoformat(),
+                import_timestamp
+            )
+            self.assertGreater(
+                (audio1_mtime + datetime.timedelta(seconds=1)).isoformat(),
+                import_timestamp
+            )
             self.assertEqual(
                 list(data.values())[0]["original_filename"], "sine-unicode.flac"
             )
