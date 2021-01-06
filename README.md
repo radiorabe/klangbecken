@@ -85,14 +85,9 @@ The API does not handle authentication by itself. It is expected that GET or POS
 
 ### Run test suite
 
-Run tox to run all unit test for multiple Python versions and make a code style check in the end. Make sure, that you have at least Python 3.6 installed locally.
+Run tox to run all unit test for multiple Python versions and check the code style and test coverage. Make sure, that you have at least one supported Python version (>= 3.6) installed locally.
 ```bash
 tox
-```
-
-For the impatient, use parallel execution
-```bash
-tox -p auto
 ```
 
 #### Run test suite only once
@@ -111,6 +106,12 @@ black .
 
 ```bash
 flake8
+```
+
+#### Check code test coverage
+```bash
+coverage run -m unittest discover
+coverage report
 ```
 
 #### Automate formatting using pre-commit

@@ -24,5 +24,10 @@ omit =
     */tests/*
     */test*py
     */.venv/*
+    */.tox/*
 
 ignore_errors = True
+
+fail_under = 80
+
+show_missing = True
