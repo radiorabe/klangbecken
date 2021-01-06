@@ -3,7 +3,7 @@ name: Liquidsoap script
 on: [push]
 
 env:
-  KLANGBECKEN_DATA=/tmp/data
+  KLANGBECKEN_DATA: /tmp/data
 
 jobs:
   build:
