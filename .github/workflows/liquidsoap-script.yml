@@ -18,12 +18,14 @@ jobs:
 
     - name: Set up Python
       uses: actions/setup-python@v2
+
+    - name: Install Python dependencies
       run: pip install -r requirements.txt
 
     - name: Docker pull
       run: docker pull radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}}
 
-    - name: Prepare Klangbecke Data Directory
+    - name: Prepare data directory
       run: |
         docker run --rm radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --version
         python klangbecken.py init -d $KLANGBECKEN_DATA
