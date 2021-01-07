@@ -55,11 +55,11 @@ class ImporterTestCase(unittest.TestCase):
             import_timestamp = list(data.values())[0]["import_timestamp"]
             self.assertLess(
                 (audio1_mtime - datetime.timedelta(seconds=1)).isoformat(),
-                import_timestamp
+                import_timestamp,
             )
             self.assertGreater(
                 (audio1_mtime + datetime.timedelta(seconds=1)).isoformat(),
-                import_timestamp
+                import_timestamp,
             )
             self.assertEqual(
                 list(data.values())[0]["original_filename"], "sine-unicode.flac"
