@@ -1,170 +1,172 @@
-# Klangbecken: The RaBe Endless Music Player
+# Klangbecken
 
 [![Python package](https://github.com/radiorabe/klangbecken/workflows/Python%20package/badge.svg)](https://github.com/radiorabe/klangbecken/actions?query=workflow%3A%22Python+package%22)
 [![Liquidsoap script](https://github.com/radiorabe/klangbecken/workflows/Liquidsoap%20script/badge.svg)](https://github.com/radiorabe/klangbecken/actions?query=workflow%3A%22Liquidsoap+script%22)
 [![Codestyle Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Description
-This repo contains two parts of the RaBe-Klangbecken infrastructure:
-* The API (`klangbecken.py`).
-* The script for the playout (`klangbecken.liq`).
+_Klangbecken_ is the minimalistic endless music player for Radio Bern RaBe based on [liquidsoap](https://www.liquidsoap.info).
 
-Some additional parts are in their own repository:
-* The listener for the current status, the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox).
-* The [UI](https://github.com/radiorabe/klangbecken-ui).
+It supports configurable and editable playlists, jingle insertion, metadata publishing and more.
+
+It is [designed](doc/design.md) for stand-alone operation, robustness and easy maintainability.
+
+This repository contains three components of the RaBe-Klangbecken:
+* The [API](doc/api.md) (`klangbecken.py`).
+* The [command line interface](doc/cli.md) (`python klangbecken.py`).
+* The [liquidsoap playout script](klangbecken.liq) (`klangbecken.liq`).
+
+Two additional components are in their own repository:
+* The listener for the current "on air" status, the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox).
+* The web-based [UI](https://github.com/radiorabe/klangbecken-ui) for playlist editing.
 
 How they interact can be seen in the [system overview diagram](doc/system-overview.svg):
 
 ![System overview diagram](doc/system-overview.svg)
 
-### System requirements
+## System requirements
 * Unix-like operating system environment
 * **Python** >= 3.6
-  * **docopt** library for parsing command line arguments
-  * **Werkzeug** library for the WSGI application
-  * **PyJWT** library for creating and verify JWT authentication tokens
-  * **mutagen** library for audio tag editing
-  * **ffmpeg** binary (>=4.0) for audio analysis
-  * Development dependencies: **tox**, **coverage**, **flake8**
-* **Liquidsoap** for sending the audio
-  * **jq** for parsing the index
+  * *docopt* library for parsing command line arguments
+  * *Werkzeug* library for the WSGI application
+  * *PyJWT* library (>= v2.0.0) for creating and verify JWT authentication tokens
+  * *mutagen* library for audio tag editing
+* **ffmpeg** binary (>=4.0) for audio analysis
+* **Liquidsoap** audio player
+
 
 ## Setup
 
-### Clone the repository:
+Clone the repository
 ```bash
-git clone https://github.com:radiorabe/klangbecken.git
+git clone https://github.com/radiorabe/klangbecken.git
 cd klangbecken
 ```
 
-### Create `python` virtual environment (optional)
+We strongly recommend to create a virtual environment (see [additional tools](doc/additional-tools.md)). E.g.
 ```bash
-mkvirtualenv klangbecken
-# or
-python3 -m venv venv && source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-### Install dependencies:
-* Python
-  ```bash
-  pip install -r requirements.txt
-  pip install -r requirements-dev.txt
-  ```
-* Liquidsoap (on CentOS 7 you can also use our prebuilt [package](https://github.com/radiorabe/centos-rpm-liquidsoap))
-  ```bash
-  opam init
-  opam switch create klangbecken 4.07.0 # we need liquidsoap 1.3.7 which does not run after OCaml 4.07.0
-  opam depext alsa mad lame vorbis taglib liquidsoap.1.3.7
-  opam install alsa mad lame vorbis taglib liquidsoap.1.3.7
-  ```
+### Install dependencies
+Install Python dependencies
+```bash
+pip install -r requirements.txt
+```
+Install `ffmpeg` with your system's package manager. E.g.
+```bash
+yum install ffmpeg
+```
+Install Liquidsoap (on CentOS 7 you can also use our prebuilt [package](https://github.com/radiorabe/centos-rpm-liquidsoap))
+```bash
+yum install opam
+opam init
+# we need liquidsoap 1.3.7 which does not run after OCaml 4.07.0
+opam switch create klangbecken 4.07.0
+opam depext alsa mad lame vorbis taglib liquidsoap.1.3.7
+opam install alsa mad lame vorbis taglib liquidsoap.1.3.7
+```
+
+Install the client UI:
+```bash
+cd ..
+git clone https://github.com/radiorabe/klangbecken-ui
+cd klangbecken-ui
+npm install
+```
 
 ### Run the programs
-* `klangbecken.py`
-  ```bash
-  python3 klangbecken.py serve
-  ```
-* `klangbecken.liq`
-  ```bash
-  export KLANGBECKEN_ALSA_DEVICE="default"
-  export KLANGBECKEN_DATA="data"
-  export KLANGBECKEN_PATH="./klangbecken.py"
-  export KLANGBECKEN_SOCKET_PATH="/tmp/klangbecken.liq.sock"
-  liquidsoap klangbecken.liq
-  ```
-* If you want to set the onair status manually you can connect to the socket using `netcat`
-  ```bash
-  echo "klangbecken.onair True" | nc -U -w 1 /tmp/klangbecken.liq.sock
-  ```
 
-## Notes
+Initialize the data directory:
+```bash
+python klangbecken.py init
+```
 
-### Authentication
+Run the development API server:
+```bash
+python klangbecken.py serve
+```
 
-The API does not handle authentication by itself. It is expected that GET or POST requests to `/api/login` are intercepted by an authentication layer, and then forwarded to the app with a valid `REMOTE_USER` parameter in the request environment, in case the authentication was successful. This can for example be achieved by an additional WSGI middleware, or an Apache module like FIXME.
+Run the client UI development server:
+```bash
+cd ../klangbecken-ui
+npm run serve
+```
+
+Browse to http://localhost:8080 and start uploading audio files.
+
+Run the liquidsoap audio player:
+```bash
+export KLANGBECKEN_ALSA_DEVICE="default"
+export KLANGBECKEN_DATA="data"
+export KLANGBECKEN_PATH="./klangbecken.py"
+export KLANGBECKEN_SOCKET_PATH="/tmp/klangbecken.liq.sock"
+liquidsoap klangbecken.liq
+```
+
+Manually set the onair status of the player using `netcat`:
+```bash
+echo "klangbecken.onair True" | nc -U -w 1 /tmp/klangbecken.liq.sock
+```
 
 
-### Run test suite
+## Development
 
-Run tox to run all unit test for multiple Python versions and check the code style and test coverage. Make sure, that you have at least one supported Python version (>= 3.6) installed locally.
+
+
+### Python Package
+
+The Python code is tested with a test suite and follows the flake8 coding guidlines.
+
+Before submitting your code make sure that ...
+
+1. ... you have installed the development dependencies
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+2. ... the test suite runs without failure
+   ```bash
+   python -m unittest discover
+   ```
+3. ... your code is covered by unit tests
+   ```bash
+   coverage run -m unittest discover
+   coverage report
+   ```
+4. ... your code follows the coding style guidelines
+   ```bash
+   flake8
+   ```
+
+#### Recommended Tools
+
+We recommend the use of `tox`, `black` and `isort` for development.
+```bash
+pip install tox black isort
+```
+
+Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.6). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it.
 ```bash
 tox
 ```
 
-#### Run test suite only once
-
-```bash
-python -m unittest discover
-```
-
-#### Format code
-
+Manually fixing coding style mistakes is a pain. `black` formats your code automatically.
 ```bash
 black .
 ```
 
-#### Check your style
-
+Finally, `isort` helps to consistantly organize package imports.
 ```bash
-flake8
+isort .
 ```
 
-#### Check code test coverage
+All development tools are preconfigured in [`setup.cfg`](setup.cfg). For additional tools and tips & tricks and  see [additional tools](doc/additional-tools.md).
+
+### Liquidsoap Script
+
+Liquidsoap lets you syntax check and type check your script:
 ```bash
-coverage run -m unittest discover
-coverage report
+liquidsoap --check klangbecken.liq
 ```
 
-#### Automate formatting using pre-commit
-
-After registering hooks with `init` pre-commit will abort commits if there are black, isort or flake8 changes to be made. If machine fixable (ie. black and isort) pre-commit usually applies those changes leaving you to stage them using `git add` before retrying your commit.
-```bash
-pre-commit init
-```
-You can also run black, isort and flake8 on all content without comitting:
-```bash
-pre-commit run -a
-```
-
-### Automatically activate and deactivate virtualenvs when changing directories
-
-Add the following to your `~/.bashrc` to automatically activate the virtualenv when cd-ing into a directory containing a `venv` directory, and deactivating it, when leaving.
-
-```bash
-_update_path() {
-  # Activate python virtualenv if 'venv' directory exists somewhere
-  P=$(pwd)
-  while [[ "$P" != / ]]; do
-      if [[ -d "$P/venv" && -f "$P/venv/bin/activate" ]]; then
-          if [[ "$P/venv" != "$VIRTUAL_ENV" ]]; then
-              source $P/venv/bin/activate
-          fi
-          FOUND_VENV=yes
-          break
-      fi
-      P=$(dirname "$P")
-  done
-  if [[ "$FOUND_VENV" != yes && -v VIRTUAL_ENV ]]; then
-      deactivate
-  fi
-
-  unset FOUND_VENV
-  unset P
-  true
-}
-
-cd() {
-  builtin cd "$@"
-  _update_path
-}
-
-_update_path
-```
-
-
-### Contributing
-
-1. Run unittests with your local Python
-2. check style
-3. Run unittests for all supported Python versions
-4. Check coverage
-5. Push to your Repo, create pull request, see if continuous integration ran without errors
