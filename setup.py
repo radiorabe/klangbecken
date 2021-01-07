@@ -8,7 +8,7 @@ setup(
     author="Marco Schmalz",
     author_email="marco@schess.ch ",
     py_modules=["klangbecken"],
-    python_requires='>=3.6',
+    python_requires=">=3.6",
     license="AGPLv3",
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -23,6 +23,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
+        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     ],
     install_requires=["docopt", "mutagen", "PyJWT >= 2.0.0", "Werkzeug"],
     extras_require={"test": ["flake8", "coverage"]},
