@@ -16,14 +16,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      run: pip install -r requirements.txt
+
     - name: Docker pull
       run: docker pull radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}}
 
-    - name: Docker prepare
+    - name: Prepare Klangbecke Data Directory
       run: |
         docker run --rm radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --version
-        mkdir $KLANGBECKEN_DATA
-        touch $KLANGBECKEN_DATA/prio.m3u $KLANGBECKEN_DATA/music.m3u $KLANGBECKEN_DATA/classics.m3u $KLANGBECKEN_DATA/jingles.m3u $KLANGBECKEN_DATA/index.json
+        python klangbecken.py init -d $KLANGBECKEN_DATA
 
     - name: Docker run check
       run: |
