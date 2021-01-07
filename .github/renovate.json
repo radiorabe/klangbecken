@@ -3,6 +3,6 @@
     "config:base"
   ],
   "pip_requirements": {
-    "fileMatch": ["requirements.txt", "requirements-dev.txt"]
+    "fileMatch": ["requirements.txt", "requirements-test.txt"]
   }
 }

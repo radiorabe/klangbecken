@@ -120,9 +120,9 @@ The Python code is tested with a test suite and follows the flake8 coding guidli
 
 Before submitting your code make sure that ...
 
-1. ... you have installed the development dependencies
+1. ... you have installed the test dependencies
    ```bash
-   pip install -r requirements-dev.txt
+   pip install -r requirements-test.txt
    ```
 
 2. ... the test suite runs without failure
