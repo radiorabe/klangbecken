@@ -170,3 +170,32 @@ Liquidsoap lets you syntax check and type check your script:
 liquidsoap --check klangbecken.liq
 ```
 
+## Deployment
+
+The deploy script `deploy.sh` partially automates deploying the code.
+
+_Preparation:_
+* Make sure, your code passes continuous integration.
+* Increment the version (in `klangbecken.py` and `setup.py`).
+* Make sure your `requirements.txt` is not dirty.
+
+
+_Run the script:_
+```bash
+./deploy.sh
+```
+It perfoms the following steps:
+- Download all run-time dependencies (plus `mod_wsgi`) locally.
+- `scp` the dependencies to production.
+- Push your code to production.
+- Install all dependencies in production.
+- Installing the Python package (API and CLI) in production.
+- Reloading the web server to load the new API code.
+- Copy the liquidsoap script to it's destination.
+
+_Finalize deployment:_
+- Restart the liquidsoap player during a "off air" moment:
+  ```bash
+  systemctl restart liquidsoap@klangbecken
+  ```
+- Append `-dev` to the version strings (in `klangbecken.py` and `setup.py`).
