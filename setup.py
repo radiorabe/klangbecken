@@ -8,6 +8,7 @@ setup(
     author="Marco Schmalz",
     author_email="marco@schess.ch ",
     py_modules=["klangbecken"],
+    python_requires='>=3.6',
     license="AGPLv3",
     classifiers=[
         "Development Status :: 3 - Alpha",
