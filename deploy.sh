@@ -23,7 +23,6 @@ then
   echo "# Deploying application #"
   echo "#########################"
   git push prod
-  # make tag
 else
   echo Requirements file is dirty
   exit 1

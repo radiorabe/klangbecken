@@ -198,4 +198,3 @@ _Finalize deployment:_
   ```bash
   systemctl restart liquidsoap@klangbecken
   ```
-- Append `-dev` to the version strings (in `klangbecken.py` and `setup.py`).
