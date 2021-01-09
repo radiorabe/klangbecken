@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name="klangbecken",
@@ -7,7 +7,7 @@ setup(
     url="https://github.com/radiorabe/klangbecken",
     author="Marco Schmalz",
     author_email="marco@schess.ch ",
-    py_modules=["klangbecken"],
+    packages=find_packages(include=["klangbecken"]),
     python_requires=">=3.6",
     license="AGPLv3",
     classifiers=[
@@ -30,5 +30,5 @@ setup(
         "dev": ["tox", "black", "isort"],
         "test": ["flake8", "coverage"],
     },
-    entry_points={"console_scripts": ["klangbecken=klangbecken:main"]},
+    entry_points={"console_scripts": ["klangbecken=klangbecken.cli:main"]},
 )

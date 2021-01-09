@@ -15,7 +15,7 @@ from werkzeug.wrappers import BaseResponse
 
 class WSGIAppTest(unittest.TestCase):
     def test_application(self):
-        from klangbecken import KlangbeckenAPI
+        from klangbecken.api import KlangbeckenAPI
 
         application = KlangbeckenAPI("inexistent_dir", "secret")
         self.assertTrue(callable(application))
@@ -23,7 +23,8 @@ class WSGIAppTest(unittest.TestCase):
 
 class APITestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import FileAddition, KlangbeckenAPI, MetadataChange
+        from klangbecken.api import KlangbeckenAPI
+        from klangbecken.playlist import FileAddition, MetadataChange
 
         self.upload_analyzer = mock.Mock(
             return_value=[
@@ -95,7 +96,7 @@ class APITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def testUpload(self):
-        from klangbecken import FileAddition, MetadataChange
+        from klangbecken.playlist import FileAddition, MetadataChange
 
         # Correct upload
         resp = self.client.post(
@@ -201,7 +202,7 @@ class APITestCase(unittest.TestCase):
         self.update_analyzer.assert_not_called()
 
     def testDelete(self):
-        from klangbecken import FileDeletion
+        from klangbecken.playlist import FileDeletion
 
         fileId = str(uuid.uuid4())
         resp = self.client.delete("/music/" + fileId + ".mp3")
@@ -216,7 +217,7 @@ class APITestCase(unittest.TestCase):
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
 
-    @mock.patch("klangbecken.playnext_processor")
+    @mock.patch("klangbecken.api.playnext_processor")
     def testPlaynext(self, playnext_processor):
         # Update weight correctly
         resp = self.client.post(
@@ -241,7 +242,7 @@ class APITestCase(unittest.TestCase):
 
 class AuthTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import KlangbeckenAPI
+        from klangbecken.api import KlangbeckenAPI
 
         app = KlangbeckenAPI(
             "inexistent_dir",
@@ -289,7 +290,7 @@ class AnalyzersTestCase(unittest.TestCase):
         os.remove(self.invalid_file)
 
     def testUpdateAnalyzer(self):
-        from klangbecken import MetadataChange, update_data_analyzer
+        from klangbecken.playlist import MetadataChange, update_data_analyzer
 
         # Correct single update
         self.assertEqual(
@@ -328,7 +329,7 @@ class AnalyzersTestCase(unittest.TestCase):
     def testRawFileAnalyzer(self):
         import datetime
 
-        from klangbecken import FileAddition, MetadataChange, raw_file_analyzer
+        from klangbecken.playlist import FileAddition, MetadataChange, raw_file_analyzer
 
         # Missing file
         self.assertRaises(
@@ -364,7 +365,7 @@ class AnalyzersTestCase(unittest.TestCase):
         self.assertTrue(MetadataChange("weight", 1) in result)
 
     def testMutagenTagAnalyzer(self):
-        from klangbecken import MetadataChange as Change, mutagen_tag_analyzer
+        from klangbecken.playlist import MetadataChange as Change, mutagen_tag_analyzer
 
         # Test regular files
         for ext in ["mp3", "ogg", "flac"]:
@@ -415,7 +416,7 @@ class AnalyzersTestCase(unittest.TestCase):
                 mutagen_tag_analyzer("music", "fileId", ext, fs)
 
     def _analyzeOneFile(self, prefix, postfix, gain, cue_in, cue_out):
-        from klangbecken import MetadataChange, ffmpeg_audio_analyzer
+        from klangbecken.playlist import MetadataChange, ffmpeg_audio_analyzer
 
         name = prefix + postfix.split(".")[0]
         ext = postfix.split(".")[1]
@@ -452,7 +453,7 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertFalse(f.closed)
 
     def testFFmpegAudioAnalyzer(self):
-        from klangbecken import ffmpeg_audio_analyzer
+        from klangbecken.playlist import ffmpeg_audio_analyzer
 
         test_data = [
             {"prefix": "padded", "gain": -17, "cue_in": 0.2, "cue_out": 0.8},
@@ -512,7 +513,7 @@ class ProcessorsTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testCheckProcessor(self):
-        from klangbecken import MetadataChange, check_processor
+        from klangbecken.playlist import MetadataChange, check_processor
 
         # Invalid key
         with self.assertRaises(UnprocessableEntity) as cm:
@@ -552,7 +553,7 @@ class ProcessorsTestCase(unittest.TestCase):
             check_processor(self.tempdir, "playlist", "id", "ext", ["whatever"])
 
     def testFilterDuplicatesProcessor(self):
-        from klangbecken import (
+        from klangbecken.playlist import (
             FileAddition,
             MetadataChange,
             filter_duplicates_processor,
@@ -575,7 +576,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue("Duplicate file entry" in cm.exception.description)
 
     def testRawFileProcessor(self):
-        from klangbecken import (
+        from klangbecken.playlist import (
             FileAddition,
             FileDeletion,
             MetadataChange,
@@ -610,7 +611,7 @@ class ProcessorsTestCase(unittest.TestCase):
         )
 
     def testIndexProcessor(self):
-        from klangbecken import (
+        from klangbecken.playlist import (
             FileAddition,
             FileDeletion,
             MetadataChange,
@@ -725,7 +726,7 @@ class ProcessorsTestCase(unittest.TestCase):
     def testFileTagProcessor(self):
         from mutagen import File
 
-        from klangbecken import (
+        from klangbecken.playlist import (
             FileAddition,
             FileDeletion,
             MetadataChange,
@@ -783,7 +784,11 @@ class ProcessorsTestCase(unittest.TestCase):
                 self.assertEqual(val, mutagenfile.get(key, [""])[0])
 
     def testPlaylistProcessor(self):
-        from klangbecken import FileDeletion, MetadataChange, playlist_processor
+        from klangbecken.playlist import (
+            FileDeletion,
+            MetadataChange,
+            playlist_processor,
+        )
 
         music_path = os.path.join(self.tempdir, "music.m3u")
         jingles_path = os.path.join(self.tempdir, "jingles.m3u")
@@ -903,7 +908,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(data, "")
 
     def testPlaynextProcessor(self):
-        from klangbecken import playnext_processor
+        from klangbecken.playlist import playnext_processor
 
         prio_path = os.path.join(self.tempdir, "prio.m3u")
 

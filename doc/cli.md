@@ -1,6 +1,6 @@
 # Command Line Interface
 
-The command line tool can be called directly from the source code `python klangbecken.py` or as command `klangbecken` when the package is installed.
+The command line tool can be called with Python `python -m klangbecken` or as a stand-alone command `klangbecken` when the package is installed.
 
 ```
 Klangbecken audio playout system.

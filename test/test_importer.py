@@ -11,7 +11,7 @@ from .utils import capture
 
 class ImporterTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import _check_data_dir
+        from klangbecken.cli import _check_data_dir
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
@@ -23,7 +23,7 @@ class ImporterTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testImport(self):
-        from klangbecken import import_cmd
+        from klangbecken.cli import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
         audio1_path = os.path.join(audio_path, "sine-unicode.flac")
@@ -117,9 +117,9 @@ class ImporterTestCase(unittest.TestCase):
                 self.assertIn("WARNING", err)
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch("klangbecken.input", return_value="y")
+    @mock.patch("klangbecken.cli.input", return_value="y")
     def testImportInteractiveYes(self, input):
-        from klangbecken import import_cmd
+        from klangbecken.cli import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
         audio1_path = os.path.join(audio_path, "sine-unicode.flac")
@@ -134,9 +134,9 @@ class ImporterTestCase(unittest.TestCase):
                 self.assertEqual(file_count, 1)
         self.assertEqual(cm.exception.code, 0)
 
-    @mock.patch("klangbecken.input", return_value="n")
+    @mock.patch("klangbecken.cli.input", return_value="n")
     def testImportInteractiveNo(self, input):
-        from klangbecken import import_cmd
+        from klangbecken.cli import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
         audio1_path = os.path.join(audio_path, "sine-unicode.flac")
