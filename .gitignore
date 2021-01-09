@@ -1,9 +1,10 @@
-/data/
-/.tox/
-/.venv/
-/.vscode/
-/*.egg-info/
-/__pycache__/
+data/
+klangbecken.egg-info/
+.tox/
+.venv/
+.vscode/
+.pytest_cache/
+**/__pycache__
 .coverage
 .pre-commit-config.yaml
 *.pyc
