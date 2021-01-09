@@ -38,3 +38,33 @@ Options:
     --all
         Reanalyze all files.
 ```
+
+### `init`
+
+Initialize the data directory by creating empty playlist files, playlist folders and other default files.
+
+### `serve`
+
+Run the development server. Serves the API from `/api` and the static files from the data directory from `/data`.
+
+### `import`
+
+Batch import audio files to the specified playlist.  Artist and title metadata can be supplied from a JSON file mapping filenames to a metadata dict. E.g.
+```json
+{
+    "importfolder/xyz.mp3": {"artist": "Hansi Hinterseher", "title": "A Bussarl"}
+    ...
+}
+```
+
+### `fsck`
+
+Validate the correctness of the `index.json` metadata cache.
+
+### `playlog`
+
+Log the airing of a track. This command is called from the liquidsoap player. It updates the `last_play` and `play_count` metadata, appends the data to the monthly playlog in `data/log/`, and calls the external play logger if configured.
+
+### `reanalyze`
+
+Re-run the audio analyzer for the specified files.
