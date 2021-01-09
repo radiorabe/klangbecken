@@ -11,9 +11,9 @@ It supports configurable and editable playlists, jingle insertion, metadata publ
 It is [designed](doc/design.md) for stand-alone operation, robustness and easy maintainability.
 
 This repository contains three components of the RaBe-Klangbecken:
-* The [API](doc/api.md) (`klangbecken.py`).
-* The [command line interface](doc/cli.md) (`python klangbecken.py`).
-* The [liquidsoap playout script](klangbecken.liq) (`klangbecken.liq`).
+* The [API](doc/api.md)
+* The [command line interface](doc/cli.md)
+* The [liquidsoap playout script](klangbecken.liq)
 
 Two additional components are in their own repository:
 * The listener for the current "on air" status, the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox).
@@ -79,12 +79,12 @@ npm install
 
 Initialize the data directory:
 ```bash
-python klangbecken.py init
+python -m klangbecken init
 ```
 
 Run the development API server:
 ```bash
-python klangbecken.py serve
+python -m klangbecken serve
 ```
 
 Run the client UI development server:
@@ -111,8 +111,6 @@ echo "klangbecken.onair True" | nc -U -w 1 /tmp/klangbecken.liq.sock
 
 
 ## Development
-
-
 
 ### Python Package
 

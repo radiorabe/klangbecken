@@ -20,7 +20,8 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testNoFFmpegWarning(self):
-        from klangbecken import StandaloneWebApplication, init_cmd
+        from klangbecken.api import StandaloneWebApplication
+        from klangbecken.cli import init_cmd
 
         init_cmd(self.tempdir)
         with capture(StandaloneWebApplication, self.tempdir, "secret") as (
@@ -31,7 +32,8 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
             self.assertNotIn("WARNING", out)
 
     def testDirStructure(self):
-        from klangbecken import StandaloneWebApplication, init_cmd
+        from klangbecken.api import StandaloneWebApplication
+        from klangbecken.cli import init_cmd
 
         self.assertFalse(os.path.isdir(os.path.join(self.tempdir, "music")))
 
@@ -52,7 +54,8 @@ class StandaloneWebApplicationStartupTestCase(unittest.TestCase):
 
 class StandaloneWebApplicationTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import StandaloneWebApplication, init_cmd
+        from klangbecken.api import StandaloneWebApplication
+        from klangbecken.cli import init_cmd
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
@@ -158,7 +161,8 @@ class DataDirCreatorTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testDataDirCheckOnly(self):
-        from klangbecken import PLAYLISTS, _check_data_dir
+        from klangbecken.settings import PLAYLISTS
+        from klangbecken.utils import _check_data_dir
 
         for playlist in PLAYLISTS + ("prio",):
             path = os.path.join(self.tempdir, playlist)
@@ -183,7 +187,8 @@ class DataDirCreatorTestCase(unittest.TestCase):
         _check_data_dir(self.tempdir, False)
 
     def testDataDirCreation(self):
-        from klangbecken import PLAYLISTS, _check_data_dir
+        from klangbecken.settings import PLAYLISTS
+        from klangbecken.utils import _check_data_dir
 
         _check_data_dir(self.tempdir, create=True)
         for playlist in PLAYLISTS:

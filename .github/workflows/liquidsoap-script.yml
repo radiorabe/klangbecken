@@ -31,7 +31,7 @@ jobs:
       run: docker run --rm radiorabe/liquidsoap:alpine-${{matrix.liquidsoap}} --version
 
     - name: Prepare data directory
-      run: python klangbecken.py init -d $KLANGBECKEN_DATA
+      run: python -m klangbecken init -d $KLANGBECKEN_DATA
 
     - name: Docker run check
       run: |

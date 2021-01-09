@@ -10,7 +10,8 @@ from .utils import capture
 
 class FsckTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import _check_data_dir, import_cmd
+        from klangbecken.cli import import_cmd
+        from klangbecken.utils import _check_data_dir
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
@@ -35,7 +36,7 @@ class FsckTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testTooShortMusicFile(self):
-        from klangbecken import import_cmd, main
+        from klangbecken.cli import import_cmd, main
 
         # Correctly import a couple of files
         file_path = os.path.join(self.current_path, "audio", "padded.ogg")
@@ -59,7 +60,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testFsckCorruptIndexJson(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         index_path = os.path.join(self.tempdir, "index.json")
         with open(index_path, "w"):
@@ -75,7 +76,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testFsckCorruptDataDir(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         shutil.rmtree(self.jingles_dir)
 
@@ -89,7 +90,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testFsck(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", "invalid"]
         try:
@@ -111,7 +112,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexWithWrongId(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -134,7 +135,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexWithWrongCueIn(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -158,7 +159,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexWithWrongCueOut(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -182,7 +183,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexMissingEntries(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -206,7 +207,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexTooManyEntries(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -230,7 +231,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testIndexMissingFile(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -246,7 +247,8 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testTagsValueMismatch(self):
-        from klangbecken import SUPPORTED_FILE_TYPES, main
+        from klangbecken.cli import main
+        from klangbecken.settings import SUPPORTED_FILE_TYPES
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -266,7 +268,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testPlaylistWeightMismatch(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -286,7 +288,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testDanglingPlaylistEntries(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
@@ -305,7 +307,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testDanglingFiles(self):
-        from klangbecken import main
+        from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
