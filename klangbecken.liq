@@ -63,7 +63,7 @@ def check_next_func(r) =
   metadata = request.metadata(r)
   filename = request.filename(r)
 
-  last_play = float_of_string(metadata["last_play"])
+  last_play = float_of_string(metadata["last_play_epoch"])
   if last_play == 0.0 then
     skipped := 0
     log("track was never played before: #{filename}", label="check_next_func")

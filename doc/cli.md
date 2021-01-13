@@ -65,7 +65,9 @@ Validate the `index.json` metadata cache integrity.
 
 ### `playlog`
 
-Log the airing of a track. This command is called from the liquidsoap player. It updates the `last_play` and `play_count` metadata, appends the data to the monthly playlog in `data/log/`, and calls the external play logger if configured.
+Log the airing of a track. This command is called from the liquidsoap player. It updates the `last_play`, `last_play_epoch` and `play_count` metadata, appends the data to the monthly playlog in `data/log/`, and calls the external play logger if configured.
+
+The `last_play` is stored in the ISO8601 date format. To simplify the liquidsoap player code, the `last_play` date is stored in the audio file tag `last_play_epoch` as a UNIX epoch date.
 
 If the environment variable `KLANGBECKEN_EXTERNAL_PLAY_LOGGER` is set, it will be used to call an external play logger. This can be used publish the information for example in a song ticker on a public web site. The command will be interpreted as a formatting string. All supported metadata keys are available (see [settings.py](../klangbecken/settings.py)).
 

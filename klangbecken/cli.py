@@ -262,6 +262,7 @@ def playlog_cmd(data_dir, filename):
     changes = [
         MetadataChange("play_count", play_count),
         MetadataChange("last_play", now.isoformat()),
+        MetadataChange("last_play_epoch", now.timestamp()),
     ]
 
     for processor in DEFAULT_PROCESSORS:
