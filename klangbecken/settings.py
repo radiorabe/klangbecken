@@ -41,12 +41,14 @@ ALLOWED_METADATA = {
     "cue_out": (float, lambda n: n >= 0.0),
     "play_count": (int, lambda n: n >= 0),
     "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_RE)),
+    "last_play_epoch": (float, lambda n: n >= 0.0),
 }
 
 UPDATE_KEYS = "artist title album weight".split()
+
 TAG_KEYS = (
     "artist title album cue_in cue_out track_gain original_filename import_timestamp "
-    "last_play"
+    "last_play_epoch"
 ).split()
 
 
@@ -57,4 +59,4 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(
     key="original_filename", desc="ORIGINAL_FILENAME"
 )
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key="import_timestamp", desc="IMPORT_TIMESTAMP")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play", desc="LAST_PLAY")
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play_epoch", desc="LAST_PLAY")
