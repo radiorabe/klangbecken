@@ -253,25 +253,23 @@ def playlog_cmd(data_dir, filename):
     file_id, ext = filename.split("/")[-1].split(".")
     now = datetime.datetime.now().astimezone()
 
-    # Update index cache
+    # Update metadata (play_count and last_play)
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
         entry = data[file_id]
-        entry["play_count"] = entry.get("play_count", 0) + 1
-        entry["last_play"] = now.isoformat()
-        f.seek(0)
-        f.truncate()
-        json.dump(data, f, indent=2, sort_keys=True)
-        del data
+        play_count = entry.get("play_count", 0) + 1
 
-    # Update file metadata: Store `last_play` date as UNIX epoch.
-    FileType = SUPPORTED_FILE_TYPES[ext]
-    mutagenfile = FileType(filename)
-    mutagenfile["last_play"] = str(now.timestamp())
-    mutagenfile.save()
+    changes = [
+        MetadataChange("play_count", play_count),
+        MetadataChange("last_play", now.isoformat()),
+    ]
+
+    for processor in DEFAULT_PROCESSORS:
+        processor(data_dir, entry["playlist"], file_id, ext, changes)
+
+    entry.update(changes)
 
     # Append to CSV log files
-    # FIXME: Zero prepend single digit months
     log_file_name = f"{now.year}-{now.month:02d}.csv"
     log_file_path = os.path.join(data_dir, "log", log_file_name)
 
