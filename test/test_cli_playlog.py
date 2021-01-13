@@ -42,7 +42,7 @@ class PlaylogCmdTestCase(unittest.TestCase):
     def testPlayLog(self):
         from klangbecken.cli import main, playlog_cmd
 
-        now = datetime.datetime(2018, 4, 28)
+        now = datetime.datetime(2018, 4, 28).astimezone()
 
         filename = os.listdir(os.path.join(self.data_dir, "music"))[0]
         path = os.path.join(self.data_dir, "music", filename)

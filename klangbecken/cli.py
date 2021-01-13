@@ -251,7 +251,7 @@ def fsck_cmd(data_dir):  # noqa: C901
 
 def playlog_cmd(data_dir, filename):
     file_id, ext = filename.split("/")[-1].split(".")
-    now = datetime.datetime.now()
+    now = datetime.datetime.now().astimezone()
 
     # Update index cache
     with locked_open(os.path.join(data_dir, "index.json")) as f:
