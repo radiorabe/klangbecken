@@ -94,7 +94,7 @@ class TokenRenewalTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         resp = self.client.get("/", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(resp.status_code, 401)
-        self.assertIn(b"Invalid token", resp.data)
+        self.assertIn(b"Expired token", resp.data)
 
         resp = self.client.post("/auth/renew/", data=json.dumps({"token": token}))
         self.assertEqual(resp.status_code, 200)
@@ -104,9 +104,9 @@ class TokenRenewalTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def testExpiredNok(self):
-        before8days = datetime.datetime.utcnow() - datetime.timedelta(days=8)
+        eightDaysAgo = datetime.datetime.utcnow() - datetime.timedelta(days=8)
         with mock.patch("klangbecken.api_utils.datetime") as dt:
-            dt.datetime.utcnow = mock.Mock(return_value=before8days)
+            dt.datetime.utcnow = mock.Mock(return_value=eightDaysAgo)
             dt.timedelta = mock.Mock(return_value=datetime.timedelta(minutes=15))
             resp = self.client.post("/auth/login/")
             self.assertEqual(resp.status_code, 200)
@@ -122,17 +122,17 @@ class TokenRenewalTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         self.assertIn(b"Unrenewable expired token", resp.data)
 
-    def testInvalidExpiredToken(self):
-        before16mins = datetime.datetime.utcnow() - datetime.timedelta(minutes=16)
+    def testCorruptedToken(self):
+        twentyMinutesAgo = datetime.datetime.utcnow() - datetime.timedelta(minutes=20)
         with mock.patch("klangbecken.api_utils.datetime") as dt:
-            dt.datetime.utcnow = mock.Mock(return_value=before16mins)
+            dt.datetime.utcnow = mock.Mock(return_value=twentyMinutesAgo)
             dt.timedelta = mock.Mock(return_value=datetime.timedelta(minutes=15))
             resp = self.client.post("/auth/login/")
             self.assertEqual(resp.status_code, 200)
             token = json.loads(resp.data)["token"]
             self.assertEqual(len(token.split(".")), 3)
 
-        token = token[:-1] + "f"  # Corrupt token
+        token = token[:-1]  # Corrupt token
         resp = self.client.get("/", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(resp.status_code, 401)
         self.assertIn(b"Invalid token", resp.data)
