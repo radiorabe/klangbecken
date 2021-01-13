@@ -182,6 +182,60 @@ class FsckTestCase(unittest.TestCase):
         finally:
             sys.arv = argv
 
+    def testIndexWithSilenceStart(self):
+        from klangbecken.cli import main
+
+        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
+
+        index_path = os.path.join(self.tempdir, "index.json")
+        with open(index_path) as f:
+            data = json.load(f)
+
+        entry = next(iter(data.values()))
+        entry["cue_in"] = 11
+        entry["cue_out"] = 100
+        entry["length"] = 101
+
+        with open(index_path, "w") as f:
+            json.dump(data, f)
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(main) as (out, err, ret):
+                    self.assertIn("ERROR", err)
+                    self.assertIn("cue_in after more than ten seconds", err)
+            self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
+    def testIndexWithSilenceEnd(self):
+        from klangbecken.cli import main
+
+        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
+
+        index_path = os.path.join(self.tempdir, "index.json")
+        with open(index_path) as f:
+            data = json.load(f)
+
+        entry = next(iter(data.values()))
+        entry["cue_in"] = 1
+        entry["cue_out"] = 90
+        entry["length"] = 101
+
+        with open(index_path, "w") as f:
+            json.dump(data, f)
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(main) as (out, err, ret):
+                    self.assertIn("ERROR", err)
+                    self.assertIn(
+                        "cue_out earlier than ten seconds before end of song", err
+                    )
+            self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
+
     def testIndexMissingEntries(self):
         from klangbecken.cli import main
 

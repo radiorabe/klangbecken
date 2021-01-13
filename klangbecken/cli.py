@@ -7,9 +7,10 @@ import subprocess
 import sys
 import uuid
 
+import docopt
 from werkzeug.exceptions import UnprocessableEntity
 
-from .api import StandaloneWebApplication
+from .api import development_server
 from .playlist import (
     DEFAULT_PROCESSORS,
     DEFAULT_UPLOAD_ANALYZERS,
@@ -26,26 +27,28 @@ from .utils import _check_data_dir
 def init_cmd(data_dir):
     if os.path.exists(data_dir):
         if os.path.isdir(data_dir) and len(os.listdir(data_dir)) != 0:
-            print(f"ERROR: Data directory {data_dir} exists but is not empty.")
+            print(
+                f"ERROR: Data directory {data_dir} exists but is not empty.",
+                file=sys.stderr,
+            )
             exit(1)
     else:
         os.mkdir(data_dir)
     _check_data_dir(data_dir, create=True)
 
 
-def serve_cmd(data_dir, address="localhost", port=5000, dev_mode=False):
+def serve_cmd(address, port, data_dir, player_socket):  # pragma: no cover
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
 
-    app = StandaloneWebApplication(data_dir, "no secret")
+    print(data_dir, player_socket)
+    app = development_server(data_dir, player_socket)
 
-    run_simple(
-        address, port, app, threaded=True, use_reloader=dev_mode, use_debugger=dev_mode
-    )
+    run_simple(address, port, app, threaded=True, use_reloader=True, use_debugger=True)
 
 
 def import_cmd(  # noqa: C901
-    data_dir, playlist, files, yes, meta=None, use_mtime=True, dev_mode=False
+    data_dir, playlist, files, yes, meta=None, use_mtime=False
 ):
     """Entry point for import script."""
 
@@ -54,7 +57,7 @@ def import_cmd(  # noqa: C901
 
     try:
         _check_data_dir(data_dir)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         err("ERROR: Problem with data directory.", str(e))
         sys.exit(1)
 
@@ -63,7 +66,8 @@ def import_cmd(  # noqa: C901
         sys.exit(1)
 
     if meta:
-        metadata = json.load(open(meta))
+        with open(meta) as f:
+            metadata = json.load(f)
     else:
         metadata = {}
 
@@ -71,14 +75,12 @@ def import_cmd(  # noqa: C901
     for filename in files:
         try:
             if filename in metadata or not meta:
-                song_data = _analyze_one_file(data_dir, playlist, filename)
-
+                song_data = _analyze_one_file(data_dir, playlist, filename, use_mtime)
                 if filename in metadata:
                     song_data[3].extend(
                         MetadataChange(key, metadata[filename][key])
                         for key in "artist title".split()
                     )
-
                 analysis_data.append(song_data)
             else:
                 print("Ignoring", filename)
@@ -108,7 +110,7 @@ def import_cmd(  # noqa: C901
     sys.exit(1 if count < len(files) else 0)
 
 
-def _analyze_one_file(data_dir, playlist, filename, use_mtime=True):
+def _analyze_one_file(data_dir, playlist, filename, use_mtime):
     if not os.path.exists(filename):
         raise UnprocessableEntity("File not found: " + filename)
 
@@ -134,7 +136,7 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime=True):
     return (filename, fileId, ext, actions)
 
 
-def fsck_cmd(data_dir, repair=False, dev_mode=False):  # noqa: C901
+def fsck_cmd(data_dir):  # noqa: C901
     """Entry point for fsck script."""
 
     song_id = None
@@ -194,7 +196,7 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):  # noqa: C901
                 err("WARNING: cue_in after more than ten seconds:", entries["cue_in"])
             if entries["cue_out"] < entries["length"] - 10:
                 err(
-                    "WARNING: cue_out earlier than ten seconds before end of " "song:",
+                    "WARNING: cue_out earlier than ten seconds before end of song:",
                     entries["cue_out"],
                 )
             if entries["cue_in"] > entries["cue_out"]:
@@ -247,16 +249,8 @@ def fsck_cmd(data_dir, repair=False, dev_mode=False):  # noqa: C901
     sys.exit(1 if err.count else 0)
 
 
-def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
-    if off_air:
-        with open(os.path.join(data_dir, "log", "current.json"), "w") as f:
-            json.dump(False, f)
-        return
-
+def playlog_cmd(data_dir, filename):
     file_id, ext = filename.split("/")[-1].split(".")
-
-    json_opts = {"indent": 2, "sort_keys": True} if dev_mode else {}
-
     now = datetime.datetime.now()
 
     # Update index cache
@@ -267,24 +261,22 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
         entry["last_play"] = now.isoformat()
         f.seek(0)
         f.truncate()
-        json.dump(data, f, **json_opts)
+        json.dump(data, f, indent=2, sort_keys=True)
         del data
 
-    # Update file metadata
+    # Update file metadata: Store `last_play` date as UNIX epoch.
     FileType = SUPPORTED_FILE_TYPES[ext]
     mutagenfile = FileType(filename)
     mutagenfile["last_play"] = str(now.timestamp())
     mutagenfile.save()
 
-    # Overwrite current.json
-    with open(os.path.join(data_dir, "log", "current.json"), "w") as f:
-        json.dump(entry, f, **json_opts)
-
     # Append to CSV log files
-    log_file_name = f"{now.year}-{now.month}.csv"
+    # FIXME: Zero prepend single digit months
+    log_file_name = f"{now.year}-{now.month:02d}.csv"
     log_file_path = os.path.join(data_dir, "log", log_file_name)
 
     if not os.path.exists(log_file_path):
+        # Initialize file for new month
         with open(log_file_path, "w", encoding="utf-8", newline="") as csv_file:
             fieldnames = ALLOWED_METADATA.keys()
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -304,7 +296,7 @@ def playlog_cmd(data_dir, filename, off_air=False, dev_mode=False):
 EXTERNAL_PLAY_LOGGER = os.environ.get("KLANGBECKEN_EXTERNAL_PLAY_LOGGER", "")
 
 
-def reanalyze_cmd(data_dir, ids, all=False, yes=False, dev_mode=False):
+def reanalyze_cmd(data_dir, ids, all, yes):
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
     if all:
@@ -328,16 +320,16 @@ def reanalyze_cmd(data_dir, ids, all=False, yes=False, dev_mode=False):
                 processor(data_dir, playlist, id, ext, file_changes)
 
 
-def main(dev_mode=False):
+def main():
     """Klangbecken audio playout system.
 
     Usage:
       klangbecken (--help | --version)
       klangbecken init [-d DATA_DIR]
-      klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
+      klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS] [-s PLAYER_SOCKET]
       klangbecken import [-d DATA_DIR] [-y] [-m] [-M FILE] PLAYLIST FILE...
-      klangbecken fsck [-d DATA_DIR] [-R]
-      klangbecken playlog [-d DATA_DIR] (--off | FILE)
+      klangbecken fsck [-d DATA_DIR]
+      klangbecken playlog [-d DATA_DIR] FILE
       klangbecken reanalyze [-d DATA_DIR] [-y] (--all | ID...)
 
     Options:
@@ -351,30 +343,29 @@ def main(dev_mode=False):
             Specify alternate port [default: 5000].
       -b ADDRESS, --bind=ADDRESS
             Specify alternate bind address [default: localhost].
+      -s PLAYER_SOCKET, --socket=PLAYER_SOCKET
+            Set the location or address of the liquisoap player socket.
+            This can either be the path to a UNIX domain socket file or
+            a domain name and port seperated by a colon (e.g. localhost:123)
+            [default: ./klangbecken.sock]
       -y, --yes
             Automatically answer yes to all questions.
       -m, --mtime
             Use file modification date as import timestamp.
       -M FILE, --meta=FILE
-            Read metadata from JSON file. Missing entries will be skipped.
-      -R, --repair
-            Try to repair index.
-      --off
-            Take klangbecken off the air.
+            Read metadata from JSON file. Files without entries are skipped.
       --all
             Reanalyze all files.
     """
-    from docopt import docopt
-
     from . import __version__
 
-    args = docopt(main.__doc__, version=f"Klangbecken {__version__}")
+    args = docopt.docopt(main.__doc__, version=f"Klangbecken {__version__}")
 
     data_dir = args["--data"]
 
     if os.path.exists(data_dir) and not os.path.isdir(data_dir):
         print(
-            f"ERROR: Data directory '{data_dir}' exists, but is not a " "directory.",
+            f"ERROR: Data directory '{data_dir}' exists, but is not a directory.",
             file=sys.stderr,
         )
         exit(1)
@@ -385,13 +376,8 @@ def main(dev_mode=False):
 
     if args["init"]:
         init_cmd(data_dir)
-    elif args["serve"]:
-        serve_cmd(
-            data_dir,
-            address=args["--bind"],
-            port=int(args["--port"]),
-            dev_mode=dev_mode,
-        )
+    elif args["serve"]:  # pragma: no cover
+        serve_cmd(args["--bind"], int(args["--port"]), data_dir, args["--socket"])
     elif args["import"]:
         import_cmd(
             data_dir,
@@ -400,16 +386,10 @@ def main(dev_mode=False):
             yes=args["--yes"],
             meta=args["--meta"],
             use_mtime=args["--mtime"],
-            dev_mode=dev_mode,
         )
     elif args["fsck"]:
-        fsck_cmd(data_dir, repair=args["--repair"], dev_mode=dev_mode)
+        fsck_cmd(data_dir)
     elif args["playlog"]:
-        if args["--off"]:
-            playlog_cmd(data_dir, "", args["--off"], dev_mode=dev_mode)
-        else:
-            playlog_cmd(data_dir, args["FILE"][0], dev_mode=dev_mode)
+        playlog_cmd(data_dir, args["FILE"][0])
     elif args["reanalyze"]:
-        reanalyze_cmd(
-            data_dir, args["ID"], args["--all"], args["--yes"], dev_mode=dev_mode
-        )
+        reanalyze_cmd(data_dir, args["ID"], args["--all"], args["--yes"])

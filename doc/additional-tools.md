@@ -73,12 +73,12 @@ _update_path
 
 #### Automate formatting using pre-commit
 
-After registering hooks with `init` pre-commit will abort commits if there are black, isort or flake8 changes to be made. If machine fixable (ie. black and isort) pre-commit usually applies those changes leaving you to stage them using `git add` before retrying your commit.
+After registering hooks with `install` pre-commit will abort commits if there are black, isort or flake8 changes to be made. If machine fixable (ie. black and isort) pre-commit usually applies those changes leaving you to stage them using `git add` before retrying your commit.
 
 
 ```bash
 pip install pre-commit
-pre-commit init
+pre-commit install
 ```
 
 Store the following configuration in `.pre-commit-config.yaml`:

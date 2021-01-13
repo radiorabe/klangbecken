@@ -1,177 +1,73 @@
-import datetime
-import functools
-import json
 import os
+import re
 import subprocess
 import sys
 import uuid
 
-import jwt
-from werkzeug.exceptions import (
-    HTTPException,
-    NotFound,
-    Unauthorized,
-    UnprocessableEntity,
-)
-from werkzeug.routing import Map, Rule
-from werkzeug.wrappers import Request, Response
+from werkzeug.exceptions import NotFound, UnprocessableEntity
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
+from . import __version__
+from .api_utils import API, DummyAuth, ExternalAuth
+from .player import LiquidsoapClient
 from .playlist import (
     DEFAULT_PROCESSORS,
     DEFAULT_UPDATE_ANALYZERS,
     DEFAULT_UPLOAD_ANALYZERS,
     FileDeletion,
     MetadataChange,
-    playnext_processor,
 )
 from .settings import PLAYLISTS, SUPPORTED_FILE_TYPES
 from .utils import _check_data_dir
 
 
-############
-# HTTP API #
-############
-class KlangbeckenAPI:
-    def __init__(
-        self,
-        data_dir,
-        secret,
-        upload_analyzers=DEFAULT_UPLOAD_ANALYZERS,
-        update_analyzers=DEFAULT_UPDATE_ANALYZERS,
-        processors=DEFAULT_PROCESSORS,
-        disable_auth=False,
-    ):
-        self.data_dir = data_dir
-        self.secret = secret
-        self.upload_analyzers = upload_analyzers
-        self.update_analyzers = update_analyzers
-        self.processors = processors
-        self.do_auth = not disable_auth
+def klangbecken_api(secret, data_dir, player_socket):
+    """Construct the Klangbecken API WSGI application.
 
-        playlist_url = "/<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
-        file_url = (
-            playlist_url
-            + "<uuid:fileId>.<any("
-            + ", ".join(SUPPORTED_FILE_TYPES.keys())
-            + "):ext>"
-        )
+    This combines the two APIs for the playlists and the player
+    with the authorization middleware.
+    """
+    playlist = playlist_api(
+        data_dir, DEFAULT_UPLOAD_ANALYZERS, DEFAULT_UPDATE_ANALYZERS, DEFAULT_PROCESSORS
+    )
+    player = player_api(LiquidsoapClient(player_socket), data_dir)
 
-        self.url_map = Map(
-            rules=(
-                Rule("/auth/login/", methods=("GET", "POST"), endpoint="login"),
-                Rule("/auth/renew/", methods=("POST",), endpoint="renew"),
-                Rule(playlist_url, methods=("POST",), endpoint="upload"),
-                Rule(file_url, methods=("PUT",), endpoint="update"),
-                Rule(file_url, methods=("DELETE",), endpoint="delete"),
-                Rule("/playnext/", methods=("POST",), endpoint="play_next"),
-            )
-        )
+    app = API()
+    app.GET("/")(
+        lambda request: f"Welcome to the Klangbecken API version {__version__}"
+    )
+    app = DispatcherMiddleware(app, {"/playlist": playlist, "/player": player})
+    auth_exempts = [
+        ("GET", "/player/"),
+        ("GET", "/player/queue/"),
+    ]
+    app = ExternalAuth(app, secret, exempt=auth_exempts)
+    return app
 
-    def __call__(self, environ, start_response):
-        try:
-            request = Request(environ)
-            adapter = self.url_map.bind_to_environ(environ)
-            endpoint, values = adapter.match()
 
-            # Check authorization
-            if self.do_auth and endpoint not in ("login", "renew"):
-                if "Authorization" not in request.headers:
-                    raise Unauthorized("No authorization header supplied")
+def playlist_api(  # noqa: C901
+    data_dir, upload_analyzers, update_analyzers, processors
+):
+    """Create API for static playlists editing.
 
-                auth = request.headers["Authorization"]
-                if not auth.startswith("Bearer "):
-                    raise Unauthorized("Invalid authorization header")
+    Audio files can be uploaded into a paylist, be removed from playlist, and
+    metadata about these audio files can be modified.
+    """
 
-                token = auth[len("Bearer ") :]
-                try:
-                    jwt.decode(
-                        token,
-                        self.secret,
-                        algorithms=["HS256"],
-                        options={"require_exp": True, "require_iat": True},
-                    )
-                except jwt.InvalidTokenError:
-                    raise Unauthorized("Invalid token")
+    playlist_url = "/<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
+    file_url = (
+        playlist_url
+        + "<uuid:fileId>.<any("
+        + ", ".join(SUPPORTED_FILE_TYPES.keys())
+        + "):ext>"
+    )
 
-            # Dispatch request
-            response = getattr(self, "on_" + endpoint)(request, **values)
-        except HTTPException as e:
-            response = JSONResponse(
-                {"code": e.code, "name": e.name, "description": e.description},
-                status=e.code,
-            )
-        return response(environ, start_response)
+    api = API()
 
-    def on_login(self, request):
-        if request.remote_user is None:
-            raise Unauthorized()
-
-        user = request.remote_user
-        now = datetime.datetime.utcnow()
-        claims = {"user": user, "iat": now, "exp": now + datetime.timedelta(minutes=15)}
-        token = jwt.encode(claims, self.secret, algorithm="HS256")
-
-        return JSONResponse({"token": token})
-
-    def on_renew(self, request):  # noqa: C901
-        try:
-            data = json.loads(str(request.data, "utf-8"))
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity(
-                "Cannot parse POST request: " "invalid UTF-8 data"
-            )
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse POST request: " "invalid JSON")
-        if not isinstance(data, dict):
-            raise UnprocessableEntity(
-                "Invalid data format: " "associative array expected"
-            )
-        if "token" not in data:
-            raise UnprocessableEntity("Invalid data format: " 'Key "token" not found')
-
-        token = data["token"]
-
-        now = datetime.datetime.utcnow()
-        try:
-            # Valid tokens can always be renewed withing their short lifetime,
-            # independent of the issuing date
-            claims = jwt.decode(
-                token,
-                self.secret,
-                algorithms=["HS256"],
-                options={"require_exp": True, "require_iat": True},
-            )
-        except jwt.ExpiredSignatureError:
-            try:
-                # Expired tokens can be renewed for at most one week after the
-                # first issuing date
-                claims = jwt.decode(
-                    token,
-                    self.secret,
-                    algorithms=["HS256"],
-                    options={
-                        "require_exp": True,
-                        "require_iat": True,
-                        "verify_exp": False,
-                    },
-                )
-                issued_at = datetime.datetime.utcfromtimestamp(claims["iat"])
-                if issued_at + datetime.timedelta(days=7) < now:
-                    raise Unauthorized()
-            except jwt.InvalidTokenError:
-                raise Unauthorized()
-        except jwt.InvalidTokenError:
-            raise Unauthorized()
-
-        claims["exp"] = now + datetime.timedelta(minutes=15)
-
-        token = jwt.encode(claims, self.secret, algorithm="HS256")
-
-        return JSONResponse({"token": token})
-
-    def on_upload(self, request, playlist):
+    @api.POST(playlist_url)
+    def playlist_upload(request, playlist):
         if "file" not in request.files:
-            raise UnprocessableEntity("No attribute named 'file' found.")
+            raise UnprocessableEntity("No file attribute named 'file' found.")
 
         try:
             uploadFile = request.files["file"]
@@ -180,168 +76,148 @@ class KlangbeckenAPI:
             fileId = str(uuid.uuid4())  # Generate new file id
 
             actions = []
-            for analyzer in self.upload_analyzers:
+            for analyzer in upload_analyzers:
                 actions += analyzer(playlist, fileId, ext, uploadFile)
 
-            for processor in self.processors:
-                processor(self.data_dir, playlist, fileId, ext, actions)
+            for processor in processors:
+                processor(data_dir, playlist, fileId, ext, actions)
 
-            response = {}
-            for change in actions:
-                if isinstance(change, MetadataChange):
-                    response[change.key] = change.value
+            response = {
+                change.key: change.value
+                for change in actions
+                if isinstance(change, MetadataChange)
+            }
         finally:
             uploadFile.close()
 
-        return JSONResponse({fileId: response})
+        return {fileId: response}
 
-    def on_update(self, request, playlist, fileId, ext):
+    @api.PUT(file_url)
+    def playlist_update(request, playlist, fileId, ext, data):
         fileId = str(fileId)
 
         actions = []
-        try:
-            data = json.loads(str(request.data, "utf-8"))
-            for analyzer in self.update_analyzers:
-                actions += analyzer(playlist, fileId, ext, data)
+        for analyzer in update_analyzers:
+            actions += analyzer(playlist, fileId, ext, data)
 
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
+        for processor in processors:
+            processor(data_dir, playlist, fileId, ext, actions)
 
-        for processor in self.processors:
-            processor(self.data_dir, playlist, fileId, ext, actions)
-
-        return JSONResponse({"status": "OK"})
-
-    def on_delete(self, request, playlist, fileId, ext):
+    @api.DELETE(file_url)
+    def on_playlist_delete(request, playlist, fileId, ext):
         fileId = str(fileId)
 
         change = [FileDeletion()]
-        for processor in self.processors:
-            processor(self.data_dir, playlist, fileId, ext, change)
+        for processor in processors:
+            processor(data_dir, playlist, fileId, ext, change)
 
-        return JSONResponse({"status": "OK"})
+    return api
 
-    def on_play_next(self, request):
+
+def player_api(client, data_dir):
+    """Create API to interact with the Liquidsoap player.
+
+    It supports:
+     - Getting player information
+     - Handling a dynamic song queue
+    """
+    api = API()
+
+    @api.GET("/")
+    def player_info(request):
         try:
-            data = json.loads(str(request.data, "utf-8"))
-            playnext_processor(self.data_dir, data)
+            with client:
+                return client.info()
+        except (FileNotFoundError, ConnectionRefusedError):
+            raise NotFound("Player not running")
 
-        except (UnicodeDecodeError, TypeError):
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid UTF-8 data")
-        except ValueError:
-            raise UnprocessableEntity("Cannot parse PUT request: " "invalid JSON")
-
-        return JSONResponse({"status": "OK"})
+    return DispatcherMiddleware(api, {"/queue": queue_api(client, data_dir)})
 
 
-class JSONResponse(Response):
-    """JSON response helper creates JSON responses."""
+def queue_api(client, data_dir):
+    api = API()
 
-    def __init__(self, data, status=200, **json_opts):
-        super(JSONResponse, self).__init__(
-            json.dumps(data, **json_opts), status=status, mimetype="text/json"
+    @api.GET("/")
+    def queue_list(request):
+        with client:
+            return client.queue()
+
+    @api.POST("/")
+    def queue_push(request, filename: str):
+        filename_re = r"^({0})/([^/.]+).({1})$".format(
+            "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
         )
+        if not re.match(filename_re, filename):
+            raise UnprocessableEntity("Invalid file path format")
 
+        with client:
+            path = os.path.join(data_dir, filename)
+            if not os.path.isfile(path):
+                raise NotFound(f"File not found: {filename}")
+            queue_id = client.push(path)
+            return {"queue_id": queue_id}
 
-class JSONSerializer:
-    @staticmethod
-    def dumps(obj):
-        # UTF-8 encoding is default in Python 3+
-        return json.dumps(obj).encode("utf-8")
+    @api.DELETE("/<queue_id>")
+    def queue_delete(request, queue_id):
+        with client:
+            client.delete(queue_id)
 
-    @staticmethod
-    def loads(serialized):
-        # UTF-8 encoding is default in Python 3+
-        return json.loads(str(serialized, "utf-8"))
+    return api
 
 
 ###########################
 # Stand-alone Application #
 ###########################
-class StandaloneWebApplication:
+def development_server(data_dir, player_socket):
     """
-    Stand-alone Klangbecken WSGI application for testing and development.
+    Construct the stand-alone Klangbecken WSGI application for testing and development.
 
     * Serves data files from the data directory
-    * Relays API calls to the KlangbeckenAPI instance
+    * Relays API calls to the API
 
-    Authentication is disabled. Loudness and silence analysis are skipped,
+    Authentication is simulated. Loudness and silence analysis are skipped,
     if ffmpeg binary is missing.
     """
+    from werkzeug.middleware.shared_data import SharedDataMiddleware
 
-    def __init__(self, data_dir, secret):
-        from werkzeug.middleware.dispatcher import DispatcherMiddleware
-        from werkzeug.middleware.shared_data import SharedDataMiddleware
+    from .playlist import ffmpeg_audio_analyzer, mutagen_tag_analyzer, raw_file_analyzer
 
-        from .playlist import (
-            check_processor,
-            ffmpeg_audio_analyzer,
-            file_tag_processor,
-            filter_duplicates_processor,
-            index_processor,
-            mutagen_tag_analyzer,
-            playlist_processor,
-            raw_file_analyzer,
-            raw_file_processor,
+    # Check data dirrectory structure
+    _check_data_dir(data_dir)
+
+    # Only add ffmpeg_audio_analyzer to analyzers if binary is present
+    upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
+    try:
+        subprocess.check_output("ffmpeg -version".split())
+        upload_analyzers.append(ffmpeg_audio_analyzer)
+    except (OSError, subprocess.CalledProcessError):  # pragma: no cover
+        print(
+            "WARNING: ffmpeg binary not found. No audio analysis is performed.",
+            file=sys.stderr,
         )
 
-        # Check data directory structure
-        _check_data_dir(data_dir)
+    # Create a slightly customized application
+    playlist = playlist_api(
+        data_dir, upload_analyzers, DEFAULT_UPDATE_ANALYZERS, DEFAULT_PROCESSORS
+    )
 
-        # Only add ffmpeg_audio_analyzer to analyzers if binary is present
-        upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
-        try:
-            subprocess.check_output("ffmpeg -version".split())
-            upload_analyzers.append(ffmpeg_audio_analyzer)
-        except (OSError, subprocess.CalledProcessError):  # pragma: no cover
-            print(
-                "WARNING: ffmpeg binary not found. " "No audio analysis is performed.",
-                file=sys.stderr,
-            )
+    player = player_api(LiquidsoapClient(player_socket), data_dir)
 
-        # Slightly modify processors, such that index.json is pretty-printed
-        processors = [
-            check_processor,
-            filter_duplicates_processor,
-            raw_file_processor,
-            functools.partial(
-                index_processor, json_opts={"indent": 2, "sort_keys": True}
-            ),
-            file_tag_processor,
-            playlist_processor,
-        ]
+    dummy_app = API()
+    dummy_app.GET("/")(
+        lambda request: f"Welcome to the Klangbecken API version {__version__}"
+    )
 
-        # Create customized KlangbeckenAPI application
-        api = KlangbeckenAPI(
-            data_dir, secret, upload_analyzers=upload_analyzers, processors=processors
-        )
+    api = DispatcherMiddleware(dummy_app, {"/playlist": playlist, "/player": player})
+    auth_exempt = [
+        ("GET", "/player/"),
+        ("GET", "/player/queue/"),
+    ]
+    api = DummyAuth(api, "no secret", exempt=auth_exempt)
 
-        # Return 404 Not Found by default
-        app = NotFound()
-        # Serve static files from the data directory
-        app = SharedDataMiddleware(app, {"/data": data_dir})
-        # Relay requests to /api to the KlangbeckenAPI instance
-        app = DispatcherMiddleware(app, {"/api": api})
+    # Serve static files from the data directory
+    app = SharedDataMiddleware(dummy_app, {"/data": data_dir})
+    # Relay requests to /api to the klangbecken_api instance
+    app = DispatcherMiddleware(app, {"/api": api})
 
-        self.app = app
-
-    def __call__(self, environ, start_response):
-        # Insert dummy user for authentication
-        # (normally done externally)
-        environ["REMOTE_USER"] = "dummyuser"
-
-        # Be nice
-        if environ["PATH_INFO"] == "/":
-            msg = b"Welcome to the Klangbecken API!\n"
-            start_response(
-                "200 OK",
-                [
-                    ("Content-Type", "text/plain"),
-                    ("Content-Length", str(len(msg))),
-                ],
-            )
-            return [msg]
-
-        return self.app(environ, start_response)
+    return app

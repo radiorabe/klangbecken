@@ -4,7 +4,7 @@
 
 The API uses JSON web tokens (JWT) for authentication.  The underlying authentication must be provided, by intercepting calls to `/api/auth/login`. The API does not specify a specific authentication method, like password-based or Kerberos, but expects to receive a valid `REMOTE_USER` string upon a successful authentication.
 
-Tokens are valid for 15 minutes. Valid tokens can be renewed indefinitely, and expired tokens can be renewed during one week after first issueing.
+Tokens are valid for 15 minutes. Valid tokens can be renewed indefinitely, and expired tokens can be renewed during one week after first issueing them.
 
 Base: `/api/auth`
 
@@ -23,11 +23,27 @@ Base: `/api/playlist`
 
 Endpoint | Method | Description
 ---------|--------|------------
-`/<PLAYLIST>/`| `POST`| Create new entry to playlist, by uploading an audio file. Returns all parsed and generated metadata.
+`/<PLAYLIST>/`| `POST`| Create new entry to playlist by uploading an audio file. Returns all generated metadata.
 `/<PLAYLIST>/<UUID>.<EXT>`|  `PUT`|  Update playlist entry metadata. Allowed keys are `artist`, `title`, `album` and `weight`.
 `/<PLAYLIST>/<UUID>.<EXT>`| `DELETE` | Delete playlist entry.
 
 Endpoint example: `/api/playlist/jingles/9967f00b-883a-4aa0-98e7-5085cdc380d3.mp3`
+
+## Player
+
+The player API allows getting information about the running audio player and edit a "play next" queue.
+
+Base: `/api/player`
+
+Endpoint | Method | Description
+---------|--------|------------
+`/`| `GET`| Get player information.
+`/queue/` | `GET` | List queue entries.
+`/queue/` | `POST` | Add audio track to queue. Requires a `filename` argument and returns the `queue_id`.
+`/queue/<QUEUE_ID>` | `DELETE` | Delete queue entry.
+
+
+Endpoint example: `/api/player/queue/15`
 
 ## Static Data
 
@@ -40,4 +56,4 @@ Endpoint | Description | Example
 `/index.json` | Metadata cache | `/data/index.json`
 `/<PLAYLIST>.m3u` | Playlist files | `/data/music.m3u`
 `/<PLAYLIST>/<UUID>.<EXT>`| Audio files | `/data/jingles/9967f00b-883a-4aa0-98e7-5085cdc380d3.mp3`
-`/log/<YEAR>-<MONTH>.csv`| Monthly play log | `/data/log/2020-8.csv`
+`/log/<YEAR>-<MONTH>.csv`| Monthly play log | `/data/log/2020-08.csv`

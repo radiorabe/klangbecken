@@ -35,6 +35,9 @@ class API:
     >>> body, code, *_ = client.post("/", data="[1, 2, 3]")
     [1, 2, 3]
 
+    >>> body, code, *_ = client.post("/", data="{}")
+    >>> code
+    '422 UNPROCESSABLE ENTITY'
 
     And finally requesting a dict in the POST data with specified fields (and types)
 
@@ -186,8 +189,11 @@ class API:
         return self.route(string, ("DELETE",))
 
     def _json_response(self, data, status=200):
-        data = json.dumps(data, indent=2, sort_keys=True) + "\n"
-        return werkzeug.Response(data, status=status, mimetype="text/json")
+        if data is None:
+            return werkzeug.Response(status=status)
+        else:
+            data = json.dumps(data, indent=2, sort_keys=True) + "\n"
+            return werkzeug.Response(data, status=status, mimetype="text/json")
 
     def __call__(self, environ, start_response):
         try:
@@ -208,6 +214,7 @@ class API:
                 {
                     "code": 500,
                     "name": "Internal Server Error",
+                    # "description": f"{e.__class__.__name__}: {str(e)}",
                 },
                 status=500,
             )
@@ -340,6 +347,8 @@ class BaseJWTAuthMiddleware:
                 algorithms=["HS256"],
                 options={"require_exp": True, "require_iat": True},
             )
+        except jwt.ExpiredSignatureError:
+            raise Unauthorized("Expired token")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
 
@@ -363,26 +372,23 @@ class BaseJWTAuthMiddleware:
                 options={"require_exp": True, "require_iat": True},
             )
         except jwt.ExpiredSignatureError:
-            try:
-                # Expired tokens can be renewed for at most one week after the
-                # first issuing date
-                claims = jwt.decode(
-                    token,
-                    self.secret,
-                    algorithms=["HS256"],
-                    options={
-                        "require_exp": True,
-                        "require_iat": True,
-                        "verify_exp": False,
-                    },
-                )
-                issued_at = datetime.datetime.utcfromtimestamp(claims["iat"])
-                if issued_at + datetime.timedelta(days=7) < now:
-                    raise Unauthorized()
-            except jwt.InvalidTokenError:
-                raise Unauthorized()
+            # Expired tokens can be renewed for at most one week after the
+            # first issuing date
+            claims = jwt.decode(
+                token,
+                self.secret,
+                algorithms=["HS256"],
+                options={
+                    "require_exp": True,
+                    "require_iat": True,
+                    "verify_exp": False,
+                },
+            )
+            issued_at = datetime.datetime.utcfromtimestamp(claims["iat"])
+            if issued_at + datetime.timedelta(days=7) < now:
+                raise Unauthorized("Unrenewable expired token")
         except jwt.InvalidTokenError:
-            raise Unauthorized()
+            raise Unauthorized("Invalid token")
 
         claims["exp"] = now + datetime.timedelta(minutes=15)
 
@@ -394,16 +400,15 @@ class BaseJWTAuthMiddleware:
         """Authenticate user.
 
         Returns a user identification if authentication passed.
-        Raises Unauthorized otherwise.
+        Raises Unauthorized otherwise.  This method must be overwritten
+        in an implementation class.
         """
-        raise Unauthorized()
+        raise Unauthorized()  # pragma: no cover
 
 
 class ExternalAuth(BaseJWTAuthMiddleware):
-    def __init__(self, *args, **kwargs):
-        if "login_methods" not in kwargs:
-            kwargs["login_methods"] = ("GET", "POST")
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, login_methods=("GET", "POST"), **kwargs):
+        super().__init__(*args, login_methods=login_methods, **kwargs)
 
     def authenticate(self, request):
         if request.remote_user is None:

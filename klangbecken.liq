@@ -12,13 +12,6 @@
 #     Path to socket to listen on                   #
 # ================================================= #
 
-# set setting to getenv(var) if set
-def set_if_env(setting, var) =
-  if getenv(var) != "" then
-    set(setting, getenv(var))
-  end
-end
-
 # return value of environment variable if set, otherwise fallback
 def getenv_fallback(var, fallback) =
   if getenv(var) != "" then
@@ -37,7 +30,7 @@ set("log.level", 3)
 
 # socket
 set("server.socket", true)
-set_if_env("server.socket.path", "KLANGBECKEN_SOCKET_PATH")
+set("server.socket.path", getenv_fallback("KLANGBECKEN_SOCKET_PATH", "./klangbecken.sock"))
 
 # Get the Klangbecken data directory
 DATA_DIR = getenv_fallback("KLANGBECKEN_DATA", "data")
@@ -45,10 +38,9 @@ if not is_directory(DATA_DIR) then
     log(level=2, "ERROR: Cannot find data directory: " ^ DATA_DIR)
     shutdown()
 end
-INDEX = path.concat(DATA_DIR, "index.json")
 
 # Get the klangecken command
-CMD_PATH = getenv_fallback("KLANGBECKEN_PATH", "./klangbecken.py")
+CMD_PATH = getenv_fallback("KLANGBECKEN_PATH", "python -m klangbecken")
 
 # Get the alsa device
 ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
@@ -67,7 +59,7 @@ end
 
 # check if track was played recently
 skipped = ref 0
-def check_next_func(r) = 
+def check_next_func(r) =
   metadata = request.metadata(r)
   filename = request.filename(r)
 
@@ -78,9 +70,7 @@ def check_next_func(r) =
     true
   else
     diff = gettimeofday() - last_play
-    filename_split = string.split(filename, separator="/")
-    # the playlist folder is the penultimate part of the file path
-    playlist = list.nth(filename_split, list.length(filename_split)-2, default="")
+    playlist = metadata["source"]
     if diff < calc_wait(playlist) then
       skipped := !skipped + 1
       log("track was recently played: #{filename} (#{diff} seconds ago)", label="check_next_func")
@@ -99,10 +89,12 @@ def check_next_func(r) =
   end
 end
 
-# Priority playlist for 'play next' feature
-prio = playlist.once(id="prio", reload_mode="watch", path.concat(DATA_DIR, "prio.m3u"))
+# Priority queue
+queue = request.equeue(id="queue", length=5.0)
+# Convert mono jingles to stereo
+queue = audio_to_stereo(queue)
 # Cut silence at start and end
-prio = cue_cut(prio, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
+queue = cue_cut(queue, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Music playlist
 music = playlist(id="music", mode="random", reload_mode="watch",
@@ -133,7 +125,7 @@ music = random(weights=[5, 1], [music, classics])
 
 
 # ================================================= #
-# INSERT JINGLE AND PRIO WHEN NEEDED                #
+# INSERT JINGLE AND QUEUE TRACKS WHEN NEEDED        #
 # ================================================= #
 
 insert_jingle = ref false
@@ -151,19 +143,13 @@ add_timeout(0.0, jingle_timeout)
 
 radio = switch(id="radio", [
   ({!insert_jingle}, jingles),
-  ({!onair}, prio),
+  ({!onair}, queue),
   ({true}, music),
 ])
 
 def on_track_func(m) =
   # Reset jingle playing flag
   insert_jingle := false
-
-  # Clear prio playlist if on air
-  if !onair and m['source'] == "prio" then
-    log("resetting prio playlist", label="on_track_func")
-    system("echo > #{DATA_DIR}/prio.m3u")
-  end
 end
 radio = on_track(on_track_func, radio)
 
@@ -175,22 +161,28 @@ radio = on_track(on_track_func, radio)
 restart = ref true
 
 def onair_func(state) =
-  onair := bool_of_string(string.case(state))
-  if !onair then
-    log("starting Klangbecken", label="onair_func")
-    restart := true
-    source.skip(radio)
-    "Klangbecken started"
+  state = string.case(state)
+  state = string.trim(state)
+  if state == "" then
+    # Return state
+    "#{!onair}"
   else
-    log("stopping Klangbecken", label="onair_func")
-    system("#{CMD_PATH} playlog -d #{DATA_DIR} --off")
-    "Klangbecken stopped"
+    onair := bool_of_string(state)
+    if !onair then
+      log("Starting Klangbecken")
+      restart := true
+      source.skip(radio)
+      "Klangbecken started"
+    else
+      log("Stopping Klangbecken")
+      "Klangbecken stopped"
+    end
   end
 end
 
 server.register(namespace='klangbecken',
-                description="Control, if the player is on air",
-                usage="onair (true|false)",
+                description="Control, if the player is on air. Returns the current state, if called without argument.",
+                usage="onair [true|false]",
                 "onair",
                 onair_func)
 
