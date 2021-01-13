@@ -346,6 +346,8 @@ class BaseJWTAuthMiddleware:
                 algorithms=["HS256"],
                 options={"require_exp": True, "require_iat": True},
             )
+        except jwt.ExpiredSignatureError:
+            raise Unauthorized("Expired token")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
 
