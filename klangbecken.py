@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 ##############################################################################
-# klangbecken_api.py - Klangbecken API                                       #
+# klangbecken.py - Klangbecken API and Command Line Util                     #
 ##############################################################################
 #
 # Copyright 2017-2020 Radio Bern RaBe, Switzerland, https://rabe.ch
@@ -44,7 +44,6 @@ import mutagen.easyid3
 import mutagen.flac
 import mutagen.mp3
 import mutagen.oggvorbis
-import pkg_resources
 from werkzeug.exceptions import (
     HTTPException,
     NotFound,
@@ -54,10 +53,8 @@ from werkzeug.exceptions import (
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 
-try:
-    __version__ = pkg_resources.get_distribution("klangbecken").version
-except pkg_resources.DistributionNotFound:  # pragma: no cover
-    __version__ = "development version"
+
+__version__ = "0.0.12-dev"
 
 
 ############
@@ -99,7 +96,7 @@ ALLOWED_METADATA = {
     "cue_in": (float, lambda n: n >= 0.0),
     "cue_out": (float, lambda n: n >= 0.0),
     "play_count": (int, lambda n: n >= 0),
-    "last_play": (str, r"^(^$)|(^{0}$)".format(ISO8601_RE)),
+    "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_RE)),
 }
 
 UPDATE_KEYS = "artist title album weight".split()
@@ -120,6 +117,10 @@ FileDeletion = collections.namedtuple("FileDeletion", ())
 # Analyzers #
 #############
 def raw_file_analyzer(playlist, fileId, ext, file_):
+    """Initial analysis of the file.
+
+    Set the import timestamp, and default values for various metadata fields.
+    """
     if not file_:
         raise UnprocessableEntity("No File found")
 
@@ -143,6 +144,10 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
 
 
 def mutagen_tag_analyzer(playlist, fileId, ext, file_):
+    """Extract tag information from the file.
+
+    Artist name, track title, album title and track length are extracted.
+    """
     with _mutagenLock:
         MutagenFileType = SUPPORTED_FILE_TYPES[ext]
         try:
@@ -167,6 +172,13 @@ trackgain_re = re.compile(r"replaygain.*track_gain = (\S* dB)")
 
 
 def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
+    """Analyze the audio data with ffmpeg.
+
+    This function does two things:
+    - Calculate the replaygain value for loudness normalization.
+    - Detect silence periods at the start and end of the track, and
+      calculate the according cue points.
+    """
     # To make sure that we find the correct cue_out point, we append ~0.2 seconds
     # of silence to the end of the track (with the `apad=pad_len=10000` option).
     # This guarantees that we always find at least one silence period.
@@ -204,7 +216,8 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
 
         # Fix negative values from old ffmpeg versions:
         # End_times might be empty for silence only tracks (and old ffmpeg versions)
-        # Also, old versions of ffmpeg return small negative values (-0.01) instead of 0.0
+        # Also, old versions of ffmpeg return small negative values (-0.01) instead
+        # of 0.0
         cue_in = max(end_times[:1] + [0.0])
     else:
         # First silence period begins somewehere in the middle of the track
@@ -225,7 +238,8 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         # This will generate an error when uploading, and thus make it easier to sort
         # out bogus audio tracks, or catch clearly wrong audio file analysis results.
         raise UnprocessableEntity(
-            f"Too much silence ({cue_in}s) found at the start of the track: Check your file."
+            f"Too much silence ({cue_in}s) found at the start of the track: "
+            f"Check your file."
         )
 
     file_.seek(0)
@@ -244,6 +258,7 @@ DEFAULT_UPLOAD_ANALYZERS = [
 
 
 def update_data_analyzer(playlist, fileId, ext, data):
+    """Prevent updating illegal fields."""
     changes = []
     if not isinstance(data, dict):
         raise UnprocessableEntity("Invalid data format: associative array expected")
@@ -261,6 +276,11 @@ DEFAULT_UPDATE_ANALYZERS = [update_data_analyzer]
 # Processors #
 ##############
 def check_processor(data_dir, playlist, fileId, ext, changes):  # noqa: C901
+    """Validate metadata changes.
+
+    Enforce type and contract checks.
+    """
+
     for change in changes:
         if isinstance(change, MetadataChange):
             key, val = change
@@ -301,6 +321,7 @@ def check_processor(data_dir, playlist, fileId, ext, changes):  # noqa: C901
 
 
 def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
+    """Prevent uploading of obvious duplicate audio tracks."""
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
 
@@ -331,6 +352,7 @@ def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
 
 
 def raw_file_processor(data_dir, playlist, fileId, ext, changes):
+    """Store or delete the file in or from the file system."""
     path = os.path.join(data_dir, playlist, fileId + "." + ext)
     for change in changes:
         if isinstance(change, FileAddition):
@@ -350,6 +372,7 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
 
 
 def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
+    """Save metadata in the index cache."""
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
         for change in changes:
@@ -382,6 +405,7 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play", desc="LAST_PLAY")
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
+    """Save metadata in audio file tags."""
     with _mutagenLock:
         mutagenfile = None
         for change in changes:
@@ -400,6 +424,11 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
 
 
 def playlist_processor(data_dir, playlist, fileId, ext, changes):
+    """Modify the playlist files.
+
+    Remove the file from the playlist when deleting, or change it's weight
+    in the playlist.
+    """
     playlist_path = os.path.join(data_dir, playlist + ".m3u")
     for change in changes:
         if isinstance(change, FileDeletion):
@@ -465,6 +494,10 @@ _mutagenLock = threading.Lock()
 
 @contextlib.contextmanager
 def locked_open(path, mode="r+"):
+    """Lock a file for writing.
+
+    Serialize access from other threads and processes (voluntary).
+    """
     if path not in _locks:
         _locks[path] = threading.Lock()
     with _locks[path]:  # Prevent more than one thread accessing the file
@@ -774,7 +807,10 @@ class StandaloneWebApplication:
             msg = b"Welcome to the Klangbecken API!\n"
             start_response(
                 "200 OK",
-                [("Content-Type", "text/plain"), ("Content-Length", str(len(msg)))],
+                [
+                    ("Content-Type", "text/plain"),
+                    ("Content-Length", str(len(msg))),
+                ],
             )
             return [msg]
 

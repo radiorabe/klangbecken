@@ -158,7 +158,7 @@ class DataDirCreatorTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testDataDirCheckOnly(self):
-        from klangbecken import _check_data_dir, PLAYLISTS
+        from klangbecken import PLAYLISTS, _check_data_dir
 
         for playlist in PLAYLISTS + ("prio",):
             path = os.path.join(self.tempdir, playlist)
@@ -183,7 +183,7 @@ class DataDirCreatorTestCase(unittest.TestCase):
         _check_data_dir(self.tempdir, False)
 
     def testDataDirCreation(self):
-        from klangbecken import _check_data_dir, PLAYLISTS
+        from klangbecken import PLAYLISTS, _check_data_dir
 
         _check_data_dir(self.tempdir, create=True)
         for playlist in PLAYLISTS:

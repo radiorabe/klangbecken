@@ -35,7 +35,7 @@ class FsckTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testTooShortMusicFile(self):
-        from klangbecken import main, import_cmd
+        from klangbecken import import_cmd, main
 
         # Correctly import a couple of files
         file_path = os.path.join(self.current_path, "audio", "padded.ogg")
@@ -246,7 +246,7 @@ class FsckTestCase(unittest.TestCase):
             sys.arv = argv
 
     def testTagsValueMismatch(self):
-        from klangbecken import main, SUPPORTED_FILE_TYPES
+        from klangbecken import SUPPORTED_FILE_TYPES, main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 

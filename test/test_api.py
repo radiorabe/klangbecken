@@ -5,8 +5,8 @@ import shutil
 import tempfile
 import unittest
 import uuid
+from unittest import mock
 
-import mock
 from werkzeug.datastructures import FileStorage
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 from werkzeug.test import Client
@@ -23,7 +23,7 @@ class WSGIAppTest(unittest.TestCase):
 
 class APITestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken import KlangbeckenAPI, FileAddition, MetadataChange
+        from klangbecken import FileAddition, KlangbeckenAPI, MetadataChange
 
         self.upload_analyzer = mock.Mock(
             return_value=[
@@ -289,7 +289,7 @@ class AnalyzersTestCase(unittest.TestCase):
         os.remove(self.invalid_file)
 
     def testUpdateAnalyzer(self):
-        from klangbecken import update_data_analyzer, MetadataChange
+        from klangbecken import MetadataChange, update_data_analyzer
 
         # Correct single update
         self.assertEqual(
@@ -327,8 +327,8 @@ class AnalyzersTestCase(unittest.TestCase):
 
     def testRawFileAnalyzer(self):
         import datetime
-        import dateutil.parser
-        from klangbecken import raw_file_analyzer, FileAddition, MetadataChange
+
+        from klangbecken import FileAddition, MetadataChange, raw_file_analyzer
 
         # Missing file
         self.assertRaises(
@@ -353,18 +353,18 @@ class AnalyzersTestCase(unittest.TestCase):
         self.assertTrue(MetadataChange("id", "fileId") in result)
         self.assertTrue(MetadataChange("ext", "ogg") in result)
         self.assertTrue(MetadataChange("original_filename", "filename-äöü") in result)
-        t = [
+        import_timestamp = [
             ch
             for ch in result
             if (isinstance(ch, MetadataChange) and ch.key == "import_timestamp")
-        ][0]
-        t = dateutil.parser.parse(t.value)
-        self.assertTrue(datetime.datetime.now() - t < datetime.timedelta(seconds=2))
+        ][0].value
+        two_seconds_ago = datetime.datetime.now() - datetime.timedelta(seconds=2)
+        two_seconds_ago = two_seconds_ago.isoformat()
+        self.assertGreater(import_timestamp, two_seconds_ago)
         self.assertTrue(MetadataChange("weight", 1) in result)
 
     def testMutagenTagAnalyzer(self):
-        from klangbecken import mutagen_tag_analyzer
-        from klangbecken import MetadataChange as Change
+        from klangbecken import MetadataChange as Change, mutagen_tag_analyzer
 
         # Test regular files
         for ext in ["mp3", "ogg", "flac"]:
@@ -415,8 +415,7 @@ class AnalyzersTestCase(unittest.TestCase):
                 mutagen_tag_analyzer("music", "fileId", ext, fs)
 
     def _analyzeOneFile(self, prefix, postfix, gain, cue_in, cue_out):
-        from klangbecken import ffmpeg_audio_analyzer
-        from klangbecken import MetadataChange
+        from klangbecken import MetadataChange, ffmpeg_audio_analyzer
 
         name = prefix + postfix.split(".")[0]
         ext = postfix.split(".")[1]
@@ -513,7 +512,7 @@ class ProcessorsTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testCheckProcessor(self):
-        from klangbecken import check_processor, MetadataChange
+        from klangbecken import MetadataChange, check_processor
 
         # Invalid key
         with self.assertRaises(UnprocessableEntity) as cm:
@@ -553,9 +552,12 @@ class ProcessorsTestCase(unittest.TestCase):
             check_processor(self.tempdir, "playlist", "id", "ext", ["whatever"])
 
     def testFilterDuplicatesProcessor(self):
-        from klangbecken import filter_duplicates_processor
-        from klangbecken import index_processor
-        from klangbecken import FileAddition, MetadataChange
+        from klangbecken import (
+            FileAddition,
+            MetadataChange,
+            filter_duplicates_processor,
+            index_processor,
+        )
 
         file_ = FileStorage(io.BytesIO(b"abc"), "filename.mp3")
         changes = [
@@ -573,8 +575,12 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue("Duplicate file entry" in cm.exception.description)
 
     def testRawFileProcessor(self):
-        from klangbecken import raw_file_processor
-        from klangbecken import FileAddition, FileDeletion, MetadataChange
+        from klangbecken import (
+            FileAddition,
+            FileDeletion,
+            MetadataChange,
+            raw_file_processor,
+        )
 
         file_ = FileStorage(io.BytesIO(b"abc"), "filename-éàè.txt")
         addition = FileAddition(file_)
@@ -604,8 +610,12 @@ class ProcessorsTestCase(unittest.TestCase):
         )
 
     def testIndexProcessor(self):
-        from klangbecken import index_processor
-        from klangbecken import FileAddition, FileDeletion, MetadataChange
+        from klangbecken import (
+            FileAddition,
+            FileDeletion,
+            MetadataChange,
+            index_processor,
+        )
 
         index_path = os.path.join(self.tempdir, "index.json")
 
@@ -713,11 +723,14 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue("fileXY" not in data)
 
     def testFileTagProcessor(self):
-        from klangbecken import file_tag_processor
-        from klangbecken import MetadataChange
-        from klangbecken import FileAddition
-        from klangbecken import FileDeletion
         from mutagen import File
+
+        from klangbecken import (
+            FileAddition,
+            FileDeletion,
+            MetadataChange,
+            file_tag_processor,
+        )
 
         # No-ops
         file_tag_processor(
@@ -770,8 +783,7 @@ class ProcessorsTestCase(unittest.TestCase):
                 self.assertEqual(val, mutagenfile.get(key, [""])[0])
 
     def testPlaylistProcessor(self):
-        from klangbecken import playlist_processor
-        from klangbecken import FileDeletion, MetadataChange
+        from klangbecken import FileDeletion, MetadataChange, playlist_processor
 
         music_path = os.path.join(self.tempdir, "music.m3u")
         jingles_path = os.path.join(self.tempdir, "jingles.m3u")
