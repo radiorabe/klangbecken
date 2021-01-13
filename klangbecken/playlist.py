@@ -19,7 +19,7 @@ from werkzeug.exceptions import NotFound, UnprocessableEntity
 from .settings import ALLOWED_METADATA, SUPPORTED_FILE_TYPES, TAG_KEYS, UPDATE_KEYS
 
 ####################
-# Action-"Classes" #
+# Change-"Classes" #
 ####################
 FileAddition = collections.namedtuple("FileAddition", ("file"))
 MetadataChange = collections.namedtuple("MetadataChange", ("key", "value"))
@@ -212,7 +212,7 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
         elif isinstance(change, (FileAddition, FileDeletion)):
             pass
         else:
-            raise ValueError("Invalid action class")
+            raise ValueError("Invalid change class")
 
 
 def _check_value(key, val, check):
@@ -303,16 +303,6 @@ def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
         f.seek(0)
         f.truncate()
         json.dump(data, f, **json_opts)
-
-
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="cue_in", desc="CUE_IN")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="cue_out", desc="CUE_OUT")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="track_gain", desc="REPLAYGAIN_TRACK_GAIN")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(
-    key="original_filename", desc="ORIGINAL_FILENAME"
-)
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="import_timestamp", desc="IMPORT_TIMESTAMP")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play", desc="LAST_PLAY")
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
