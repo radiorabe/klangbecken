@@ -43,13 +43,15 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
     # Be compatible with werkzeug.datastructures.FileStorage and plain files
     filename = file_.filename if hasattr(file_, "filename") else file_.name
 
+    now = datetime.datetime.now().astimezone()
+
     return [
         FileAddition(file_),
         MetadataChange("id", fileId),
         MetadataChange("ext", ext),
         MetadataChange("playlist", playlist),
         MetadataChange("original_filename", filename),
-        MetadataChange("import_timestamp", datetime.datetime.now().isoformat()),
+        MetadataChange("import_timestamp", now.isoformat()),
         MetadataChange("weight", 1),
         MetadataChange("play_count", 0),
         MetadataChange("last_play", ""),
