@@ -17,13 +17,9 @@ class GenericAPITestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken.api import klangbecken_api
 
-        with mock.patch(
-            "klangbecken.api.DEFAULT_UPLOAD_ANALYZERS", []
-        ), mock.patch(
+        with mock.patch("klangbecken.api.DEFAULT_UPLOAD_ANALYZERS", []), mock.patch(
             "klangbecken.api.DEFAULT_UPDATE_ANALYZERS", []
-        ), mock.patch(
-            "klangbecken.api.DEFAULT_PROCESSORS", []
-        ):
+        ), mock.patch("klangbecken.api.DEFAULT_PROCESSORS", []):
             self.app = klangbecken_api(
                 "secret",
                 "data_dir",
