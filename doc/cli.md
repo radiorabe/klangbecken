@@ -67,6 +67,13 @@ Validate the `index.json` metadata cache integrity.
 
 Log the airing of a track. This command is called from the liquidsoap player. It updates the `last_play` and `play_count` metadata, appends the data to the monthly playlog in `data/log/`, and calls the external play logger if configured.
 
+If the environment variable `KLANGBECKEN_EXTERNAL_PLAY_LOGGER` is set, it will be used to call an external play logger. This can be used publish the information for example in a song ticker on a public web site. The command will be interpreted as a formatting string. All supported metadata keys are available (see [settings.py](../klangbecken/settings.py)).
+
+Example:
+```bash
+KLANGBECKEN_EXTERNAL_PLAY_LOGGER="/usr/local/bin/myscript.sh {playlist} {id} {artist} {title}
+```
+
 ### `reanalyze`
 
 Re-run the audio analyzer for the specified files.
