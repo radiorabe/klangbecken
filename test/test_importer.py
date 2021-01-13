@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from unittest import mock
 
+import mutagen
+
 from .utils import capture
 
 
@@ -23,7 +25,7 @@ class ImporterTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testImport(self):
-        from klangbecken.cli import import_cmd
+        from klangbecken.cli import import_cmd, main
 
         audio_path = os.path.join(self.current_path, "audio")
         audio1_path = os.path.join(audio_path, "sine-unicode.flac")
@@ -31,16 +33,21 @@ class ImporterTestCase(unittest.TestCase):
         audio1_mtime = datetime.datetime.fromtimestamp(os.stat(audio1_path).st_mtime)
 
         # Import nothing -> usage
-        args = [self.tempdir, "music", [], True]
-        with self.assertRaises(SystemExit) as cm:
-            with capture(import_cmd, *args) as (out, err, ret):
-                pass
+        cmd = f"klangbecken import -d {self.tempdir} --yes --mtime music"
+        with mock.patch("sys.argv", cmd.split()):
+            with self.assertRaises(SystemExit) as cm:
+                with capture(main) as (out, err, ret):
+                    pass
+        self.assertTrue(hasattr(cm.exception, "usage"))
 
         # Import one file
-        args = [self.tempdir, "music", [audio1_path], True]
+        cmd = f"klangbecken import -d {self.tempdir} -y -m music {audio1_path}"
         with self.assertRaises(SystemExit) as cm:
-            with capture(import_cmd, *args) as (out, err, ret):
-                self.assertIn("Successfully imported 1 of 1 files.", out)
+            with mock.patch("sys.argv", cmd.split()):
+                with capture(main) as (out, err, ret):
+                    pass
+        # print(out, err, ret)
+        self.assertIn("Successfully imported 1 of 1 files.", out)
         self.assertEqual(cm.exception.code, 0)
 
         files = [
@@ -74,7 +81,7 @@ class ImporterTestCase(unittest.TestCase):
 
         files = [
             f
-            for f in os.listdir(self.music_dir)  # pragma: no cover
+            for f in os.listdir(self.music_dir)
             if os.path.isfile(os.path.join(self.music_dir, f))
         ]
         self.assertEqual(len(files), 3)
@@ -115,6 +122,48 @@ class ImporterTestCase(unittest.TestCase):
             with capture(import_cmd, *args) as (out, err, ret):
                 self.assertIn("Successfully imported 0 of 1 files.", out)
                 self.assertIn("WARNING", err)
+        self.assertEqual(cm.exception.code, 1)
+
+    def testImportWithMetadataFile(self):
+        from klangbecken.cli import main
+
+        audio_path = os.path.join(self.current_path, "audio")
+        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
+        audio2_path = os.path.join(audio_path, "padded.ogg")
+
+        metadata_path = os.path.join(self.tempdir, "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump({audio1_path: {"artist": "artist", "title": "title"}}, f)
+
+        # Import one file with additional metadata
+        cmd = (
+            f"klangbecken import -d {self.tempdir} -y -m -M {metadata_path} "
+            f"music {audio1_path}"
+        )
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch("sys.argv", cmd.split()):
+                with capture(main) as (out, err, ret):
+                    pass
+        self.assertIn("Successfully imported 1 of 1 files.", out)
+        self.assertEqual(cm.exception.code, 0)
+
+        imported_path = os.listdir(os.path.join(self.tempdir, "music"))[0]
+        imported_path = os.path.join(self.tempdir, "music", imported_path)
+        mutagen_file = mutagen.File(imported_path, easy=True)
+        self.assertEqual(mutagen_file["artist"][0], "artist")
+
+        # Try importing one file without additional metadata
+        cmd = (
+            f"klangbecken import -d {self.tempdir} -y -m -M {metadata_path} "
+            f"music {audio2_path}"
+        )
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch("sys.argv", cmd.split()):
+                with capture(main) as (out, err, ret):
+                    pass
+
+        self.assertIn("Successfully imported 0 of 1 files.", out)
+        self.assertIn("Ignoring", out)
         self.assertEqual(cm.exception.code, 1)
 
     @mock.patch("klangbecken.cli.input", return_value="y")

@@ -13,7 +13,7 @@ def _check_data_dir(data_dir, create=False):
                 os.mkdir(path)
             else:
                 raise Exception(f"Directory '{path}' does not exist")
-    for path in [os.path.join(data_dir, d + ".m3u") for d in PLAYLISTS + ("prio",)]:
+    for path in [os.path.join(data_dir, d + ".m3u") for d in PLAYLISTS]:
         if not os.path.isfile(path):
             if create:
                 with open(path, "a"):

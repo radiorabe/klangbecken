@@ -4,7 +4,6 @@ import datetime
 import fcntl
 import json
 import os
-import random
 import re
 import shutil
 import subprocess
@@ -17,13 +16,7 @@ import mutagen.mp3
 import mutagen.oggvorbis
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 
-from .settings import (
-    ALLOWED_METADATA,
-    PLAYLISTS,
-    SUPPORTED_FILE_TYPES,
-    TAG_KEYS,
-    UPDATE_KEYS,
-)
+from .settings import ALLOWED_METADATA, SUPPORTED_FILE_TYPES, TAG_KEYS, UPDATE_KEYS
 
 ####################
 # Action-"Classes" #
@@ -195,12 +188,11 @@ DEFAULT_UPDATE_ANALYZERS = [update_data_analyzer]
 ##############
 # Processors #
 ##############
-def check_processor(data_dir, playlist, fileId, ext, changes):  # noqa: C901
+def check_processor(data_dir, playlist, fileId, ext, changes):
     """Validate metadata changes.
 
     Enforce type and contract checks.
     """
-
     for change in changes:
         if isinstance(change, MetadataChange):
             key, val = change
@@ -213,31 +205,34 @@ def check_processor(data_dir, playlist, fileId, ext, changes):  # noqa: C901
                 checks = (checks,)
 
             for check in checks:
-                if isinstance(check, type):
-                    if not isinstance(val, check):
-                        raise UnprocessableEntity(
-                            f'Invalid data format for "{key}": Type error '
-                            f"(expected {check.__name__}, "
-                            f"got {type(val).__name__})."
-                        )
-                elif callable(check):
-                    if not check(val):
-                        raise UnprocessableEntity(
-                            f'Invalid data format for "{key}": Check failed '
-                            f'(value: "{val}").'
-                        )
-                elif isinstance(check, str):
-                    if re.match(check, val) is None:
-                        raise UnprocessableEntity(
-                            f'Invalid data format for "{key}": Regex check '
-                            f'failed (value: "{val}", regex: "{check}").'
-                        )
-                else:
-                    raise NotImplementedError()
+                _check_value(key, val, check)
+
         elif isinstance(change, (FileAddition, FileDeletion)):
             pass
         else:
             raise ValueError("Invalid action class")
+
+
+def _check_value(key, val, check):
+    if isinstance(check, type):
+        if not isinstance(val, check):
+            raise UnprocessableEntity(
+                f"Invalid data format for '{key}': Type error "
+                f"(expected {check.__name__}, got {type(val).__name__})."
+            )
+    elif callable(check):
+        if not check(val):
+            raise UnprocessableEntity(
+                f'Invalid data format for "{key}": Check failed (value: "{val}").'
+            )
+    elif isinstance(check, str):
+        if re.match(check, val) is None:
+            raise UnprocessableEntity(
+                f"Invalid data format for '{key}': Regex check failed (value: '{val}'"
+                f", regex: '{check}'')."
+            )
+    else:
+        raise NotImplementedError()  # pragma: no cover
 
 
 def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
@@ -261,13 +256,7 @@ def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
                 and entry["playlist"] == playlist
             ):
                 raise UnprocessableEntity(
-                    "Duplicate file entry:\n"
-                    + artist
-                    + " - "
-                    + title
-                    + " ("
-                    + filename
-                    + ")"
+                    f"Duplicate file entry: {artist} - {title} ({filename})"
                 )
 
 
@@ -366,7 +355,6 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 
                 weight = change.value
                 lines.extend([os.path.join(playlist, fileId + "." + ext)] * weight)
-                random.shuffle(lines)  # TODO: custom shuffling?
                 f.seek(0)
                 f.truncate()
                 for line in lines:
@@ -375,48 +363,23 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 
 DEFAULT_PROCESSORS = [
     check_processor,  # type and contract check changes
-    filter_duplicates_processor,
+    filter_duplicates_processor,  # filter obvious duplicates
     raw_file_processor,  # save file
     file_tag_processor,  # update tags
     playlist_processor,  # update playlist file
-    index_processor,  # commit file to index at last
+    index_processor,  # commit file to the index cache at last
 ]
 
 
-def playnext_processor(data_dir, data):
-    if not isinstance(data, dict):
-        raise UnprocessableEntity("Invalid data format: " "associative array expected")
-    if "file" not in data:
-        raise UnprocessableEntity("Invalid data format: " 'Key "file" not found')
+###################
+# Locking helpers #
+###################
 
-    filename = data["file"]
-    filename_re = r"^({0})/([^/.]+)\.({1})$".format(
-        "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
-    )
-    if not re.match(filename_re, filename):
-        raise UnprocessableEntity("Invalid file path format")
-
-    path = os.path.join(data_dir, filename)
-    if not os.path.isfile(path):
-        raise NotFound()
-
-    with locked_open(os.path.join(data_dir, "prio.m3u")) as f:
-        f.seek(0)
-        f.truncate()
-        print(filename, file=f)
-
-
-###########
-# Helpers #
-###########
-
-# Locking helper to serialize access with mutagen library
-_mutagenLock = threading.Lock()
-
-
-# Locking Helper
-
+# A dict containing locks for different paths.
+# Dict keys are file paths like `data/index.json`
 _locks = {}
+
+# Lock to serialize the use of non-thread-safe mutagen library
 _mutagenLock = threading.Lock()
 
 

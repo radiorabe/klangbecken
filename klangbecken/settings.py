@@ -36,7 +36,7 @@ ALLOWED_METADATA = {
     "title": str,
     "album": str,
     "length": (float, lambda n: n >= 0.0),
-    "track_gain": (str, r"^[+-]?[0-9]*(\.[0-9]*) dB$"),
+    "track_gain": (str, r"^[+-]?[0-9]+(\.[0-9]*) dB$"),
     "cue_in": (float, lambda n: n >= 0.0),
     "cue_out": (float, lambda n: n >= 0.0),
     "play_count": (int, lambda n: n >= 0),
@@ -45,5 +45,6 @@ ALLOWED_METADATA = {
 
 UPDATE_KEYS = "artist title album weight".split()
 TAG_KEYS = (
-    "artist title album cue_in cue_out track_gain original_filename import_timestamp"
+    "artist title album cue_in cue_out track_gain original_filename import_timestamp "
+    "last_play"
 ).split()

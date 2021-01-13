@@ -19,16 +19,16 @@ Two additional components are in their own repository:
 * The listener for the current "on air" status, the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox).
 * The web-based [UI](https://github.com/radiorabe/klangbecken-ui) for playlist editing.
 
-How they interact can be seen in the [system overview diagram](doc/system-overview.svg):
+How they interact can be seen in the [system overview diagram](doc/system-overview.png):
 
-![System overview diagram](doc/system-overview.svg)
+![System overview diagram](doc/system-overview.png)
 
 ## System requirements
 * Unix-like operating system environment
 * **Python** >= 3.6
   * *docopt* library for parsing command line arguments
-  * *Werkzeug* library for the WSGI application
-  * *PyJWT* library (>= v2.0.0) for creating and verify JWT authentication tokens
+  * *Werkzeug* library for WSGI support
+  * *PyJWT* library (>= v2.0.0) for creating and verifing JWT authentication tokens
   * *mutagen* library for audio tag editing
 * **ffmpeg** binary (>=4.0) for audio analysis
 * **Liquidsoap** audio player
@@ -99,7 +99,7 @@ Run the liquidsoap audio player:
 ```bash
 export KLANGBECKEN_ALSA_DEVICE="default"
 export KLANGBECKEN_DATA="data"
-export KLANGBECKEN_PATH="./klangbecken.py"
+export KLANGBECKEN_PATH="python -m klangbecken"
 export KLANGBECKEN_SOCKET_PATH="/tmp/klangbecken.liq.sock"
 liquidsoap klangbecken.liq
 ```
@@ -174,8 +174,8 @@ The deploy script `deploy.sh` partially automates deploying the code.
 
 _Preparation:_
 * Make sure, your code passes continuous integration.
-* Increment the version (in `klangbecken.py` and `setup.py`).
-* Make sure your `requirements.txt` is not dirty.
+* Increment the version (in `klangbecken/__init__.py` and `setup.py`).
+* Be sure your `requirements.txt` has no uncommited modifications.
 
 
 _Run the script:_

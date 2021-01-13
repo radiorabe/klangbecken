@@ -15,15 +15,16 @@ from werkzeug.wrappers import BaseResponse
 
 class WSGIAppTest(unittest.TestCase):
     def test_application(self):
-        from klangbecken.api import KlangbeckenAPI
+        from klangbecken.api import klangbecken_api
 
-        application = KlangbeckenAPI("inexistent_dir", "secret")
+        application = klangbecken_api("inexistent_dir", "secret", "player.sock")
         self.assertTrue(callable(application))
 
 
 class APITestCase(unittest.TestCase):
+    @mock.patch("klangbecken.api.ExternalAuth", lambda app, *args, **kwargs: app)
     def setUp(self):
-        from klangbecken.api import KlangbeckenAPI
+        from klangbecken.api import klangbecken_api
         from klangbecken.playlist import FileAddition, MetadataChange
 
         self.upload_analyzer = mock.Mock(
@@ -35,72 +36,81 @@ class APITestCase(unittest.TestCase):
         self.update_analyzer = mock.Mock(return_value=["UpdateChange"])
         self.processor = mock.MagicMock()
 
-        app = KlangbeckenAPI(
-            "data_dir",
-            "secret",
-            upload_analyzers=[self.upload_analyzer],
-            update_analyzers=[self.update_analyzer],
-            processors=[self.processor],
-            disable_auth=True,
-        )
+        with mock.patch(
+            "klangbecken.api.DEFAULT_UPLOAD_ANALYZERS", [self.upload_analyzer]
+        ), mock.patch(
+            "klangbecken.api.DEFAULT_UPDATE_ANALYZERS", [self.update_analyzer]
+        ), mock.patch(
+            "klangbecken.api.DEFAULT_PROCESSORS", [self.processor]
+        ):
+            app = klangbecken_api(
+                "secret",
+                "data_dir",
+                "player.sock",
+            )
         self.client = Client(app, BaseResponse)
 
     def testUrls(self):
         resp = self.client.get("/")
-        self.assertEqual(resp.status_code, 404)
-        resp = self.client.get("/music/")
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.get("/playlist/music/")
         self.assertEqual(resp.status_code, 405)
-        resp = self.client.get("/jingles/")
+        resp = self.client.get("/playlist/jingles/")
         self.assertEqual(resp.status_code, 405)
-        resp = self.client.get("/nonexistant/")
+        resp = self.client.get("/playlist/nonexistant/")
         self.assertEqual(resp.status_code, 404)
         resp = self.client.get("/öäü/")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.post("/jingles")
+        resp = self.client.post("/playlist/jingles")
         self.assertIn(resp.status_code, (301, 308))
-        resp = self.client.post("/music/")
+        resp = self.client.post("/playlist/music/")
         self.assertEqual(resp.status_code, 422)
-        resp = self.client.post("/jingles/something")
+        resp = self.client.post("/playlist/jingles/something")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.put("/music/")
+        resp = self.client.put("/playlist/music/")
         self.assertEqual(resp.status_code, 405)
-        resp = self.client.put("/jingles/something")
+        resp = self.client.put("/playlist/jingles/something")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.put("/jingles/something.mp3")
+        resp = self.client.put("/playlist/jingles/something.mp3")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.put("/music/" + str(uuid.uuid4()))
+        resp = self.client.put("/playlist/music/" + str(uuid.uuid4()))
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.put("/music/" + str(uuid.uuid4()) + ".mp3")
-        self.assertEqual(resp.status_code, 422)
-        resp = self.client.put("/jingles/" + str(uuid.uuid4()) + ".ogg")
-        self.assertEqual(resp.status_code, 422)
-        resp = self.client.put("/music/" + str(uuid.uuid4()) + ".flac")
-        self.assertEqual(resp.status_code, 422)
-        resp = self.client.put("/jingles/" + str(uuid.uuid4()) + ".ttt")
+        resp = self.client.put("/playlist/music/" + str(uuid.uuid4()) + ".mp3")
+        self.assertEqual(resp.status_code, 415)
+        resp = self.client.put("/playlist/jingles/" + str(uuid.uuid4()) + ".ogg")
+        self.assertEqual(resp.status_code, 415)
+        resp = self.client.put("/playlist/music/" + str(uuid.uuid4()) + ".flac")
+        self.assertEqual(resp.status_code, 415)
+        resp = self.client.put("/playlist/jingles/" + str(uuid.uuid4()) + ".ttt")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.delete("/music/")
+        resp = self.client.delete("/playlist/music/")
         self.assertEqual(resp.status_code, 405)
-        resp = self.client.delete("/jingles/something")
+        resp = self.client.delete("/playlist/jingles/something")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.delete("/jingles/something.mp3")
+        resp = self.client.delete("/playlist/jingles/something.mp3")
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.delete("/music/" + str(uuid.uuid4()))
+        resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()))
         self.assertEqual(resp.status_code, 404)
-        resp = self.client.delete("/jingles/" + str(uuid.uuid4()) + ".mp3")
+        resp = self.client.delete("/playlist/jingles/" + str(uuid.uuid4()) + ".mp3")
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete("/music/" + str(uuid.uuid4()) + ".ogg")
+        resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()) + ".ogg")
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete("/jingles/" + str(uuid.uuid4()) + ".flac")
+        resp = self.client.delete("/playlist/jingles/" + str(uuid.uuid4()) + ".flac")
         self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete("/music/" + str(uuid.uuid4()) + ".ttt")
+        resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()) + ".ttt")
         self.assertEqual(resp.status_code, 404)
+
+    def testPlayerInfo(self):
+        resp = self.client.get("/player/")
+        self.assertEqual(resp.status_code, 404)
+        self.assertIn(b"Player not running", resp.data)
 
     def testUpload(self):
         from klangbecken.playlist import FileAddition, MetadataChange
 
         # Correct upload
         resp = self.client.post(
-            "/music/", data={"file": (io.BytesIO(b"testcontent"), "test.mp3")}
+            "/playlist/music/", data={"file": (io.BytesIO(b"testcontent"), "test.mp3")}
         )
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
@@ -131,20 +141,21 @@ class APITestCase(unittest.TestCase):
 
         # Wrong attribute name
         resp = self.client.post(
-            "/music/", data={"not-file": (io.BytesIO(b"testcontent"), "test.mp3")}
+            "/playlist/music/",
+            data={"not-file": (io.BytesIO(b"testcontent"), "test.mp3")},
         )
         self.assertEqual(resp.status_code, 422)
-        self.assertTrue(b"No attribute named 'file' found" in resp.data)
+        self.assertIn(b"No file attribute named", resp.data)
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_not_called()
         self.processor.assert_not_called()
 
         # File as normal text attribute
         resp = self.client.post(
-            "/music/", data={"file": "testcontent", "filename": "test.mp3"}
+            "/playlist/music/", data={"file": "testcontent", "filename": "test.mp3"}
         )
         self.assertEqual(resp.status_code, 422)
-        self.assertTrue(b"No attribute named 'file' found" in resp.data)
+        self.assertIn(b"No file attribute named", resp.data)
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_not_called()
         self.processor.assert_not_called()
@@ -153,7 +164,7 @@ class APITestCase(unittest.TestCase):
         # Update weight correctly
         fileId = str(uuid.uuid4())
         resp = self.client.put(
-            "/music/" + fileId + ".mp3",
+            "/playlist/music/" + fileId + ".mp3",
             data=json.dumps({"weight": 4}),
             content_type="text/json",
         )
@@ -165,13 +176,12 @@ class APITestCase(unittest.TestCase):
         self.processor.assert_called_once_with(
             "data_dir", "music", fileId, "mp3", ["UpdateChange"]
         )
-        self.assertEqual(json.loads(resp.data), {"status": "OK"})
         self.update_analyzer.reset_mock()
         self.processor.reset_mock()
 
         # Update artist and title correctly
         resp = self.client.put(
-            "/music/" + fileId + ".mp3",
+            "/playlist/music/" + fileId + ".mp3",
             data=json.dumps({"artist": "A", "title": "B"}),
             content_type="text/json",
         )
@@ -187,17 +197,19 @@ class APITestCase(unittest.TestCase):
 
         # Update with invalid json format
         resp = self.client.put(
-            "/music/" + fileId + ".mp3", data='{ a: " }', content_type="text/json"
+            "/playlist/music/" + fileId + ".mp3",
+            data='{ a: " }',
+            content_type="text/json",
         )
-        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.status_code, 415)
         self.assertIn(b"invalid JSON", resp.data)
         self.update_analyzer.assert_not_called()
 
         # Update with invalid unicode format
         resp = self.client.put(
-            "/music/" + fileId + ".mp3", data=b"\xFF", content_type="text/json"
+            "/playlist/music/" + fileId + ".mp3", data=b"\xFF", content_type="text/json"
         )
-        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.status_code, 415)
         self.assertIn(b"invalid UTF-8 data", resp.data)
         self.update_analyzer.assert_not_called()
 
@@ -205,60 +217,41 @@ class APITestCase(unittest.TestCase):
         from klangbecken.playlist import FileDeletion
 
         fileId = str(uuid.uuid4())
-        resp = self.client.delete("/music/" + fileId + ".mp3")
+        resp = self.client.delete("/playlist/music/" + fileId + ".mp3")
         self.assertEqual(resp.status_code, 200)
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_not_called()
         self.processor.assert_called_once_with(
             "data_dir", "music", fileId, "mp3", [FileDeletion()]
         )
-
-        self.assertEqual(json.loads(resp.data), {"status": "OK"})
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
-
-    @mock.patch("klangbecken.api.playnext_processor")
-    def testPlaynext(self, playnext_processor):
-        # Update weight correctly
-        resp = self.client.post(
-            "/playnext/", data=json.dumps({"file": "tutu"}), content_type="text/json"
-        )
-        self.assertEqual(resp.status_code, 200)
-        playnext_processor.assert_called_once_with("data_dir", {"file": "tutu"})
-        playnext_processor.reset_mock()
-
-        # Update with invalid json format
-        resp = self.client.post("/playnext/", data='{ a: " }', content_type="text/json")
-        self.assertEqual(resp.status_code, 422)
-        self.assertTrue(b"invalid JSON" in resp.data)
-        playnext_processor.assert_not_called()
-
-        # Update with invalid unicode format
-        resp = self.client.post("/playnext/", data=b"\xFF", content_type="text/json")
-        self.assertEqual(resp.status_code, 422)
-        self.assertTrue(b"invalid UTF-8 data" in resp.data)
-        playnext_processor.assert_not_called()
 
 
 class AuthTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken.api import KlangbeckenAPI
+        from klangbecken.api import klangbecken_api
 
-        app = KlangbeckenAPI(
-            "inexistent_dir",
-            "secret",
-            upload_analyzers=[lambda *args: []],
-            update_analyzers=[lambda *args: []],
-            processors=[lambda *args: None],
-        )
+        with mock.patch(
+            "klangbecken.api.DEFAULT_UPLOAD_ANALYZERS", [lambda *args: []]
+        ), mock.patch(
+            "klangbecken.api.DEFAULT_UPDATE_ANALYZERS", [lambda *args: []]
+        ), mock.patch(
+            "klangbecken.api.DEFAULT_PROCESSORS", [lambda *args: None]
+        ):
+            app = klangbecken_api(
+                "inexistent_dir",
+                "secret",
+                "nix.sock",
+            )
         self.client = Client(app, BaseResponse)
 
     def testFailingAuth(self):
-        resp = self.client.post("/music/")
+        resp = self.client.post("/playlist/music/")
         self.assertEqual(resp.status_code, 401)
-        resp = self.client.put("/jingles/" + str(uuid.uuid4()) + ".mp3")
+        resp = self.client.put("/playlist/jingles/" + str(uuid.uuid4()) + ".mp3")
         self.assertEqual(resp.status_code, 401)
-        resp = self.client.delete("/music/" + str(uuid.uuid4()) + ".ogg")
+        resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()) + ".ogg")
         self.assertEqual(resp.status_code, 401)
 
     def testFailingLogin(self):
@@ -276,6 +269,72 @@ class AuthTestCase(unittest.TestCase):
         response_data = json.loads(resp.data)
         self.assertIn("token", response_data)
         self.assertRegex(response_data["token"], r"([a-zA-Z0-9_-]+\.){2}[a-zA-Z0-9_-]+")
+
+
+class PlayerAPITestCase(unittest.TestCase):
+    def setUp(self):
+        from klangbecken.api import player_api
+
+        self.liquidsoap_client = mock.MagicMock()
+        self.liquidsoap_client.info = mock.Mock(return_value="info")
+        self.tempdir = tempfile.mkdtemp()
+        app = player_api(self.liquidsoap_client, self.tempdir)
+        os.mkdir(os.path.join(self.tempdir, "music"))
+        with open(os.path.join(self.tempdir, "music", "titi.mp3"), "w"):
+            pass
+        self.client = Client(app, BaseResponse)
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def testInfo(self):
+        self.liquidsoap_client.info = mock.Mock(return_value="info")
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"info", resp.data)
+        self.liquidsoap_client.info.assert_called_once_with()
+
+    def testQueueListCorrect(self):
+        self.liquidsoap_client.queue = mock.Mock(return_value="queue")
+        resp = self.client.get("/queue/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"queue", resp.data)
+        self.liquidsoap_client.queue.assert_called_once_with()
+
+    def testQueuePushCorrect(self):
+        self.liquidsoap_client.push = mock.Mock(return_value="my_id")
+        resp = self.client.post(
+            "/queue/", data=json.dumps({"filename": "music/titi.mp3"})
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEqual(data["queue_id"], "my_id")
+        self.liquidsoap_client.push.assert_called_once_with(
+            os.path.join(self.tempdir, "music", "titi.mp3")
+        )
+
+    def testQueuePushIncorrect(self):
+        self.liquidsoap_client.push = mock.Mock(return_value="my_track_id")
+        resp = self.client.post(
+            "/queue/", data=json.dumps({"filename": "music/tata.mp3"})
+        )
+        self.assertEqual(resp.status_code, 404)
+        self.liquidsoap_client.push.assert_not_called()
+
+        resp = self.client.post(
+            "/queue/", data=json.dumps({"filename": "music/titi.abc"})
+        )
+        self.assertEqual(resp.status_code, 422)
+        self.liquidsoap_client.push.assert_not_called()
+
+        resp = self.client.post("/queue/", data=json.dumps({"file": "music/titi.mp3"}))
+        self.assertEqual(resp.status_code, 422)
+        self.liquidsoap_client.push.assert_not_called()
+
+    def testQueueDelete(self):
+        resp = self.client.delete("/queue/15")
+        self.assertEqual(resp.status_code, 200)
+        self.liquidsoap_client.delete.assert_called_once_with("15")
 
 
 class AnalyzersTestCase(unittest.TestCase):
@@ -507,7 +566,6 @@ class ProcessorsTestCase(unittest.TestCase):
             print("{}", file=f)
         open(os.path.join(self.tempdir, "music.m3u"), "w").close()
         open(os.path.join(self.tempdir, "jingles.m3u"), "w").close()
-        open(os.path.join(self.tempdir, "prio.m3u"), "w").close()
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
@@ -906,26 +964,3 @@ class ProcessorsTestCase(unittest.TestCase):
         with open(jingles_path) as f:
             data = f.read()
         self.assertEqual(data, "")
-
-    def testPlaynextProcessor(self):
-        from klangbecken.playlist import playnext_processor
-
-        prio_path = os.path.join(self.tempdir, "prio.m3u")
-
-        # Invalid playnext updates
-        with self.assertRaises(UnprocessableEntity):
-            playnext_processor(self.tempdir, [])
-        with self.assertRaises(UnprocessableEntity):
-            playnext_processor(self.tempdir, {})
-        with self.assertRaises(UnprocessableEntity):
-            playnext_processor(self.tempdir, {"file": "funny/../path.mp3"})
-
-        # Inexistent file
-        with self.assertRaises(NotFound):
-            playnext_processor(self.tempdir, {"file": "music/nonexistent.mp3"})
-
-        # Correct update
-        playnext_processor(self.tempdir, {"file": "music/silence.mp3"})
-        with open(prio_path) as f:
-            data = f.read()
-        self.assertEqual(data.strip(), "music/silence.mp3")

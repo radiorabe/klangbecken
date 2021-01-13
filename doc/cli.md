@@ -8,10 +8,10 @@ Klangbecken audio playout system.
 Usage:
     klangbecken (--help | --version)
     klangbecken init [-d DATA_DIR]
-    klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS]
+    klangbecken serve [-d DATA_DIR] [-p PORT] [-b ADDRESS] [-s PLAYER_SOCKET]
     klangbecken import [-d DATA_DIR] [-y] [-m] [-M FILE] PLAYLIST FILE...
-    klangbecken fsck [-d DATA_DIR] [-R]
-    klangbecken playlog [-d DATA_DIR] (--off | FILE)
+    klangbecken fsck [-d DATA_DIR]
+    klangbecken playlog [-d DATA_DIR] FILE
     klangbecken reanalyze [-d DATA_DIR] [-y] (--all | ID...)
 
 Options:
@@ -25,16 +25,17 @@ Options:
         Specify alternate port [default: 5000].
     -b ADDRESS, --bind=ADDRESS
         Specify alternate bind address [default: localhost].
+    -s PLAYER_SOCKET, --socket=PLAYER_SOCKET
+        Set the location or address of the liquisoap player socket.
+        This can either be the path to a UNIX domain socket file or
+        a domain name and port seperated by a colon (e.g. localhost:123)
+        [default: ./klangbecken.sock]
     -y, --yes
         Automatically answer yes to all questions.
     -m, --mtime
         Use file modification date as import timestamp.
     -M FILE, --meta=FILE
-        Read metadata from JSON file. Missing entries will be skipped.
-    -R, --repair
-        Try to repair index.
-    --off
-        Take klangbecken off the air.
+        Read metadata from JSON file.  Files without entries are skipped.
     --all
         Reanalyze all files.
 ```
@@ -52,14 +53,15 @@ Run the development server. Serves the API from `/api` and the static files from
 Batch import audio files to the specified playlist.  Artist and title metadata can be supplied from a JSON file mapping filenames to a metadata dict. E.g.
 ```json
 {
-    "importfolder/xyz.mp3": {"artist": "Hansi Hinterseher", "title": "A Bussarl"}
+    "importfolder/xyz.mp3": {"artist": "Wildecker Herzbuam", "title": "Herzilein"}
     ...
 }
 ```
+Files that have no entry in the metadata file are skipped.
 
 ### `fsck`
 
-Validate the correctness of the `index.json` metadata cache.
+Validate the `index.json` metadata cache integrity.
 
 ### `playlog`
 
