@@ -10,6 +10,15 @@ from werkzeug.wrappers import BaseResponse
 from .utils import capture
 
 
+# most testing is done in  doctests
+def load_tests(loader, tests, ignore):
+    import klangbecken.api_utils
+
+    # load doctests
+    tests.addTests(doctest.DocTestSuite(klangbecken.api_utils))
+    return tests
+
+
 class AdditionalTestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken.api_utils import API
@@ -140,11 +149,3 @@ class TokenRenewalTestCase(unittest.TestCase):
         resp = self.client.get("/", headers={"Authorization": f"Something {token}"})
         self.assertEqual(resp.status_code, 401)
         self.assertIn(b"Invalid authorization header", resp.data)
-
-
-def load_tests(loader, tests, ignore):
-    import klangbecken.api_utils
-
-    # load doctests
-    tests.addTests(doctest.DocTestSuite(klangbecken.api_utils))
-    return tests
