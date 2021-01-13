@@ -188,13 +188,6 @@ class API:
         """Shorthand for registering DELETE requests."""
         return self.route(string, ("DELETE",))
 
-    def _json_response(self, data, status=200):
-        if data is None:
-            return werkzeug.Response(status=status)
-        else:
-            data = json.dumps(data, indent=2, sort_keys=True) + "\n"
-            return werkzeug.Response(data, status=status, mimetype="text/json")
-
     def __call__(self, environ, start_response):
         try:
             request = werkzeug.Request(environ)
@@ -203,24 +196,27 @@ class API:
 
             # Dispatch request
             response = endpoint(request, **values)
-            response = self._json_response(response)
+            response = _json_response(response)
         except werkzeug.exceptions.HTTPException as e:
-            response = self._json_response(
+            response = _json_response(
                 {"code": e.code, "name": e.name, "description": e.description},
                 status=e.code,
             )
         except Exception as e:
-            response = self._json_response(
-                {
-                    "code": 500,
-                    "name": "Internal Server Error",
-                    # "description": f"{e.__class__.__name__}: {str(e)}",
-                },
-                status=500,
+            response = _json_response(
+                {"code": 500, "name": "Internal Server Error"}, status=500
             )
             print(f"ERROR {e.__class__.__name__}: {str(e)}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
         return response(environ, start_response)
+
+
+def _json_response(data, status=200):
+    if data is None:
+        return werkzeug.Response(status=status)
+    else:
+        data = json.dumps(data, indent=2, sort_keys=True) + "\n"
+        return werkzeug.Response(data, status=status, mimetype="text/json")
 
 
 def _parse_json_body_wrapper(func, body_type, content_types):  # noqa: C901
@@ -324,8 +320,11 @@ class BaseJWTAuthMiddleware:
             try:
                 self._check_authorization(request)
                 response = self.app
-            except Unauthorized as err:
-                response = err
+            except Unauthorized as e:
+                response = _json_response(
+                    {"code": e.code, "name": e.name, "description": e.description},
+                    status=e.code,
+                )
 
         return response(environ, start_response)
 
@@ -347,8 +346,6 @@ class BaseJWTAuthMiddleware:
                 algorithms=["HS256"],
                 options={"require_exp": True, "require_iat": True},
             )
-        except jwt.ExpiredSignatureError:
-            raise Unauthorized("Expired token")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
 

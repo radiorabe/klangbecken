@@ -94,7 +94,7 @@ class TokenRenewalTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         resp = self.client.get("/", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(resp.status_code, 401)
-        self.assertIn(b"Expired token", resp.data)
+        self.assertIn(b"Invalid token", resp.data)
 
         resp = self.client.post("/auth/renew/", data=json.dumps({"token": token}))
         self.assertEqual(resp.status_code, 200)
