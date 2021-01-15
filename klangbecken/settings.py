@@ -59,4 +59,4 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(
     key="original_filename", desc="ORIGINAL_FILENAME"
 )
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key="import_timestamp", desc="IMPORT_TIMESTAMP")
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play_epoch", desc="LAST_PLAY")
+mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play_epoch", desc="LAST_PLAY_EPOCH")
