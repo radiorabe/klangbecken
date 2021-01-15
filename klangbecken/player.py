@@ -36,6 +36,9 @@ class LiquidsoapClient:
         return self
 
     def __exit__(self, *exc_info):
+        # Try to be nice
+        self.tel.write(b"exit\n")
+        self.tel.read_until(b"Bye!", timeout=0.1)
         self.close()
 
     def open(self, addr):

@@ -15,7 +15,8 @@ class EchoHandler(socketserver.BaseRequestHandler):
     def handle(self):
         while True:
             msg = self.request.recv(8192)
-            if not msg:
+            if not msg or msg.strip() == b"exit":
+                self.request.send(b"Bye!\n")
                 break
             self.request.send(msg)
 
