@@ -41,7 +41,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testOpenAndUnix(self):
-        from klangbecken.player import LiquidsoapClient
+        from klangbecken.player import LiquidsoapClient, LiquidsoapClientError
 
         settings = [
             (socketserver.TCPServer, ("localhost", get_port())),
@@ -55,6 +55,12 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 with client:
                     result = client.command("\r\n\r\nhello\r\nworld\r\n\r\nEND")
                 self.assertEqual(result, "hello\nworld")
+                with client:
+                    with self.assertRaises(LiquidsoapClientError) as cm:
+                        client.command("Does not contain the finishing sentinel.")
+                self.assertIn(
+                    "Timeout while trying to read until", cm.exception.args[0]
+                )
                 serv.shutdown()
                 thread.join()
 

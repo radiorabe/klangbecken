@@ -55,7 +55,16 @@ class LiquidsoapClient:
 
     def command(self, cmd):
         self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
-        ans = self.tel.read_until(b"END")
+        ans = self.tel.read_until(b"END", timeout=0.1)
+        if ans == b"":  # pragma: no cover
+            raise LiquidsoapClientError(
+                "Timeout while trying to read from player. Got no answer."
+            )
+        if not ans.endswith(b"END"):
+            raise LiquidsoapClientError(
+                f"Timeout while trying to read until 'END' from player. "
+                f"Only got: {repr(ans)}"
+            )
         ans = re.sub(b"[\r\n]*END$", b"", ans)
         ans = re.sub(b"^[\r\n]*", b"", ans)
         ans = re.subn(b"\r", b"", ans)[0]
