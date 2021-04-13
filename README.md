@@ -30,8 +30,8 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
   * *Werkzeug* library (>= v2.0.0) for WSGI support
   * *PyJWT* library (>= v2.0.0) for creating and verifing JWT authentication tokens
   * *mutagen* library for audio tag editing
-* **ffmpeg** binary (>=4.0) for audio analysis
-* **Liquidsoap** audio player
+* **ffmpeg** binary for audio analysis
+* **Liquidsoap** audio player (version 1.3.x)
 
 
 ## Setup
@@ -65,6 +65,7 @@ opam init
 opam switch create klangbecken 4.07.0
 opam depext alsa mad lame vorbis taglib liquidsoap.1.3.7
 opam install alsa mad lame vorbis taglib liquidsoap.1.3.7
+eval $(opam env)
 ```
 
 Install the client UI:
@@ -119,7 +120,6 @@ Before submitting your code make sure that ...
    ```bash
    pip install -r requirements-test.txt
    ```
-
 2. ... the test suite runs without failure
    ```bash
    python -m unittest discover
@@ -141,16 +141,19 @@ We recommend the use of `tox`, `black` and `isort` for development.
 pip install tox black isort
 ```
 
-Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.6). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it.
+###### tox
+Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.6). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it.  To call it simply type:
 ```bash
 tox
 ```
 
+###### black
 Manually fixing coding style mistakes is a pain. `black` formats your code automatically.
 ```bash
 black .
 ```
 
+###### isort
 Finally, `isort` helps to consistantly organize package imports.
 ```bash
 isort .
