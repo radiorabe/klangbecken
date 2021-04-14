@@ -9,8 +9,6 @@ PLAYLISTS = ("music", "classics", "jingles")
 # Map file extension to mutagen class for all supported file types
 SUPPORTED_FILE_TYPES = {
     "mp3": mutagen.mp3.EasyMP3,
-    "ogg": mutagen.oggvorbis.OggVorbis,
-    "flac": mutagen.flac.FLAC,
 }
 
 ISO8601_RE = (
