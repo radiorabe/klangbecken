@@ -7,7 +7,7 @@ SSH_HOST=root@vm-0016.vm-admin.int.rabe.ch
 
 if [ $# -eq 0 ]; then
   MOD_WSGI=yes
-elif [ $# -eq 1 -a ( "$1" = "--no-mod-wsgi" -o "$1" = "-n") ]; then
+elif [ $# -eq 1 ] && [ "$1" = "--no-mod-wsgi" -o "$1" = "-n" ]; then
   MOD_WSGI=no
 else
   echo "Klangbecken deployment script"
