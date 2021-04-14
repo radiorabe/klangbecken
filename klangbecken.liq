@@ -4,12 +4,19 @@
 # Environment Variables:                            #
 #   - KLANGBECKEN_ALSA_DEVICE                       #
 #     ALSA device to send sound to                  #
-#   - KLANGBECKEN_DATA                              #
+#     Default: default                              #
+#                                                   #
+#   - KLANGBECKEN_DATA_DIR                          #
 #     Directory with data                           #
-#   - KLANGBECKEN_PATH                              #
-#     Path to klangbecken.py                        #
-#   - KLANGBECKEN_SOCKET_PATH                       #
+#     Default: ./data                               #
+#                                                   #
+#   - KLANGBECKEN_COMMAND                           #
+#     Klangbecken command                           #
+#     Default: python -m klangbecken                #
+#                                                   #
+#   - KLANGBECKEN_PLAYER_SOCKET                     #
 #     Path to socket to listen on                   #
+#     Default: klagbecken.sock                      #
 # ================================================= #
 
 # return value of environment variable if set, otherwise fallback
@@ -30,18 +37,18 @@ set("log.level", 3)
 
 # socket
 set("server.socket", true)
-set("server.socket.path", getenv_fallback("KLANGBECKEN_SOCKET_PATH", "./klangbecken.sock"))
+set("server.socket.path", getenv_fallback("KLANGBECKEN_PLAYER_SOCKET", "./klangbecken.sock"))
 set("server.socket.permissions", 0o660)  # Make socket group readable/writable
 
 # Get the Klangbecken data directory
-DATA_DIR = getenv_fallback("KLANGBECKEN_DATA", "data")
-if not is_directory(DATA_DIR) then
+DATA_DIR = getenv_fallback("KLANGBECKEN_DATA_DIR", "./data")
+if not file.is_directory(DATA_DIR) then
     log(level=2, "ERROR: Cannot find data directory: " ^ DATA_DIR)
     shutdown()
 end
 
-# Get the klangecken command
-CMD_PATH = getenv_fallback("KLANGBECKEN_PATH", "python -m klangbecken")
+# Get the klangbecken command
+KLANGBECKEN_COMMAND = getenv_fallback("KLANGBECKEN_COMMAND", "python -m klangbecken")
 
 # Get the alsa device
 ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
@@ -65,7 +72,9 @@ def check_next_func(r) =
   filename = request.filename(r)
 
   last_play = float_of_string(metadata["last_play_epoch"])
-  if last_play == 0.0 then
+  if filename == "" then
+    false
+  elsif last_play == 0.0 then
     skipped := 0
     log("track was never played before: #{filename}", label="check_next_func")
     true
@@ -92,26 +101,41 @@ end
 
 # Priority queue
 queue = request.equeue(id="queue", length=5.0)
-# Convert mono jingles to stereo
+# Convert mono queue entries (jingles) to stereo
 queue = audio_to_stereo(queue)
 # Cut silence at start and end
 queue = cue_cut(queue, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Music playlist
-music = playlist(id="music", mode="random", reload_mode="watch",
-                 check_next=check_next_func, path.concat(DATA_DIR, "music.m3u"))
+music = playlist(
+  path.concat(DATA_DIR, "music.m3u"),
+  id="music",
+  mode="random",
+  reload_mode="watch",
+  check_next=check_next_func,
+)
 # Cut silence at start and end
 music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Classics playlist
-classics = playlist(id="classics", mode="random", reload_mode="watch",
-                    check_next=check_next_func, path.concat(DATA_DIR, "classics.m3u"))
+classics = playlist(
+  path.concat(DATA_DIR, "classics.m3u"),
+  id="classics",
+  mode="random",
+  reload_mode="watch",
+  check_next=check_next_func,
+)
 # Cut silence at start and end
 classics = cue_cut(classics, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 
 # Jingles playlist
-jingles = playlist(id="jingles", mode="random", reload_mode="watch",
-                   check_next=check_next_func, path.concat(DATA_DIR, "jingles.m3u"))
+jingles = playlist(
+  path.concat(DATA_DIR, "jingles.m3u"),
+  id="jingles",
+  mode="random",
+  reload_mode="watch",
+  check_next=check_next_func,
+)
 # Convert mono jingles to stereo
 jingles = audio_to_stereo(jingles)
 # Cut silence at start and end
@@ -130,7 +154,7 @@ music = random(weights=[5, 1], [music, classics])
 # ================================================= #
 
 insert_jingle = ref false
-onair = ref false
+on_air = ref false
 
 def jingle_timeout() =
   jingle_times = [5m0s, 20m0s, 35m0s, 50m0s]
@@ -144,13 +168,15 @@ add_timeout(0.0, jingle_timeout)
 
 radio = switch(id="radio", [
   ({!insert_jingle}, jingles),
-  ({!onair}, queue),
+  ({!on_air}, queue),
   ({true}, music),
 ])
 
 def on_track_func(m) =
   # Reset jingle playing flag
-  insert_jingle := false
+  if m['source'] == 'jingles' then
+    insert_jingle := false
+  end
 end
 radio = on_track(on_track_func, radio)
 
@@ -161,15 +187,15 @@ radio = on_track(on_track_func, radio)
 
 restart = ref true
 
-def onair_func(state) =
+def on_air_func(state) =
   state = string.case(state)
   state = string.trim(state)
   if state == "" then
     # Return state
-    "#{!onair}"
+    "#{!on_air}"
   else
-    onair := bool_of_string(state)
-    if !onair then
+    on_air := bool_of_string(state)
+    if !on_air then
       log("Starting Klangbecken")
       restart := true
       source.skip(radio)
@@ -185,7 +211,13 @@ server.register(namespace='klangbecken',
                 description="Control, if the player is on air. Returns the current state, if called without argument.",
                 usage="onair [true|false]",
                 "onair",
-                onair_func)
+                on_air_func)
+server.register(
+  "on_air",
+  on_air_func,
+  usage="on_air [true|false]",
+  description="Control if the player is on air. Returns the current state, if called without argument."
+)
 
 # Have restart delay and fade dynamically reconfigurable
 # for debugging purpose
@@ -217,7 +249,11 @@ filename = ref ''
 def log_metadata_func(m) =
   log('Playing: #{m["filename"]}', label="log_metadata_func")
 
-  if !onair then
+  if m['filename'] == '' then
+    log("WARNING: Empty filename", label="log_metadata_func")
+  end
+
+  if !on_air then
     # Prepare play logger
     have_new_metadata := true
     filename := m['filename']
@@ -227,7 +263,9 @@ radio = on_track(log_metadata_func, radio)
 
 def run_play_logger() =
   have_new_metadata := false
-  system("#{CMD_PATH} playlog -d #{DATA_DIR} #{!filename}")
+  log("#{KLANGBECKEN_COMMAND} playlog -d #{DATA_DIR} #{!filename}", label="run_play_logger")
+
+  system("#{KLANGBECKEN_COMMAND} playlog -d #{DATA_DIR} #{!filename}")
 end
 
 # Run the logging command in the background, not to lock up the player
