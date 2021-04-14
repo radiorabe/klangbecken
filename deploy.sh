@@ -36,17 +36,19 @@ then
         exit 1
     fi
   fi
+  echo
   echo "##################################"
   echo "# Copying dependencies to server #"
   echo "##################################"
   scp "$TEMP"/* "$SSH_HOST":"dependencies/"
   rm "$TEMP"/*
   rmdir "$TEMP"
+  echo
   echo "#########################"
   echo "# Deploying application #"
   echo "#########################"
   git push prod
 else
-  echo Requirements file is dirty
+  echo "WARNING: Requirements file is dirty"
   exit 1
 fi
