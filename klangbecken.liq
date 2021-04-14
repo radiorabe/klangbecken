@@ -31,6 +31,7 @@ set("log.level", 3)
 # socket
 set("server.socket", true)
 set("server.socket.path", getenv_fallback("KLANGBECKEN_SOCKET_PATH", "./klangbecken.sock"))
+set("server.socket.permissions", 0o660)  # Make socket group readable/writable
 
 # Get the Klangbecken data directory
 DATA_DIR = getenv_fallback("KLANGBECKEN_DATA", "data")
