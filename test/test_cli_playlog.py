@@ -25,7 +25,7 @@ class PlaylogCmdTestCase(unittest.TestCase):
         # Correctly import a couple of files
         files = [
             os.path.join(self.current_path, "audio", "padded" + ext)
-            for ext in ".ogg .flac -stereo.mp3".split()
+            for ext in "-jointstereo.mp3 -stereo.mp3".split()
         ]
         try:
             args = [self.data_dir, "music", files, True]

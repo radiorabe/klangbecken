@@ -18,7 +18,16 @@ class EchoHandler(socketserver.BaseRequestHandler):
             if not msg or msg.strip() == b"exit":
                 self.request.send(b"Bye!\n")
                 break
+            # self.request.send(b"echo: ")
+            # time.sleep(0.5)
             self.request.send(msg)
+
+
+# port = random.randrange(1024, 100000)
+# serv = socketserver.TCPServer(("localhost", port), EchoHandler)
+# thread = threading.Thread(target=serv.serve_forever)
+# thread.start()
+# tel = telnetlib.Telnet("localhost", port)
 
 
 def get_port():

@@ -57,9 +57,9 @@ class GenericAPITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         resp = self.client.put("/playlist/music/" + str(uuid.uuid4()) + ".mp3")
         self.assertEqual(resp.status_code, 415)
-        resp = self.client.put("/playlist/jingles/" + str(uuid.uuid4()) + ".ogg")
+        resp = self.client.put("/playlist/classics/" + str(uuid.uuid4()) + ".mp3")
         self.assertEqual(resp.status_code, 415)
-        resp = self.client.put("/playlist/music/" + str(uuid.uuid4()) + ".flac")
+        resp = self.client.put("/playlist/jingles/" + str(uuid.uuid4()) + ".mp3")
         self.assertEqual(resp.status_code, 415)
         resp = self.client.put("/playlist/jingles/" + str(uuid.uuid4()) + ".ttt")
         self.assertEqual(resp.status_code, 404)
@@ -71,11 +71,11 @@ class GenericAPITestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()))
         self.assertEqual(resp.status_code, 404)
+        resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()) + ".mp3")
+        self.assertEqual(resp.status_code, 200)
+        resp = self.client.delete("/playlist/classics/" + str(uuid.uuid4()) + ".mp3")
+        self.assertEqual(resp.status_code, 200)
         resp = self.client.delete("/playlist/jingles/" + str(uuid.uuid4()) + ".mp3")
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()) + ".ogg")
-        self.assertEqual(resp.status_code, 200)
-        resp = self.client.delete("/playlist/jingles/" + str(uuid.uuid4()) + ".flac")
         self.assertEqual(resp.status_code, 200)
         resp = self.client.delete("/playlist/music/" + str(uuid.uuid4()) + ".ttt")
         self.assertEqual(resp.status_code, 404)
@@ -343,3 +343,15 @@ class PlayerAPITestCase(unittest.TestCase):
         resp = self.client.delete("/queue/15")
         self.assertEqual(resp.status_code, 200)
         self.liquidsoap_client.delete.assert_called_once_with("15")
+
+
+#
+# def testQueueMove(self):
+#     resp = self.client.put("/queue/15", data=json.dumps({"position": 42}))
+#     self.assertEqual(resp.status_code, 200)
+#     self.liquidsoap_client.move.assert_called_once_with("15", 42)
+#
+# def testQueueClear(self):
+#     resp = self.client.delete("/queue/")
+#     self.assertEqual(resp.status_code, 200)
+#     self.liquidsoap_client.clear_queue.assert_called_once_with()
