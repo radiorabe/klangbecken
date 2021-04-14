@@ -16,7 +16,7 @@
 #                                                   #
 #   - KLANGBECKEN_PLAYER_SOCKET                     #
 #     Path to socket to listen on                   #
-#     Default: klagbecken.sock                      #
+#     Default: klangbecken.sock                      #
 # ================================================= #
 
 # return value of environment variable if set, otherwise fallback
