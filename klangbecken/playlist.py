@@ -85,40 +85,35 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
 
 silence_re = re.compile(r"silencedetect.*silence_(start|end):\s*(\S*)")
 trackgain_re = re.compile(r"replaygain.*track_gain = (\S* dB)")
+audio_quality_re = re.compile(
+    r"Stream #0:0: Audio: (.*), (\d*) Hz, (stereo|mono), \S*, (\d*) kb/s"
+)
 
 
-def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
-    """Analyze the audio data with ffmpeg.
+def _check_audio_quality(ffmpeg_output, playlist):
+    quality_match = audio_quality_re.search(ffmpeg_output)
+    if quality_match is None:  # pragma: no cover
+        # Should not happen
+        raise UnprocessableEntity("Cannot detect audio quality")
 
-    This function does two things:
-    - Calculate the replaygain value for loudness normalization.
-    - Detect silence periods at the start and end of the track, and
-      calculate the according cue points.
-    """
-    # To make sure that we find the correct cue_out point, we append ~0.2 seconds
-    # of silence to the end of the track (with the `apad=pad_len=10000` option).
-    # This guarantees that we always find at least one silence period.
-    #
-    # Also, we have no a priori knowledge of the exact length of the track, to which
-    # we could fall back to. Whereas at the start of the track it is easy: we can
-    # always fall back to 0.0.
-    command = """ffmpeg -i - -af
-    replaygain,apad=pad_len=10000,silencedetect=d=0.01 -f null -""".split()
+    filetype, samplerate, channels, bitrate = quality_match.groups()
 
-    try:
-        raw_output = subprocess.check_output(
-            command, stdin=file_, stderr=subprocess.STDOUT
-        )
-        # Non-ASCII characters can safely be ignored
-        output = str(raw_output, "ascii", errors="ignore")
-    except subprocess.CalledProcessError:
-        raise UnprocessableEntity("Cannot process audio data")
+    if filetype != "mp3":
+        raise UnprocessableEntity(f"The track is not a valid MP3 file: {filetype}")
 
-    # Extract ReplayGain value
-    gain = trackgain_re.search(output).groups()[0]
+    if samplerate not in ("44100", "48000"):
+        raise UnprocessableEntity(f"Invalid sample rate: {samplerate}")
 
+    if playlist != "jingles" and channels == "mono":
+        raise UnprocessableEntity("Track must be stereo")
+
+    if int(bitrate) < 120:
+        raise UnprocessableEntity(f"Track bitrate too low: {bitrate} < 120 kb/s")
+
+
+def _extract_cue_points(ffmpeg_output):
     # Extract silence periods
-    silence_times = re.findall(silence_re, output)
+    silence_times = re.findall(silence_re, ffmpeg_output)
 
     # Start times of silence periods (there is at least one value)
     start_times = [float(value) for name, value in silence_times if name == "start"]
@@ -157,6 +152,46 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
             f"Too much silence ({cue_in}s) found at the start of the track: "
             f"Check your file."
         )
+
+    return cue_in, cue_out
+
+
+def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
+    """Analyze the audio data with ffmpeg.
+
+    This function does three things:
+    - Check the encoding quality of the track (bitrate, samplerate, stereo/mono)
+    - Calculate the replaygain value for loudness normalization.
+    - Detect silence periods at the start and end of the track, and
+      calculate the according cue points.
+    """
+    # To make sure that we find the correct cue_out point, we append ~0.2 seconds
+    # of silence to the end of the track (with the `apad=pad_len=10000` option).
+    # This guarantees that we always find at least one silence period.
+    #
+    # Also, we have no a priori knowledge of the exact length of the track, to which
+    # we could fall back to. Whereas at the start of the track it is easy: we can
+    # always fall back to 0.0.
+    command = """ffmpeg -i - -af
+    replaygain,apad=pad_len=10000,silencedetect=d=0.01 -f null -""".split()
+
+    try:
+        raw_output = subprocess.check_output(
+            command, stdin=file_, stderr=subprocess.STDOUT
+        )
+        # Non-ASCII characters can safely be ignored
+        output = str(raw_output, "ascii", errors="ignore")
+    except subprocess.CalledProcessError:
+        raise UnprocessableEntity("Cannot process audio data")
+
+    # Check audio quality
+    _check_audio_quality(output, playlist)
+
+    # Extract ReplayGain value
+    gain = trackgain_re.search(output).groups()[0]
+
+    # Extract cue points
+    cue_in, cue_out = _extract_cue_points(output)
 
     file_.seek(0)
     return [
