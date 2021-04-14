@@ -180,17 +180,17 @@ def development_server(data_dir, player_socket):
     """
     from werkzeug.middleware.shared_data import SharedDataMiddleware
 
-    from .playlist import ffmpeg_audio_analyzer, mutagen_tag_analyzer, raw_file_analyzer
+    from .playlist import ffmpeg_audio_analyzer
 
     # Check data dirrectory structure
     _check_data_dir(data_dir)
 
-    # Only add ffmpeg_audio_analyzer to analyzers if binary is present
-    upload_analyzers = [raw_file_analyzer, mutagen_tag_analyzer]
+    # Remove ffmpeg_audio_analyzer from analyzers if binary is not present
+    upload_analyzers = DEFAULT_UPLOAD_ANALYZERS[:]
     try:
         subprocess.check_output("ffmpeg -version".split())
-        upload_analyzers.append(ffmpeg_audio_analyzer)
     except (OSError, subprocess.CalledProcessError):  # pragma: no cover
+        upload_analyzers.remove(ffmpeg_audio_analyzer)
         print(
             "WARNING: ffmpeg binary not found. No audio analysis is performed.",
             file=sys.stderr,
