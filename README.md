@@ -180,15 +180,16 @@ _Preparation:_
 
 _Run the script:_
 ```bash
-./deploy.sh
+./deploy.sh [--no-mod-wsgi]
 ```
 It perfoms the following steps:
-- Download all run-time dependencies (plus `mod_wsgi`) locally.
+- Download all run-time dependencies.
+- Optionally download `mod_wsgi` (requires httpd-devel libraries to be installed locally).
 - `scp` the dependencies to production.
 - Push your code to production.
 - Install all dependencies in production.
-- Installing the Python package (API and CLI) in production.
-- Reloading the web server to load the new API code.
+- Install the Python package (API and CLI) in production.
+- Reload the web server to load the new API code.
 - Copy the liquidsoap script to it's destination.
 
 _Finalize deployment:_
