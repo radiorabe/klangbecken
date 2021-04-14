@@ -21,7 +21,7 @@ class FsckTestCase(unittest.TestCase):
         # Correctly import a couple of files
         files = [
             os.path.join(self.current_path, "audio", "padded" + ext)
-            for ext in ".ogg .flac -stereo.mp3".split()
+            for ext in "-stereo.mp3 -jointstereo.mp3".split()
         ]
         try:
             args = [self.tempdir, "jingles", files, True]
@@ -39,7 +39,7 @@ class FsckTestCase(unittest.TestCase):
         from klangbecken.cli import import_cmd, main
 
         # Correctly import a couple of files
-        file_path = os.path.join(self.current_path, "audio", "padded.ogg")
+        file_path = os.path.join(self.current_path, "audio", "padded-jointstereo.mp3")
         try:
             args = [self.tempdir, "music", [file_path], True]
             with capture(import_cmd, *args) as (out, err, ret):

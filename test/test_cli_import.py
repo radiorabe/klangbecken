@@ -28,8 +28,8 @@ class ImporterTestCase(unittest.TestCase):
         from klangbecken.cli import import_cmd, main
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
-        audio2_path = os.path.join(audio_path, "padded.ogg")
+        audio1_path = os.path.join(audio_path, "sine-unicode-stereo.mp3")
+        audio2_path = os.path.join(audio_path, "padded-stereo.mp3")
         audio1_mtime = datetime.datetime.fromtimestamp(os.stat(audio1_path).st_mtime)
 
         # Import nothing -> usage
@@ -69,7 +69,7 @@ class ImporterTestCase(unittest.TestCase):
                 import_timestamp,
             )
             self.assertEqual(
-                list(data.values())[0]["original_filename"], "sine-unicode.flac"
+                list(data.values())[0]["original_filename"], "sine-unicode-stereo.mp3"
             )
 
         # Import two file
@@ -128,8 +128,8 @@ class ImporterTestCase(unittest.TestCase):
         from klangbecken.cli import main
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
-        audio2_path = os.path.join(audio_path, "padded.ogg")
+        audio1_path = os.path.join(audio_path, "sine-unicode-stereo.mp3")
+        audio2_path = os.path.join(audio_path, "padded-stereo.mp3")
 
         metadata_path = os.path.join(self.tempdir, "metadata.json")
         with open(metadata_path, "w") as f:
@@ -171,7 +171,7 @@ class ImporterTestCase(unittest.TestCase):
         from klangbecken.cli import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
+        audio1_path = os.path.join(audio_path, "sine-unicode-stereo.mp3")
 
         args = [self.tempdir, "music", [audio1_path], False]
         with self.assertRaises(SystemExit) as cm:
@@ -188,7 +188,7 @@ class ImporterTestCase(unittest.TestCase):
         from klangbecken.cli import import_cmd
 
         audio_path = os.path.join(self.current_path, "audio")
-        audio1_path = os.path.join(audio_path, "sine-unicode.flac")
+        audio1_path = os.path.join(audio_path, "sine-unicode-stereo.mp3")
 
         args = [self.tempdir, "music", [audio1_path], False]
 

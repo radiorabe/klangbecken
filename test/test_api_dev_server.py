@@ -83,11 +83,11 @@ class DevServerTestCase(unittest.TestCase):
         resp.close()
 
         # Upload
-        path = os.path.join(self.current_path, "audio", "sine-unicode.flac")
+        path = os.path.join(self.current_path, "audio", "sine-unicode-jointstereo.mp3")
         with open(path, "rb") as f:
             resp = self.client.post(
                 "/api/playlist/music/",
-                data={"file": (f, "sine-unicode.flac")},
+                data={"file": (f, "sine-unicode-jointstereo.mp3")},
                 headers=[("Authorization", f"Bearer {token}")],
             )
         self.assertEqual(resp.status_code, 200)
@@ -95,12 +95,12 @@ class DevServerTestCase(unittest.TestCase):
         fileId = list(data.keys())[0]
         self.assertEqual(fileId, str(uuid.UUID(fileId)))
         expected = {
-            "original_filename": "sine-unicode.flac",
+            "original_filename": "sine-unicode-jointstereo.mp3",
             "length": 5.0,
             "album": "Sine Album 👌👍🖖",
             "title": "Sine Title éàè",
             "artist": "Sine Artist öäü",
-            "ext": "flac",
+            "ext": "mp3",
             "weight": 1,
             "playlist": "music",
             "id": fileId,
@@ -110,7 +110,7 @@ class DevServerTestCase(unittest.TestCase):
 
         # Update
         resp = self.client.put(
-            "/api/playlist/music/" + fileId + ".flac",
+            "/api/playlist/music/" + fileId + ".mp3",
             data=json.dumps({"weight": 4}),
             content_type="text/json",
             headers=[("Authorization", f"Bearer {token}")],
@@ -119,7 +119,7 @@ class DevServerTestCase(unittest.TestCase):
         resp.close()
 
         # Get file
-        resp = self.client.get("/data/music/" + fileId + ".flac")
+        resp = self.client.get("/data/music/" + fileId + ".mp3")
         self.assertEqual(resp.status_code, 200)
         resp.close()
 
@@ -130,7 +130,7 @@ class DevServerTestCase(unittest.TestCase):
 
         # Delete file
         resp = self.client.delete(
-            "/api/playlist/music/" + fileId + ".flac",
+            "/api/playlist/music/" + fileId + ".mp3",
             headers=[("Authorization", f"Bearer {token}")],
         )
         self.assertEqual(resp.status_code, 200)

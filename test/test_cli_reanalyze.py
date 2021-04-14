@@ -22,7 +22,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
         # Correctly import a couple of files
         files = [
             os.path.join(self.current_path, "audio", "padded" + ext)
-            for ext in ".ogg .flac -stereo.mp3".split()
+            for ext in "-jointstereo.mp3 -stereo.mp3".split()
         ]
         self.file_count = len(files)
 

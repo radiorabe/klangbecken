@@ -74,7 +74,7 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # Correct file
         fileStorage = FileStorage(filename="filename-äöü")
-        result = raw_file_analyzer("jingles", "fileId", "ogg", fileStorage)
+        result = raw_file_analyzer("jingles", "fileId", "mp3", fileStorage)
 
         # Assure file is reset correctly
         self.assertEqual(fileStorage.tell(), 0)
@@ -83,7 +83,7 @@ class AnalyzersTestCase(unittest.TestCase):
         self.assertEqual(result[0], FileAddition(fileStorage))
         self.assertTrue(MetadataChange("playlist", "jingles") in result)
         self.assertTrue(MetadataChange("id", "fileId") in result)
-        self.assertTrue(MetadataChange("ext", "ogg") in result)
+        self.assertTrue(MetadataChange("ext", "mp3") in result)
         self.assertTrue(MetadataChange("original_filename", "filename-äöü") in result)
         import_timestamp = [
             ch
@@ -99,7 +99,7 @@ class AnalyzersTestCase(unittest.TestCase):
         from klangbecken.playlist import MetadataChange as Change, mutagen_tag_analyzer
 
         # Test regular files
-        for ext in ["mp3", "ogg", "flac"]:
+        for ext in ["mp3"]:
             path = os.path.join(self.current_path, "audio", "silence." + ext)
             with open(path, "rb") as f:
                 fs = FileStorage(f)
@@ -115,7 +115,7 @@ class AnalyzersTestCase(unittest.TestCase):
                 self.assertFalse(f.closed)
 
         # Test regular files with unicode tags
-        for suffix in ["-jointstereo.mp3", "-stereo.mp3", ".ogg", ".flac"]:
+        for suffix in ["-jointstereo.mp3", "-stereo.mp3"]:
             extra, ext = suffix.split(".")
             name = "silence-unicode" + extra + "." + ext
             path = os.path.join(self.current_path, "audio", name)
@@ -140,7 +140,7 @@ class AnalyzersTestCase(unittest.TestCase):
             self.assertIn(Change("length", 1.0), changes)
 
         # Test invalid files
-        for ext in ["mp3", "ogg", "flac"]:
+        for ext in ["mp3"]:
             path = os.path.join(self.current_path, "audio", "silence." + ext)
             fs = FileStorage(io.BytesIO(b"\0" * 1024))
             with self.assertRaises(UnprocessableEntity):
@@ -196,12 +196,14 @@ class AnalyzersTestCase(unittest.TestCase):
         ]
 
         for data in test_data:
-            for ext in "-jointstereo.mp3 -stereo.mp3 .ogg .flac".split():
+            for ext in "-jointstereo.mp3 -stereo.mp3".split():
                 self._analyzeOneFile(postfix=ext, **data)
 
         # silence only file
         with self.assertRaises(UnprocessableEntity) as cm:
-            path = os.path.join(self.current_path, "audio", "silence-unicode.flac")
+            path = os.path.join(
+                self.current_path, "audio", "silence-unicode-stereo.mp3"
+            )
             with open(path, "rb") as f:
                 fs = FileStorage(f)
                 ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
@@ -209,7 +211,7 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # too long silence intro file
         with self.assertRaises(UnprocessableEntity) as cm:
-            path = os.path.join(self.current_path, "audio", "padded-start-long.flac")
+            path = os.path.join(self.current_path, "audio", "padded-start-long.mp3")
             with open(path, "rb") as f:
                 fs = FileStorage(f)
                 ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
@@ -228,7 +230,7 @@ class ProcessorsTestCase(unittest.TestCase):
         os.mkdir(os.path.join(self.tempdir, "music"))
 
         current_path = os.path.dirname(os.path.realpath(__file__))
-        for ext in ".mp3 -stripped.mp3 .ogg .flac".split():
+        for ext in ".mp3 -stripped.mp3".split():
             shutil.copyfile(
                 os.path.join(current_path, "audio", "silence" + ext),
                 os.path.join(self.tempdir, "music", "silence" + ext),
@@ -353,7 +355,7 @@ class ProcessorsTestCase(unittest.TestCase):
         # Add two new files
         file_ = FileStorage(io.BytesIO(b"abc"), "filename.txt")
         index_processor(self.tempdir, "music", "fileId1", "mp3", [FileAddition(file_)])
-        index_processor(self.tempdir, "music", "fileId2", "ogg", [FileAddition(file_)])
+        index_processor(self.tempdir, "music", "fileId2", "mp3", [FileAddition(file_)])
 
         with open(index_path) as f:
             data = json.load(f)
@@ -369,7 +371,7 @@ class ProcessorsTestCase(unittest.TestCase):
             self.tempdir,
             "music",
             "fileId2",
-            ".ogg",
+            ".mp3",
             [MetadataChange("key1", "value1"), MetadataChange("key2", "value2")],
         )
 
@@ -395,7 +397,7 @@ class ProcessorsTestCase(unittest.TestCase):
             self.tempdir,
             "music",
             "fileId2",
-            "ogg",
+            "mp3",
             [MetadataChange("key2", "value2-1-œ")],
         )
 
@@ -423,7 +425,7 @@ class ProcessorsTestCase(unittest.TestCase):
         # Try duplicating file ids
         with self.assertRaisesRegex(UnprocessableEntity, "Duplicate"):
             index_processor(
-                self.tempdir, "music", "fileId2", ".ogg", [FileAddition(file_)]
+                self.tempdir, "music", "fileId2", ".mp3", [FileAddition(file_)]
             )
         with self.assertRaisesRegex(UnprocessableEntity, "Duplicate"):
             index_processor(
@@ -440,13 +442,13 @@ class ProcessorsTestCase(unittest.TestCase):
                 self.tempdir,
                 "music",
                 "fileIdXY",
-                "ogg",
+                "mp3",
                 [MetadataChange("key", "val")],
             )
 
         # Try deleting non existent file ids
         with self.assertRaises(NotFound):
-            index_processor(self.tempdir, "music", "fileIdXY", "ogg", [FileDeletion()])
+            index_processor(self.tempdir, "music", "fileIdXY", "mp3", [FileDeletion()])
 
         with open(index_path) as f:
             data = json.load(f)
@@ -491,12 +493,7 @@ class ProcessorsTestCase(unittest.TestCase):
         metadata_changes = [MetadataChange(key, val) for key, val in changes.items()]
 
         # Valid files
-        for filename in [
-            "silence.mp3",
-            "silence-stripped.mp3",
-            "silence.ogg",
-            "silence.flac",
-        ]:
+        for filename in ["silence.mp3", "silence-stripped.mp3"]:
             prefix, ext = filename.split(".")
 
             path = os.path.join(self.tempdir, "music", filename)
@@ -569,10 +566,10 @@ class ProcessorsTestCase(unittest.TestCase):
             self.tempdir, "music", "fileId1", "mp3", [MetadataChange("weight", 2)]
         )
         playlist_processor(
-            self.tempdir, "music", "fileId2", "ogg", [MetadataChange("weight", 1)]
+            self.tempdir, "music", "fileId2", "mp3", [MetadataChange("weight", 1)]
         )
         playlist_processor(
-            self.tempdir, "music", "fileId3", "flac", [MetadataChange("weight", 3)]
+            self.tempdir, "music", "fileId3", "mp3", [MetadataChange("weight", 3)]
         )
         playlist_processor(
             self.tempdir, "jingles", "fileId4", "mp3", [MetadataChange("weight", 2)]
@@ -585,9 +582,9 @@ class ProcessorsTestCase(unittest.TestCase):
             lines = [ln.strip() for ln in f.readlines()]
         entries = [ln for ln in lines if ln.endswith("music/fileId1.mp3")]
         self.assertEqual(len(entries), 2)
-        entries = [ln for ln in lines if ln.endswith("music/fileId2.ogg")]
+        entries = [ln for ln in lines if ln.endswith("music/fileId2.mp3")]
         self.assertEqual(len(entries), 1)
-        entries = [ln for ln in lines if ln.endswith("music/fileId3.flac")]
+        entries = [ln for ln in lines if ln.endswith("music/fileId3.mp3")]
         self.assertEqual(len(entries), 3)
 
         with open(jingles_path) as f:
@@ -598,7 +595,7 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertEqual(len(entries), 3)
 
         # Delete non existing file (must be possible)
-        playlist_processor(self.tempdir, "music", "fileIdXY", "ogg", [FileDeletion()])
+        playlist_processor(self.tempdir, "music", "fileIdXY", "mp3", [FileDeletion()])
         with open(music_path) as f:
             lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 6)
@@ -624,14 +621,14 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue(all(lines))
 
         # Multiple deletes
-        playlist_processor(self.tempdir, "music", "fileId3", "flac", [FileDeletion()])
+        playlist_processor(self.tempdir, "music", "fileId3", "mp3", [FileDeletion()])
         playlist_processor(self.tempdir, "jingles", "fileId4", "mp3", [FileDeletion()])
         playlist_processor(self.tempdir, "jingles", "fileId5", "mp3", [FileDeletion()])
 
         with open(music_path) as f:
             lines = [ln.strip() for ln in f.readlines()]
         self.assertEqual(len(lines), 1)
-        self.assertTrue(lines[0].endswith("music/fileId2.ogg"))
+        self.assertTrue(lines[0].endswith("music/fileId2.mp3"))
 
         with open(jingles_path) as f:
             data = f.read()
