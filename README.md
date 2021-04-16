@@ -173,9 +173,10 @@ liquidsoap --check klangbecken.liq
 The deploy script `deploy.sh` partially automates deploying the code.
 
 _Preparation:_
+* Have a remote `prod` point at the repository on the production system.
 * Make sure, your code passes continuous integration.
 * Increment the version (in `klangbecken/__init__.py` and `setup.py`).
-* Be sure your `requirements.txt` has no uncommited modifications.
+* Verify that your `requirements.txt` and `setup.py` have no uncommited modifications and that you are on the `master` branch.
 
 
 _Run the script:_
@@ -191,9 +192,14 @@ It perfoms the following steps:
 - Install the Python package (API and CLI) in production.
 - Reload the web server to load the new API code.
 - Copy the liquidsoap script to it's destination.
+- If everything was successful, tag the current commit with the new version number.
 
 _Finalize deployment:_
 - Restart the liquidsoap player during a "off air" moment:
   ```bash
   systemctl restart liquidsoap@klangbecken
+  ```
+- Push the tags to the upstream repository:
+  ```bash
+  git push --tags upstream master
   ```
