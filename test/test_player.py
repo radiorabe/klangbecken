@@ -50,7 +50,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def testOpenAndUnix(self):
-        from klangbecken.player import LiquidsoapClient, LiquidsoapClientError
+        from klangbecken.player import LiquidsoapClient
 
         settings = [
             (socketserver.TCPServer, ("localhost", get_port())),
@@ -103,14 +103,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "classics.next",
                 """[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3""",
             ),
-            (
-                "jingles.next",
-                """[ready] data/jingles/4c4903fe-7c1f-4dbf-925c-a43a9ac1e55f.mp3
-                [ready] data/jingles/86fde5f3-47aa-4ac7-ad47-bfc82612224f.mp3
-                data/jingles/17e716e1-8a03-4a1f-bb40-7d8d90e97f98.mp3
-                data/jingles/c5ed6706-fb81-49ca-b1bb-4eaf19e598a6.mp3
-                data/jingles/9637b1e1-6542-4715-bb02-00b433011551.mp3""",
-            ),
+            ("jingles.next", ""),
             ("klangbecken.onair", "true"),
             ("request.on_air", "8"),
             (
@@ -151,7 +144,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "api_version": __version__,
                 "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
                 "classics": "",
-                "jingles": "4c4903fe-7c1f-4dbf-925c-a43a9ac1e55f",
+                "jingles": "",
                 "on_air": {
                     "source": "classics",
                     "id": "4daabe44-6d48-47c4-a187-592cf048b039",
