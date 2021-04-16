@@ -161,7 +161,10 @@ def _extract_id(filename, playlist=None):
     filename_re = r"^.*{0}/([0-9a-f-]+)\.(?:{1})$".format(
         playlist, "|".join(SUPPORTED_FILE_TYPES.keys())
     )
-    return re.findall(filename_re, filename)[0]
+    try:
+        return re.findall(filename_re, filename)[0]
+    except IndexError:
+        return None
 
 
 class LiquidsoapClientError(Exception):
