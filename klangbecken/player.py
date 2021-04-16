@@ -164,7 +164,7 @@ def _extract_id(filename, playlist=None):
     try:
         return re.findall(filename_re, filename)[0]
     except IndexError:
-        return None
+        return ""
 
 
 class LiquidsoapClientError(Exception):
