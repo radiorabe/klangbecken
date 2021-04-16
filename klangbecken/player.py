@@ -37,9 +37,11 @@ class LiquidsoapClient:
 
     def __exit__(self, *exc_info):
         # Try to be nice
-        self.tel.write(b"exit\n")
-        self.tel.read_until(b"Bye!", timeout=0.1)
-        self.close()
+        try:
+            self.tel.write(b"exit\n")
+            self.tel.read_until(b"Bye!", timeout=0.1)
+        finally:
+            self.close()
 
     def open(self, addr):
         try:
@@ -57,11 +59,11 @@ class LiquidsoapClient:
         self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
         ans = self.tel.read_until(b"END", timeout=0.1)
         if ans == b"":  # pragma: no cover
-            raise LiquidsoapClientError(
+            raise ConnectionError(
                 "Timeout while trying to read from player. Got no answer."
             )
         if not ans.endswith(b"END"):
-            raise LiquidsoapClientError(
+            raise ConnectionError(
                 f"Timeout while trying to read until 'END' from player. "
                 f"Only got: {repr(ans)}"
             )

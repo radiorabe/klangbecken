@@ -128,7 +128,7 @@ def player_api(client, data_dir):
         try:
             with client:
                 return client.info()
-        except (FileNotFoundError, ConnectionRefusedError):
+        except (FileNotFoundError, ConnectionError):
             raise NotFound("Player not running")
 
     return DispatcherMiddleware(api, {"/queue": queue_api(client, data_dir)})

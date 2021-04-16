@@ -65,7 +65,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                     result = client.command("\r\n\r\nhello\r\nworld\r\n\r\nEND")
                 self.assertEqual(result, "hello\nworld")
                 with client:
-                    with self.assertRaises(LiquidsoapClientError) as cm:
+                    with self.assertRaises(ConnectionError) as cm:
                         client.command("Does not contain the finishing sentinel.")
                 self.assertIn(
                     "Timeout while trying to read until", cm.exception.args[0]
