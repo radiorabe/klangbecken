@@ -52,13 +52,13 @@ VERSION="v$INIT_VERSION"
 TAG_VERSION=$(git tag -l "v*" | sort -V | tail -n 1)
 if [ "$VERSION" = "$TAG_VERSION" ]
 then
-    echo "ERROR: Version has not been incremented: $VERSION < $TAG_VERSION"
+    echo "ERROR: Version has not been incremented."
     exit 1
 fi
 
 if [ "$((echo $VERSION; echo $TAG_VERSION) | sort -V | tail -n 1)" = "$TAG_VERSION" ]
 then
-    echo "ERROR: New version number is smaller than old one."
+    echo "ERROR: New version number is smaller than old one: $VERSION < $TAG_VERSION"
     exit 1
 fi
 
