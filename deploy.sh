@@ -94,4 +94,4 @@ git tag $VERSION
 echo
 echo "Deployment successful!"
 echo "Push the newly created version tag to the upstream repository with"
-echo "    `git push --tags upstream master`"
+echo "    git push --tags upstream master"
