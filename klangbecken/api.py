@@ -30,7 +30,7 @@ def klangbecken_api(secret, data_dir, player_socket):
     playlist = playlist_api(
         data_dir, DEFAULT_UPLOAD_ANALYZERS, DEFAULT_UPDATE_ANALYZERS, DEFAULT_PROCESSORS
     )
-    player = player_api(LiquidsoapClient(player_socket), data_dir)
+    player = player_api(player_socket, data_dir)
 
     app = API()
     app.GET("/")(
@@ -114,7 +114,7 @@ def playlist_api(  # noqa: C901
     return api
 
 
-def player_api(client, data_dir):
+def player_api(player_socket, data_dir):
     """Create API to interact with the Liquidsoap player.
 
     It supports:
@@ -126,20 +126,20 @@ def player_api(client, data_dir):
     @api.GET("/")
     def player_info(request):
         try:
-            with client:
+            with LiquidsoapClient(player_socket) as client:
                 return client.info()
         except (FileNotFoundError, ConnectionError):
             raise NotFound("Player not running")
 
-    return DispatcherMiddleware(api, {"/queue": queue_api(client, data_dir)})
+    return DispatcherMiddleware(api, {"/queue": queue_api(player_socket, data_dir)})
 
 
-def queue_api(client, data_dir):
+def queue_api(player_socket, data_dir):
     api = API()
 
     @api.GET("/")
     def queue_list(request):
-        with client:
+        with LiquidsoapClient(player_socket) as client:
             return client.queue()
 
     @api.POST("/")
@@ -150,7 +150,7 @@ def queue_api(client, data_dir):
         if not re.match(filename_re, filename):
             raise UnprocessableEntity("Invalid file path format")
 
-        with client:
+        with LiquidsoapClient(player_socket) as client:
             path = os.path.join(data_dir, filename)
             if not os.path.isfile(path):
                 raise NotFound(f"File not found: {filename}")
@@ -159,7 +159,7 @@ def queue_api(client, data_dir):
 
     @api.DELETE("/<queue_id>")
     def queue_delete(request, queue_id):
-        with client:
+        with LiquidsoapClient(player_socket) as client:
             client.delete(queue_id)
 
     return api

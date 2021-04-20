@@ -283,10 +283,13 @@ class PlayerAPITestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken.api import player_api
 
-        self.liquidsoap_client = mock.MagicMock()
-        self.liquidsoap_client.info = mock.Mock(return_value="info")
+        self.liquidsoap_client = mock.MagicMock(name="LiquidsoapClient")
+        self.liquidsoap_client_class = mock.Mock(return_value=self.liquidsoap_client)
+        self.liquidsoap_client.__enter__ = mock.Mock(
+            return_value=self.liquidsoap_client
+        )
         self.tempdir = tempfile.mkdtemp()
-        app = player_api(self.liquidsoap_client, self.tempdir)
+        app = player_api("inexistant.sock", self.tempdir)
         os.mkdir(os.path.join(self.tempdir, "music"))
         with open(os.path.join(self.tempdir, "music", "titi.mp3"), "w"):
             pass
@@ -297,23 +300,33 @@ class PlayerAPITestCase(unittest.TestCase):
 
     def testInfo(self):
         self.liquidsoap_client.info = mock.Mock(return_value="info")
-        resp = self.client.get("/")
+
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.get("/")
         self.assertEqual(resp.status_code, 200)
         self.assertIn(b"info", resp.data)
         self.liquidsoap_client.info.assert_called_once_with()
 
     def testQueueListCorrect(self):
         self.liquidsoap_client.queue = mock.Mock(return_value="queue")
-        resp = self.client.get("/queue/")
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.get("/queue/")
         self.assertEqual(resp.status_code, 200)
         self.assertIn(b"queue", resp.data)
         self.liquidsoap_client.queue.assert_called_once_with()
 
     def testQueuePushCorrect(self):
         self.liquidsoap_client.push = mock.Mock(return_value="my_id")
-        resp = self.client.post(
-            "/queue/", data=json.dumps({"filename": "music/titi.mp3"})
-        )
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.post(
+                "/queue/", data=json.dumps({"filename": "music/titi.mp3"})
+            )
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
         self.assertEqual(data["queue_id"], "my_id")
@@ -323,24 +336,38 @@ class PlayerAPITestCase(unittest.TestCase):
 
     def testQueuePushIncorrect(self):
         self.liquidsoap_client.push = mock.Mock(return_value="my_track_id")
-        resp = self.client.post(
-            "/queue/", data=json.dumps({"filename": "music/tata.mp3"})
-        )
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.post(
+                "/queue/", data=json.dumps({"filename": "music/tata.mp3"})
+            )
         self.assertEqual(resp.status_code, 404)
         self.liquidsoap_client.push.assert_not_called()
 
-        resp = self.client.post(
-            "/queue/", data=json.dumps({"filename": "music/titi.abc"})
-        )
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.post(
+                "/queue/", data=json.dumps({"filename": "music/titi.abc"})
+            )
         self.assertEqual(resp.status_code, 422)
         self.liquidsoap_client.push.assert_not_called()
 
-        resp = self.client.post("/queue/", data=json.dumps({"file": "music/titi.mp3"}))
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.post(
+                "/queue/", data=json.dumps({"file": "music/titi.mp3"})
+            )
         self.assertEqual(resp.status_code, 422)
         self.liquidsoap_client.push.assert_not_called()
 
     def testQueueDelete(self):
-        resp = self.client.delete("/queue/15")
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.delete("/queue/15")
         self.assertEqual(resp.status_code, 200)
         self.liquidsoap_client.delete.assert_called_once_with("15")
 
