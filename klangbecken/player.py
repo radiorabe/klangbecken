@@ -89,17 +89,19 @@ class LiquidsoapClient:
             lines = [line for line in lines if not line.startswith("[playing] ")]
             info[playlist] = _extract_id(lines[0], playlist) if lines else ""
 
-        on_air = self.command("klangbecken.onair")
-        if on_air == "true":
+        on_air = self.command("klangbecken.onair") == "true"
+        info["on_air"] = on_air
+        if on_air:
             on_air_rid = self.command("request.on_air").strip()
-            metadata = self.metadata(on_air_rid)
-            info["on_air"] = {
-                "source": metadata["source"],
-                "id": _extract_id(metadata["filename"]),
-                "remaining": float(self.command("out.remaining")),
-            }
-        else:
-            info["on_air"] = {}
+            if on_air_rid:
+                metadata = self.metadata(on_air_rid)
+                info["current_track"] = {
+                    "source": metadata["source"],
+                    "id": _extract_id(metadata["filename"]),
+                    "remaining": float(self.command("out.remaining")),
+                }
+            else:
+                info["current_track"] = {}
 
         queue = (
             self.metadata(rid) for rid in self.command("queue.queue").strip().split()

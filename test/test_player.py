@@ -145,11 +145,70 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
                 "classics": "",
                 "jingles": "",
-                "on_air": {
+                "on_air": True,
+                "current_track": {
                     "source": "classics",
                     "id": "4daabe44-6d48-47c4-a187-592cf048b039",
                     "remaining": 1165.97,
                 },
+                "queue": "4daabe44-6d48-47c4-a187-592cf048b039",
+            },
+        )
+        self.assertEqual(command_calls, [])
+
+    def testInfoOnAirNoCurrentTrack(self):
+        from klangbecken import __version__
+        from klangbecken.player import LiquidsoapClient
+
+        command_calls = [
+            ("uptime", "0d 00h 08m 54s"),
+            ("version", "Liquidsoap 1.4.2"),
+            (
+                "music.next",
+                """[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3
+                [ready] data/music/3819cd8d-cb4b-49e0-8710-e091bb7dd4dd.mp3
+                data/music/b78cc27d-e4a5-40d5-852e-a2a9f641a490.mp3
+                data/music/5bf6bd2d-4506-4f06-be04-7c4145fb06e9.mp3""",
+            ),
+            (
+                "classics.next",
+                """[ready] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3""",
+            ),
+            ("jingles.next", ""),
+            ("klangbecken.onair", "true"),
+            ("request.on_air", ""),
+            ("queue.queue", "0 1"),
+            (
+                "request.metadata 0",
+                '''queue="primary"
+                rid="0"
+                status="ready"
+                source="queue"
+                temporary="false"
+                filename="data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3"''',
+            ),
+        ]
+
+        def side_effect(actual_command):
+            command, result = command_calls.pop(0)
+            self.assertEqual(command, actual_command)
+            return result
+
+        client = LiquidsoapClient()
+        client.command = mock.Mock(side_effect=side_effect)
+
+        result = client.info()
+        self.assertEqual(
+            result,
+            {
+                "uptime": "0d 00h 08m 54s",
+                "liquidsoap_version": "Liquidsoap 1.4.2",
+                "api_version": __version__,
+                "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
+                "classics": "4daabe44-6d48-47c4-a187-592cf048b039",
+                "jingles": "",
+                "on_air": True,
+                "current_track": {},
                 "queue": "4daabe44-6d48-47c4-a187-592cf048b039",
             },
         )
@@ -219,7 +278,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
                 "classics": "49080554-1a0f-41a4-9f00-f1158c2bd7e5",
                 "jingles": "4c4903fe-7c1f-4dbf-925c-a43a9ac1e55f",
-                "on_air": {},
+                "on_air": False,
                 "queue": "4daabe44-6d48-47c4-a187-592cf048b039",
             },
         )
