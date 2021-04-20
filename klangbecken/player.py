@@ -33,6 +33,7 @@ class LiquidsoapClient:
     def __enter__(self):
         if not self.connected:
             self.open(self.path)
+        self.log = []
         return self
 
     def __exit__(self, *exc_info):
@@ -42,6 +43,14 @@ class LiquidsoapClient:
             self.tel.read_until(b"Bye!", timeout=0.1)
         finally:
             self.close()
+
+            if exc_info[0]:  # pragma: no cover
+                for cmd, resp in self.log:
+                    print("Command:", cmd)
+                    print("Response:", resp)
+                print("Exception:", *exc_info)
+
+            del self.log
 
     def open(self, addr):
         try:
@@ -70,7 +79,10 @@ class LiquidsoapClient:
         ans = re.sub(b"[\r\n]*END$", b"", ans)
         ans = re.sub(b"^[\r\n]*", b"", ans)
         ans = re.subn(b"\r", b"", ans)[0]
-        return ans.decode("ascii", "ignore").strip()
+        ans = ans.decode("ascii", "ignore").strip()
+        if hasattr(self, "log"):
+            self.log.append((cmd, ans))
+        return ans
 
     def metadata(self, rid):
         ans = self.command(f"request.metadata {rid}")
