@@ -201,7 +201,7 @@ def development_server(data_dir, player_socket):
         data_dir, upload_analyzers, DEFAULT_UPDATE_ANALYZERS, DEFAULT_PROCESSORS
     )
 
-    player = player_api(LiquidsoapClient(player_socket), data_dir)
+    player = player_api(player_socket, data_dir)
 
     dummy_app = API()
     dummy_app.GET("/")(
