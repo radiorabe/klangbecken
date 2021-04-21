@@ -110,7 +110,6 @@ class LiquidsoapClient:
                 info["current_track"] = {
                     "source": metadata["source"],
                     "id": _extract_id(metadata["filename"]),
-                    "remaining": float(self.command("out.remaining")),
                 }
             else:
                 info["current_track"] = {}

@@ -114,7 +114,6 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 temporary="false"
                 filename="data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3"''',
             ),
-            ("out.remaining", "1165.97"),
             ("queue.queue", "0 1"),
             (
                 "request.metadata 0",
@@ -149,7 +148,6 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "current_track": {
                     "source": "classics",
                     "id": "4daabe44-6d48-47c4-a187-592cf048b039",
-                    "remaining": 1165.97,
                 },
                 "queue": "4daabe44-6d48-47c4-a187-592cf048b039",
             },
