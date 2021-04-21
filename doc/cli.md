@@ -53,8 +53,8 @@ Run the development server. Serves the API from `/api` and the static files from
 Batch import audio files to the specified playlist.  Artist and title metadata can be supplied from a JSON file mapping filenames to a metadata dict. E.g.
 ```json
 {
-    "importfolder/xyz.mp3": {"artist": "Wildecker Herzbuam", "title": "Herzilein"}
-    ...
+    "importfolder/xyz.mp3": {"artist": "Wildecker Herzbuam", "title": "Herzilein"},
+    "..."
 }
 ```
 Files that have no entry in the metadata file are skipped.
