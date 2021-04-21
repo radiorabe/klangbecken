@@ -215,7 +215,7 @@ def _json_response(data, status=200):
     if data is None:
         return werkzeug.Response(status=status)
     else:
-        data = json.dumps(data, indent=2, sort_keys=True) + "\n"
+        data = json.dumps(data, indent=2) + "\n"
         return werkzeug.Response(data, status=status, mimetype="text/json")
 
 
