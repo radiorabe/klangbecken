@@ -66,7 +66,6 @@ def serve_cmd(address, port, data_dir, player_socket):  # pragma: no cover
     # Run locally in stand-alone development mode
     from werkzeug.serving import run_simple
 
-    print(data_dir, player_socket)
     app = development_server(data_dir, player_socket)
 
     run_simple(address, port, app, threaded=True, use_reloader=True, use_debugger=True)

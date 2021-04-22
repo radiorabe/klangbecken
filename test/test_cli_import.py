@@ -46,7 +46,6 @@ class ImporterTestCase(unittest.TestCase):
             with mock.patch("sys.argv", cmd.split()):
                 with capture(main) as (out, err, ret):
                     pass
-        # print(out, err, ret)
         self.assertIn("Successfully imported 1 of 1 files.", out)
         self.assertEqual(cm.exception.code, 0)
 

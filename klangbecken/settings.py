@@ -1,8 +1,4 @@
-import mutagen
-import mutagen.easyid3
-import mutagen.flac
 import mutagen.mp3
-import mutagen.oggvorbis
 
 PLAYLISTS = ("music", "classics", "jingles")
 
