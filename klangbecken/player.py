@@ -7,6 +7,8 @@ from werkzeug.exceptions import NotFound
 
 from .settings import PLAYLISTS, SUPPORTED_FILE_TYPES
 
+metadata_re = re.compile(r'^\s*(\S+?)="(.*?)"\s*$', re.M)
+
 
 class LiquidsoapClient:
     """Liquidsoap Client.
@@ -86,7 +88,7 @@ class LiquidsoapClient:
 
     def metadata(self, rid):
         ans = self.command(f"request.metadata {rid}")
-        return dict(re.findall(r'^\s*(\S+?)="(.*?)"\s*$', ans, re.M))
+        return dict(re.findall(metadata_re, ans))
 
     def info(self):
         from . import __version__
@@ -97,8 +99,10 @@ class LiquidsoapClient:
             "api_version": __version__,
         }
         for playlist in PLAYLISTS:
-            lines = self.command(f"{playlist}.next").split("\n")[:2]
-            lines = [line for line in lines if not line.startswith("[playing] ")]
+            lines = self.command(f"{playlist}.next").strip().split("\n")
+            lines = [
+                line for line in lines if line and not line.startswith("[playing] ")
+            ]
             info[playlist] = _extract_id(lines[0], playlist) if lines else ""
 
         on_air = self.command("klangbecken.onair") == "true"
@@ -167,17 +171,24 @@ class LiquidsoapClient:
             raise LiquidsoapClientError("Queue delete failed")  # pragma: no cover
 
 
-def _extract_id(filename, playlist=None):
-    if playlist is None:
-        playlist = r"(?:{})".format("|".join(PLAYLISTS))
-
-    filename_re = r"^.*{0}/([0-9a-f-]+)\.(?:{1})$".format(
-        playlist, "|".join(SUPPORTED_FILE_TYPES.keys())
+filename_res = {
+    playlist: re.compile(
+        r"^.*{0}/([0-9a-f-]+)\.(?:{1})$".format(
+            playlist, "|".join(SUPPORTED_FILE_TYPES.keys())
+        )
     )
-    try:
-        return re.findall(filename_re, filename)[0]
-    except IndexError:
-        return ""
+    for playlist in PLAYLISTS
+}
+
+filename_res[None] = re.compile(
+    r"^.*(?:{0})/([0-9a-f-]+)\.(?:{1})$".format(
+        "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
+    )
+)
+
+
+def _extract_id(filename, playlist=None):
+    return re.findall(filename_res[playlist], filename)[0]
 
 
 class LiquidsoapClientError(Exception):

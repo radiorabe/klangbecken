@@ -190,7 +190,8 @@ class LiquidsoapClientTestCase(unittest.TestCase):
             ),
             (
                 "classics.next",
-                """[ready] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3""",
+                """[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3
+                """,
             ),
             ("jingles.next", ""),
             ("klangbecken.onair", "true"),
@@ -223,7 +224,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "liquidsoap_version": "Liquidsoap 1.4.2",
                 "api_version": __version__,
                 "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
-                "classics": "4daabe44-6d48-47c4-a187-592cf048b039",
+                "classics": "",
                 "jingles": "",
                 "on_air": True,
                 "current_track": {},
