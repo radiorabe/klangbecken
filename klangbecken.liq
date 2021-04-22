@@ -213,6 +213,7 @@ server.register(namespace='klangbecken',
                 "onair",
                 on_air_func)
 server.register(
+  namespace='klangbecken',
   "on_air",
   on_air_func,
   usage="on_air [true|false]",
