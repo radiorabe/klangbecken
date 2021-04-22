@@ -370,15 +370,3 @@ class PlayerAPITestCase(unittest.TestCase):
             resp = self.client.delete("/queue/15")
         self.assertEqual(resp.status_code, 200)
         self.liquidsoap_client.delete.assert_called_once_with("15")
-
-
-#
-# def testQueueMove(self):
-#     resp = self.client.put("/queue/15", data=json.dumps({"position": 42}))
-#     self.assertEqual(resp.status_code, 200)
-#     self.liquidsoap_client.move.assert_called_once_with("15", 42)
-#
-# def testQueueClear(self):
-#     resp = self.client.delete("/queue/")
-#     self.assertEqual(resp.status_code, 200)
-#     self.liquidsoap_client.clear_queue.assert_called_once_with()
