@@ -12,8 +12,7 @@ from .utils import capture
 
 class ReanalyzeCmdTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken.cli import import_cmd
-        from klangbecken.utils import _check_data_dir
+        from klangbecken.cli import _check_data_dir, import_cmd
 
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.data_dir = tempfile.mkdtemp()

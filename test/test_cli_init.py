@@ -41,8 +41,8 @@ class InitCmdTestCase(unittest.TestCase):
                     self.assertIn("not a directory", err)
 
     def testDataDirCheckOnly(self):
+        from klangbecken.cli import _check_data_dir
         from klangbecken.settings import PLAYLISTS
-        from klangbecken.utils import _check_data_dir
 
         for playlist in PLAYLISTS + ("log",):
             path = os.path.join(self.tempdir, playlist)
@@ -72,8 +72,8 @@ class InitCmdTestCase(unittest.TestCase):
         _check_data_dir(self.tempdir, False)
 
     def testDataDirCreation(self):
+        from klangbecken.cli import _check_data_dir
         from klangbecken.settings import PLAYLISTS
-        from klangbecken.utils import _check_data_dir
 
         _check_data_dir(self.tempdir, create=True)
         for playlist in PLAYLISTS:
