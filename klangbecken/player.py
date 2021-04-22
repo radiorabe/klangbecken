@@ -13,12 +13,14 @@ metadata_re = re.compile(r'^\s*(\S+?)="(.*?)"\s*$', re.M)
 class LiquidsoapClient:
     """Liquidsoap Client.
 
-    Use as context manager:
-    with LiquidsoapClient('/var/run/liquidsoap.sock') as client:
-        client.queue()
+    Interact with a running Liquidsoap process through it's telnet interface.
+
+    Use as context manager (preferred):
+    >>> with LiquidsoapClient('/var/run/liquidsoap.sock') as client:
+    ...    client.queue()
 
 
-    Interactive mode
+    Use interactively from Python console:
     >>> client = LiquidsoapClient()
     >>> client.open(("localhost", 1234))
     >>> client.info()
@@ -67,6 +69,10 @@ class LiquidsoapClient:
         self.connected = False
 
     def command(self, cmd):
+        """Execute a Liquidsoap command.
+
+        Returns the response.
+        """
         self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
         ans = self.tel.read_until(b"END", timeout=0.1)
         if ans == b"":  # pragma: no cover
@@ -87,10 +93,24 @@ class LiquidsoapClient:
         return ans
 
     def metadata(self, rid):
+        """Query metadata information for a Liquidsoap request[1].
+
+        Returns dict with metadata information.
+
+        [1] The scheduling of an audio track for playing is called a 'request'
+            in Liquidsoap jargon.
+        """
         ans = self.command(f"request.metadata {rid}")
         return dict(re.findall(metadata_re, ans))
 
     def info(self):
+        """Query general information about the state of the player.
+
+        * Versions and uptime
+        * 'on air' state
+        * Current track, if on air.
+        * Next scheduled track for all playlists and the queue, if any.
+        """
         from . import __version__
 
         info = {
@@ -129,6 +149,7 @@ class LiquidsoapClient:
         return info
 
     def queue(self):
+        """List the contents of the queue."""
         queue = [
             self.metadata(rid) for rid in self.command("queue.queue").strip().split()
         ]
@@ -152,6 +173,10 @@ class LiquidsoapClient:
         return queue
 
     def push(self, path):
+        """Add a new track to the queue.
+
+        Returns the request id for the added track.
+        """
         rid = self.command(f"queue.push {path}").strip()
         if self.metadata(rid)["status"] != "ready":  # pragma: no cover
             try:
@@ -163,6 +188,7 @@ class LiquidsoapClient:
         return rid
 
     def delete(self, rid):
+        """Delete track from the queue."""
         if rid not in self.command("queue.secondary_queue").strip().split():
             raise NotFound(f"Track with QueueID '{rid}' not found.")
 
