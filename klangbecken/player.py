@@ -183,7 +183,7 @@ class LiquidsoapClient:
                 self.delete(rid)
             except Exception:
                 pass
-            raise LiquidsoapClientError("Queue push failed")
+            raise LiquidsoapClientQueueError("Queue push failed")
 
         return rid
 
@@ -194,7 +194,7 @@ class LiquidsoapClient:
 
         ans = self.command(f"queue.remove {rid}")
         if ans.strip() != "OK" or self.metadata(rid)["status"] != "destroyed":
-            raise LiquidsoapClientError("Queue delete failed")  # pragma: no cover
+            raise LiquidsoapClientQueueError("Queue delete failed")  # pragma: no cover
 
 
 filename_res = {
@@ -217,7 +217,7 @@ def _extract_id(filename, playlist=None):
     return re.findall(filename_res[playlist], filename)[0]
 
 
-class LiquidsoapClientError(Exception):
+class LiquidsoapClientQueueError(Exception):
     pass
 
 
