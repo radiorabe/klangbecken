@@ -18,7 +18,6 @@ from .playlist import (
     MetadataChange,
 )
 from .settings import PLAYLISTS, SUPPORTED_FILE_TYPES
-from .utils import _check_data_dir
 
 
 def klangbecken_api(secret, data_dir, player_socket):
@@ -180,6 +179,7 @@ def development_server(data_dir, player_socket):
     """
     from werkzeug.middleware.shared_data import SharedDataMiddleware
 
+    from .cli import _check_data_dir
     from .playlist import ffmpeg_audio_analyzer
 
     # Check data dirrectory structure
