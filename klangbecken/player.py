@@ -44,11 +44,11 @@ class LiquidsoapClient:
         finally:
             self.close()
 
-            if exc_info[0]:  # pragma: no cover
+            if exc_info[0]:
                 for cmd, resp in self.log:
-                    print("Command:", cmd)
-                    print("Response:", resp)
-                print("Exception:", *exc_info)
+                    print("Command:", cmd, file=sys.stderr)
+                    print("Response:", resp, file=sys.stderr)
+                print("Exception:", *exc_info, file=sys.stderr)
 
             del self.log
 
