@@ -64,6 +64,35 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 serv.shutdown()
                 thread.join()
 
+    def testCommandLoggingOnError(self):
+        from klangbecken.player import LiquidsoapClient
+
+        from .utils import capture
+
+        Server = socketserver.UnixStreamServer
+        addr = os.path.join(self.tempdir, "test.sock")
+        with Server(addr, EchoHandler) as serv:
+            thread = threading.Thread(target=serv.serve_forever)
+            thread.start()
+            client = LiquidsoapClient(addr)
+
+            def do():
+                with client:
+                    client.command("\r\n\r\nhello\r\nworld\r\n\r\nEND")
+                    raise Exception("Something terrible happened")
+
+            with self.assertRaises(Exception) as cm:
+                with capture(do) as (out, err, ret):
+                    pass
+            self.assertEqual("Something terrible happened", cm.exception.args[0])
+            self.assertIn("Something terrible happened", err)
+            self.assertIn("Command:", err)
+            self.assertIn("Response:", err)
+            self.assertIn("hello", err)
+
+            serv.shutdown()
+            thread.join()
+
     def testMetadata(self):
         from klangbecken.player import LiquidsoapClient
 
