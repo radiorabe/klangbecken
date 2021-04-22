@@ -134,6 +134,10 @@ def player_api(player_socket, data_dir):
 
 
 def queue_api(player_socket, data_dir):
+    """Create API for queue interaction.
+
+    List queue entries, add new tracks to queue and delete queue entries.
+    """
     api = API()
 
     @api.GET("/")
@@ -168,8 +172,7 @@ def queue_api(player_socket, data_dir):
 # Stand-alone Application #
 ###########################
 def development_server(data_dir, player_socket):
-    """
-    Construct the stand-alone Klangbecken WSGI application for testing and development.
+    """Construct the stand-alone Klangbecken WSGI application and development.
 
     * Serves data files from the data directory
     * Relays API calls to the API

@@ -50,6 +50,10 @@ def _check_data_dir(data_dir, create=False):
 
 
 def init_cmd(data_dir):
+    """Entry point for `init` command.
+
+    Initialize data directory structure.
+    """
     if os.path.exists(data_dir):
         if os.path.isdir(data_dir) and len(os.listdir(data_dir)) != 0:
             print(
@@ -63,7 +67,10 @@ def init_cmd(data_dir):
 
 
 def serve_cmd(address, port, data_dir, player_socket):  # pragma: no cover
-    # Run locally in stand-alone development mode
+    """Entry point for `serve` command.
+
+    Run a local stand-alone server for development.
+    """
     from werkzeug.serving import run_simple
 
     app = development_server(data_dir, player_socket)
@@ -74,7 +81,7 @@ def serve_cmd(address, port, data_dir, player_socket):  # pragma: no cover
 def import_cmd(  # noqa: C901
     data_dir, playlist, files, yes, meta=None, use_mtime=False
 ):
-    """Entry point for import script."""
+    """Entry point for `import` command."""
 
     def err(*args):
         print(*args, file=sys.stderr)
@@ -135,6 +142,8 @@ def import_cmd(  # noqa: C901
 
 
 def _analyze_one_file(data_dir, playlist, filename, use_mtime):
+    """Helper for import command: Analyze a single audio file."""
+
     if not os.path.exists(filename):
         raise UnprocessableEntity("File not found: " + filename)
 
@@ -161,7 +170,7 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime):
 
 
 def fsck_cmd(data_dir):  # noqa: C901
-    """Entry point for fsck script."""
+    """Entry point for `fsck` command."""
 
     song_id = None
 
@@ -274,6 +283,10 @@ def fsck_cmd(data_dir):  # noqa: C901
 
 
 def playlog_cmd(data_dir, filename):
+    """Entry point for `playlog` command.
+
+    Log track play in metadata, log files, and with external command.
+    """
     file_id, ext = filename.split("/")[-1].split(".")
     now = datetime.datetime.now().astimezone()
 
@@ -320,6 +333,10 @@ EXTERNAL_PLAY_LOGGER = os.environ.get("KLANGBECKEN_EXTERNAL_PLAY_LOGGER", "")
 
 
 def reanalyze_cmd(data_dir, ids, all, yes):
+    """Entry point for `reanalyze` command.
+
+    Re-run audio analyzer for selected files and update gain values and cue points.
+    """
     with locked_open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
     if all:
