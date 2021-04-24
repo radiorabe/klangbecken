@@ -278,7 +278,7 @@ class AnalyzersTestCase(unittest.TestCase):
             with open(path, "rb") as f:
                 fs = FileStorage(f)
                 ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
-        self.assertIn("bitrate too low: 112 < 120", cm.exception.description.lower())
+        self.assertIn("bitrate too low: 112 < 128", cm.exception.description.lower())
 
 
 class ProcessorsTestCase(unittest.TestCase):

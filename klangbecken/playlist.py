@@ -107,8 +107,8 @@ def _check_audio_quality(ffmpeg_output, playlist):
     if playlist != "jingles" and channels == "mono":
         raise UnprocessableEntity("Track must be stereo")
 
-    if int(bitrate) < 120:
-        raise UnprocessableEntity(f"Track bitrate too low: {bitrate} < 120 kb/s")
+    if int(bitrate) < 128:
+        raise UnprocessableEntity(f"Track bitrate too low: {bitrate} < 128 kb/s")
 
 
 def _extract_cue_points(ffmpeg_output):
