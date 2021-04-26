@@ -1,6 +1,6 @@
 -r requirements.txt
 coverage==5.5
-flake8==3.9.0
+flake8==3.9.1
 
 # secondary dependencies (flake8)
 mccabe==0.6.1
