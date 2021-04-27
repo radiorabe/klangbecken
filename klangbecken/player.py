@@ -125,7 +125,7 @@ class LiquidsoapClient:
             ]
             info[playlist] = _extract_id(lines[0], playlist) if lines else ""
 
-        on_air = self.command("klangbecken.on_air") == "true"
+        on_air = self.command("klangbecken.on_air").lower() == "true"
         info["on_air"] = on_air
         if on_air:
             on_air_rid = self.command("request.on_air").strip()
