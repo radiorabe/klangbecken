@@ -223,6 +223,63 @@ class AnalyzersTestCase(unittest.TestCase):
                 fs = FileStorage(f)
                 ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
 
+    def testFFmpegAudioAnalyzerAudioQuality(self):
+        from klangbecken.playlist import ffmpeg_audio_analyzer
+
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "not-an-audio-file.mp3")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn("cannot process audio data", cm.exception.description.lower())
+
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "silence.wav")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn(
+            "the track is not a valid mp3 file", cm.exception.description.lower()
+        )
+        self.assertIn("ulaw", cm.exception.description.lower())
+
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "silence.ogg")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn(
+            "the track is not a valid mp3 file", cm.exception.description.lower()
+        )
+        self.assertIn("vorbis", cm.exception.description.lower())
+
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "silence-32kHz.mp3")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn("invalid sample rate: 32", cm.exception.description.lower())
+
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "sine-unicode-mono.mp3")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn("stereo", cm.exception.description.lower())
+
+        path = os.path.join(self.current_path, "audio", "sine-unicode-mono.mp3")
+        with open(path, "rb") as f:
+            fs = FileStorage(f)
+            changes = ffmpeg_audio_analyzer("jingles", "id1", "mp3", fs)
+        self.assertEqual(len(changes), 3)
+
+        with self.assertRaises(UnprocessableEntity) as cm:
+            path = os.path.join(self.current_path, "audio", "silence-112kbps.mp3")
+            with open(path, "rb") as f:
+                fs = FileStorage(f)
+                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+        self.assertIn("bitrate too low: 112 < 128", cm.exception.description.lower())
+
 
 class ProcessorsTestCase(unittest.TestCase):
     def setUp(self):
