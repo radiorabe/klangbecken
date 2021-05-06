@@ -170,20 +170,28 @@ liquidsoap --check klangbecken.liq
 
 ## Deployment
 
-The deploy script `deploy.sh` partially automates deploying the code.
+The deploy script `deploy.sh` automates deploying the code.
 
 _Preparation:_
-* Have a remote `prod` point at the repository on the production system.
-* Make sure, your code passes continuous integration.
-* Increment the version (in `klangbecken/__init__.py` and `setup.py`).
-* Verify that your `requirements.txt` and `setup.py` have no uncommited modifications and that you are on the `master` branch.
-
+* Configure a remote repository `upstream` pointing at the upstream repository (https://github.com/radiorabe/klangbecken).
+* Configure git to automatically fetch tags from `upstream/master`:
+  ```bash
+  git config remote.upstream.tagOpts --tags
+  ```
+* Configure a remote `prod` pointing at the repository on the production system.
+* Pull the latest version from `upstream`:
+  ```bash
+  git pull upstream master --ff-only
+  ```
+* Verify that the code you want to deploy passed continuous integration.
+* Make sure that your working directory is clean.
 
 _Run the script:_
 ```bash
 ./deploy.sh [--no-mod-wsgi]
 ```
 It perfoms the following steps:
+- Increment and commit a new version number.
 - Download all run-time dependencies.
 - Optionally download `mod_wsgi` (requires httpd-devel libraries to be installed locally).
 - `scp` the dependencies to production.
@@ -192,14 +200,10 @@ It perfoms the following steps:
 - Install the Python package (API and CLI) in production.
 - Reload the web server to load the new API code.
 - Copy the liquidsoap script to it's destination.
-- If everything was successful, tag the current commit with the new version number.
+- If everything was successful, tag the current commit with the new version number, and push it to the `upstream` repository.
 
 _Finalize deployment:_
-- Restart the liquidsoap player during a "off air" moment:
+- If the liquidsoap script (`klangbecken.liq`) changed, restart the liquidsoap player during a "off air" moment:
   ```bash
   systemctl restart liquidsoap@klangbecken
-  ```
-- Push the tags to the upstream repository:
-  ```bash
-  git push --tags upstream master
   ```
