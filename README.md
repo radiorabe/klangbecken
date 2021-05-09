@@ -114,7 +114,7 @@ echo "klangbecken.onair True" | nc -U -w 1 /tmp/klangbecken.liq.sock
 
 ### Python Package
 
-The Python code is tested with a test suite and follows the flake8 coding guidlines.
+The Python code is tested with a test suite and follows the flake8 coding guidelines.
 
 Before submitting your code make sure that ...
 
@@ -127,7 +127,7 @@ Before submitting your code make sure that ...
    ```bash
    python -m unittest discover
    ```
-3. ... your code is covered by unit tests
+3. ... all your code is covered by unit tests
    ```bash
    coverage run -m unittest discover
    coverage report
@@ -137,7 +137,7 @@ Before submitting your code make sure that ...
    flake8
    ```
 
-#### Recommended Tools
+#### Recommended Tools (_optional_)
 
 We recommend the use of `tox`, `black` and `isort` for development.
 ```bash
@@ -176,7 +176,7 @@ _Preparation:_
 * Configure a remote repository `upstream` pointing at the upstream repository (https://github.com/radiorabe/klangbecken).
 * Configure git to automatically fetch tags from `upstream/master`:
   ```bash
-  git config remote.upstream.tagOpts --tags
+  git config remote.upstream.tagOpt --tags
   ```
 * Configure a remote `prod` pointing at the repository on the production system.
 * Pull the latest version from `upstream`:
