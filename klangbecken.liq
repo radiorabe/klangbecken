@@ -53,6 +53,8 @@ KLANGBECKEN_COMMAND = getenv_fallback("KLANGBECKEN_COMMAND", "python -m klangbec
 # Get the alsa device
 ALSA_DEVICE = getenv_fallback("KLANGBECKEN_ALSA_DEVICE", "default")
 
+on_air = ref false
+
 # ================================================= #
 # PLAYLISTS                                         #
 # ================================================= #
@@ -75,7 +77,9 @@ def check_next_func(r) =
   filename = request.filename(r)
 
   last_play = float_of_string(metadata["last_play_epoch"])
-  if filename == "" then
+  if not (!on_air) then
+    true
+  elsif filename == "" then
     false
   elsif last_play == 0.0 then
     skipped := 0
@@ -157,7 +161,6 @@ music = random(weights=[5, 1], [music, classics])
 # ================================================= #
 
 insert_jingle = ref false
-on_air = ref false
 
 def jingle_timeout() =
   jingle_times = [5m0s, 20m0s, 35m0s, 50m0s]
