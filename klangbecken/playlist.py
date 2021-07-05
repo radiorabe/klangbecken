@@ -4,6 +4,7 @@ import datetime
 import fcntl
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -383,6 +384,7 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 
                 weight = change.value
                 lines.extend([os.path.join(playlist, fileId + "." + ext)] * weight)
+                random.shuffle(lines)
                 f.seek(0)
                 f.truncate()
                 for line in lines:
