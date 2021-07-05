@@ -114,10 +114,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
             ("version", "Liquidsoap 1.4.2"),
             (
                 "music.next",
-                """[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3
-                [ready] data/music/3819cd8d-cb4b-49e0-8710-e091bb7dd4dd.mp3
-                data/music/b78cc27d-e4a5-40d5-852e-a2a9f641a490.mp3
-                data/music/5bf6bd2d-4506-4f06-be04-7c4145fb06e9.mp3""",
+                "[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3",
             ),
             (
                 "classics.next",
@@ -183,15 +180,11 @@ class LiquidsoapClientTestCase(unittest.TestCase):
             ("version", "Liquidsoap 1.4.2"),
             (
                 "music.next",
-                """[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3
-                [ready] data/music/3819cd8d-cb4b-49e0-8710-e091bb7dd4dd.mp3
-                data/music/b78cc27d-e4a5-40d5-852e-a2a9f641a490.mp3
-                data/music/5bf6bd2d-4506-4f06-be04-7c4145fb06e9.mp3""",
+                "[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3",
             ),
             (
                 "classics.next",
-                """[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3
-                """,
+                "[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3",
             ),
             ("jingles.next", ""),
             ("klangbecken.on_air", "true"),

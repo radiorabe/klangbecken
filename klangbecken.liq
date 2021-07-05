@@ -117,7 +117,7 @@ queue = cue_cut(queue, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 music = playlist(
   path.concat(DATA_DIR, "music.m3u"),
   id="music",
-  mode="randomize",
+  mode="random",
   reload_mode="watch",
   check_next=check_next_func,
 )
@@ -128,7 +128,7 @@ music = cue_cut(music, cue_in_metadata="cue_in", cue_out_metadata="cue_out")
 classics = playlist(
   path.concat(DATA_DIR, "classics.m3u"),
   id="classics",
-  mode="randomize",
+  mode="random",
   reload_mode="watch",
   check_next=check_next_func,
 )
@@ -139,7 +139,7 @@ classics = cue_cut(classics, cue_in_metadata="cue_in", cue_out_metadata="cue_out
 jingles = playlist(
   path.concat(DATA_DIR, "jingles.m3u"),
   id="jingles",
-  mode="randomize",
+  mode="random",
   reload_mode="watch",
   check_next=check_next_func,
 )
