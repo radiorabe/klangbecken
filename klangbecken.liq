@@ -33,7 +33,7 @@ set("log.file", false)
 set("log.stdout", true)
 set("server.telnet", false)
 set("server.telnet.port", 1234)
-set("log.level", 3)
+set("log.level", 2)
 
 # socket
 set("server.socket", true)
@@ -43,7 +43,7 @@ set("server.socket.permissions", 0o660)  # Make socket group readable/writable
 # Get the Klangbecken data directory
 DATA_DIR = getenv_fallback("KLANGBECKEN_DATA_DIR", "./data")
 if not file.is_directory(DATA_DIR) then
-    log(level=2, "ERROR: Cannot find data directory: " ^ DATA_DIR)
+    log("ERROR: Cannot find data directory: #{DATA_DIR}", level=0)
     shutdown()
 end
 
@@ -62,7 +62,10 @@ def calc_wait(playlist) =
   if playlist == "music" then 259200.0 # 3 days
   elsif playlist == "classics" then 86400.0 # 1 day
   elsif playlist == "jingles" then 3600.0 # 1 hour
-  else 0.0 end
+  else
+    log("WARNING: invalid playlist: #{playlist}", level=1, label="calc_wait")
+    0.0
+  end
 end
 
 # check if track was played recently
@@ -86,7 +89,7 @@ def check_next_func(r) =
       log("track was recently played: #{filename} (#{diff} seconds ago)", label="check_next_func")
       if !skipped >= 10 then
         skipped := 0
-        log("too many skipped tracks, playing #{filename} anyway", label="check_next_func")
+        log("WARNING: too many skipped tracks, playing #{filename} anyway", level=1, label="check_next_func")
         true
       else
         false
@@ -159,7 +162,7 @@ on_air = ref false
 def jingle_timeout() =
   jingle_times = [5m0s, 20m0s, 35m0s, 50m0s]
   if list.fold(fun (a,b) -> a or b, false, jingle_times) then
-    log('Jingle up next')
+    log("Jingle up next", label="jingle_timeout")
     insert_jingle := true
   end
   1.0
@@ -196,12 +199,12 @@ def on_air_func(state) =
   else
     on_air := bool_of_string(state)
     if !on_air then
-      log("Starting Klangbecken")
+      log("INFO: Starting Klangbecken", level=2, label="on_air_func")
       restart := true
       source.skip(radio)
       "Klangbecken started"
     else
-      log("Stopping Klangbecken")
+      log("INFO: Stopping Klangbecken", level=2, label="on_air_func")
       "Klangbecken stopped"
     end
   end
@@ -248,16 +251,11 @@ have_new_metadata = ref false
 filename = ref ''
 
 def log_metadata_func(m) =
-  log('Playing: #{m["filename"]}', label="log_metadata_func")
-
-  if m['filename'] == '' then
-    log("WARNING: Empty filename", label="log_metadata_func")
-  end
-
-  if !on_air then
+  if !on_air and m['filename'] != '' then
     # Prepare play logger
     have_new_metadata := true
     filename := m['filename']
+    log("INFO: Playing: #{!filename}", label="log_metadata_func", level=2)
   end
 end
 radio = on_track(log_metadata_func, radio)
