@@ -121,7 +121,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 """[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3""",
             ),
             ("jingles.next", ""),
-            ("on_air", "true"),
+            ("klangbecken.on_air", "true"),
             ("request.on_air", "8"),
             (
                 "request.metadata 8",
@@ -187,7 +187,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3",
             ),
             ("jingles.next", ""),
-            ("on_air", "true"),
+            ("klangbecken.on_air", "true"),
             ("request.on_air", ""),
             ("queue.queue", "0 1"),
             (
@@ -251,7 +251,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 [ready] data/jingles/86fde5f3-47aa-4ac7-ad47-bfc82612224f.mp3
                 data/jingles/17e716e1-8a03-4a1f-bb40-7d8d90e97f98.mp3""",
             ),
-            ("on_air", "false"),
+            ("klangbecken.on_air", "false"),
             ("queue.queue", "0 1"),
             (
                 "request.metadata 0",
