@@ -61,8 +61,8 @@ on_air = ref false
 
 # calculate waiting time for repeating a track depending on its playlist
 def calc_wait(playlist) =
-  if playlist == "music" then 259200.0 # 3 days
-  elsif playlist == "classics" then 86400.0 # 1 day
+  if playlist == "music" then 172800.0 # 2 days
+  elsif playlist == "classics" then 172800.0 # 2 days
   elsif playlist == "jingles" then 3600.0 # 1 hour
   else
     log("WARNING: invalid playlist: #{playlist}", level=1, label="calc_wait")
@@ -91,7 +91,7 @@ def check_next_func(r) =
     if diff < calc_wait(playlist) then
       skipped := !skipped + 1
       log("track was recently played: #{filename} (#{diff} seconds ago)", label="check_next_func")
-      if !skipped >= 10 then
+      if !skipped >= 20 then
         skipped := 0
         log("WARNING: too many skipped tracks, playing #{filename} anyway", level=1, label="check_next_func")
         true
