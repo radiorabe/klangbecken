@@ -22,8 +22,8 @@ class API:
     ...
     >>> from werkzeug.test import Client
     >>> client = Client(app)
-    >>> body, code, *_ = client.get('/')
-    >>> json.loads(b''.join(body))
+    >>> response = client.get('/')
+    >>> response.get_json()
     'Hello World'
 
     Now with generic POST data: add a data parameter and optionally specify it's
@@ -32,11 +32,11 @@ class API:
     ... def create(request, data:list):
     ...     print(data)
     ...
-    >>> body, code, *_ = client.post("/", data="[1, 2, 3]")
+    >>> response = client.post("/", data="[1, 2, 3]")
     [1, 2, 3]
 
-    >>> body, code, *_ = client.post("/", data="{}")
-    >>> code
+    >>> response = client.post("/", data="{}")
+    >>> response.status
     '422 UNPROCESSABLE ENTITY'
 
     And finally requesting a dict in the POST data with specified fields (and types)
@@ -48,37 +48,37 @@ class API:
     ...
     >>> import json
     >>> data = {"name": "Betsy", "age": 34}
-    >>> body, code, *_ = client.put("/", data=json.dumps(data))
+    >>> response = client.put("/", data=json.dumps(data))
     Betsy is 34 years old.
     Betsy is not superhuman.
-    >>> code
+    >>> response.status
     '200 OK'
 
     >>> data = {"name": "Betsy"}
-    >>> body, code, *_ = client.put("/", data=json.dumps(data))
-    >>> code
+    >>> response = client.put("/", data=json.dumps(data))
+    >>> response.status
     '422 UNPROCESSABLE ENTITY'
 
     >>> data = {"name": "Betsy", "age": "34"}
-    >>> body, code, *_ = client.put("/", data=json.dumps(data))
-    >>> code
+    >>> response = client.put("/", data=json.dumps(data))
+    >>> response.status
     '422 UNPROCESSABLE ENTITY'
 
     >>> data = {"name": "Betsy", "age": 34, "superhuman": True}
-    >>> body, code, *_ = client.put("/", data=json.dumps(data))
+    >>> response = client.put("/", data=json.dumps(data))
     Betsy is 34 years old.
     Betsy is superhuman.
-    >>> code
+    >>> response.status
     '200 OK'
 
     >>> data = {"name": "Betsy", "age": 34, "verysmart": True}
-    >>> body, code, *_ = client.put("/", data=json.dumps(data))
-    >>> code
+    >>> response = client.put("/", data=json.dumps(data))
+    >>> response.status
     '422 UNPROCESSABLE ENTITY'
 
     >>> data = "This is not valid JSON"
-    >>> body, code, *_ = client.put("/", data=data)
-    >>> code
+    >>> response = client.put("/", data=data)
+    >>> response.status
     '415 UNSUPPORTED MEDIA TYPE'
     """
 
@@ -103,13 +103,15 @@ class API:
         To test it use the Client class.
         >>> from werkzeug.test import Client
         >>> client = Client(api)
-        >>> client.get("/")       # doctest: +ELLIPSIS
-        (<werkzeug.wsgi.ClosingIterator ...>, '200 OK', Headers(...))
-        >>> json.loads(b"".join(_[0]))
+        >>> response = client.get("/")
+        >>> response.status
+        '200 OK'
+        >>> response.get_json()
         'Hello!'
-        >>> client.get("/user/007")       # doctest: +ELLIPSIS
-        (<werkzeug.wsgi.ClosingIterator ...>, '200 OK', Headers(...))
-        >>> json.loads(b"".join(_[0]))
+        >>> response = client.get("/user/007")
+        >>> response.status
+        '200 OK'
+        >>> response.get_json()
         'Welcome home 007!'
         """
         if func is None:
@@ -167,8 +169,8 @@ class API:
         ...
         >>> from werkzeug.test import Client
         >>> client = Client(api)
-        >>> client.get("/admin")   # doctest: +ELLIPSIS
-        (<werkzeug.wsgi.ClosingIterator ...>, '200 OK', Headers(...))
+        >>> client.get("/admin")
+        <TestResponse streamed [200 OK]>
         """
         return self.route(string, ("GET",))
 
@@ -435,21 +437,21 @@ class DummyAuth(BaseJWTAuthMiddleware):
     >>> client = Client(app)
 
     By default, access is denied:
-    >>> client.get("/")       # doctest: +ELLIPSIS
-    (<werkzeug.wsgi.ClosingIterator ...>, '401 UNAUTHORIZED', Headers(...))
+    >>> client.get("/")
+    <TestResponse streamed [401 UNAUTHORIZED]>
 
     Login to get a token:
-    >>> body, code, *_ = client.post("/auth/login/")
-    >>> code
+    >>> response = client.post("/auth/login/")
+    >>> response.status
     '200 OK'
-    >>> token = json.loads(b"".join(body))["token"]
-    >>> token                                                      # doctest: +ELLIPSIS
+    >>> token = response.get_json()["token"]
+    >>> token     # doctest: +ELLIPSIS
     'eyJ...'
 
     Use the token to gain access:
     >>> headers = {"Authorization": f"Bearer {token}"}
-    >>> client.get("/", headers=headers)                           # doctest: +ELLIPSIS
-    (<werkzeug.wsgi.ClosingIterator ...>, '200 OK', Headers(...))
+    >>> client.get("/", headers=headers)
+    <TestResponse streamed [200 OK]>
     """
 
     def authenticate(self, request):
