@@ -3,6 +3,7 @@ import csv
 import datetime
 import json
 import os
+import shlex
 import subprocess
 import sys
 import uuid
@@ -324,9 +325,11 @@ def playlog_cmd(data_dir, filename):
         writer.writerow(entry)
 
     if EXTERNAL_PLAY_LOGGER:
-        subprocess.check_call(
-            EXTERNAL_PLAY_LOGGER.format(**entry).encode("utf-8"), shell=True
-        )
+        # Quote inserted field values to prevent shell injections
+        quoted_entry = {key: shlex.quote(str(value)) for key, value in entry.items()}
+        cmd = shlex.split(EXTERNAL_PLAY_LOGGER.format(**quoted_entry))
+        # Force UTF-8 encoding
+        subprocess.check_call([arg.encode("utf-8") for arg in cmd])
 
 
 EXTERNAL_PLAY_LOGGER = os.environ.get("KLANGBECKEN_EXTERNAL_PLAY_LOGGER", "")
