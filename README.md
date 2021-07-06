@@ -97,16 +97,13 @@ Browse to http://localhost:8080 and start uploading audio files.
 
 Run the liquidsoap audio player:
 ```bash
-export KLANGBECKEN_ALSA_DEVICE="default"
-export KLANGBECKEN_DATA="data"
-export KLANGBECKEN_PATH="python -m klangbecken"
-export KLANGBECKEN_SOCKET_PATH="/tmp/klangbecken.liq.sock"
+eval $(opam env)
 liquidsoap klangbecken.liq
 ```
 
 Manually set the onair status of the player using `netcat`:
 ```bash
-echo "klangbecken.onair True" | nc -U -w 1 /tmp/klangbecken.liq.sock
+echo "klangbecken.on_air True" | nc -U -w 1 klangbecken.sock
 ```
 
 
