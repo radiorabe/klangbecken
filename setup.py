@@ -25,7 +25,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: WSGI",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     ],
-    install_requires=["docopt", "mutagen", "PyJWT >= 2.0.0", "Werkzeug"],
+    install_requires=["docopt", "mutagen", "PyJWT >= 2.0.0", "Werkzeug >= 2.0.0"],
     extras_require={
         "dev": ["tox", "black", "isort"],
         "test": ["flake8", "coverage"],
