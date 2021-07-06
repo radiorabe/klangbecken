@@ -79,8 +79,10 @@ class PlaylogCmdTestCase(unittest.TestCase):
 
         with open(os.path.join(self.data_dir, "log", "2018-04.csv")) as f:
             reader = csv.DictReader(f)
-            entry = next(reader)
+            entries = list(reader)
+            entry = entries[0]
 
+        self.assertEqual(len(entries), 1)
         self.assertEqual(entry["last_play"], now.isoformat())
         self.assertEqual(entry["play_count"], "1")
 
