@@ -5,7 +5,6 @@ import unittest
 from unittest import mock
 
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
 from .utils import capture
 
@@ -29,7 +28,7 @@ class AdditionalTestCase(unittest.TestCase):
         def root(request):
             int("1.5")
 
-        self.client = Client(app, BaseResponse)
+        self.client = Client(app)
 
     def testError500(self):
         with capture(self.client.patch, "/") as (out, err, resp):
@@ -59,7 +58,7 @@ class TokenRenewalTestCase(unittest.TestCase):
             return "Hello World"
 
         app = DummyAuth(api, "no secret")
-        self.client = Client(app, BaseResponse)
+        self.client = Client(app)
 
     def testImmediateRenewal(self):
         resp = self.client.get("/")
