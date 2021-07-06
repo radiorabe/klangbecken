@@ -180,7 +180,7 @@ radio = switch(id="radio", [
 
 def on_track_func(m) =
   # Reset jingle playing flag
-  if m['source'] == 'jingles' then
+  if m["source"] == "jingles" then
     insert_jingle := false
   end
 end
@@ -214,7 +214,7 @@ def on_air_func(state) =
 end
 
 server.register(
-  namespace='klangbecken',
+  namespace="klangbecken",
   "on_air",
   on_air_func,
   usage="on_air [true|false]",
@@ -246,13 +246,13 @@ radio = fallback(track_sensitive=false,
 # ================================================= #
 
 have_new_metadata = ref false
-filename = ref ''
+filename = ref ""
 
 def log_metadata_func(m) =
-  if !on_air and m['filename'] != '' then
+  if !on_air and m["filename"] != "" then
     # Prepare play logger
     have_new_metadata := true
-    filename := m['filename']
+    filename := m["filename"]
     log("INFO: Playing: #{!filename}", label="log_metadata_func", level=2)
   end
 end
