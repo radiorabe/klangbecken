@@ -318,7 +318,8 @@ class BaseJWTAuthMiddleware:
             # All others: Check authorization and then forward to app
             request = werkzeug.Request(environ)
             try:
-                self._check_authorization(request)
+                user = self._check_authorization(request)
+                environ["REMOTE_USER"] = user
                 response = self.app
             except Unauthorized as e:
                 response = _json_response(
@@ -340,15 +341,16 @@ class BaseJWTAuthMiddleware:
 
         token = auth[len("Bearer ") :]
         try:
-            jwt.decode(
+            contents = jwt.decode(
                 token,
                 self.secret,
                 algorithms=["HS256"],
                 options={"require_exp": True, "require_iat": True},
             )
+            return contents["user"]
         except jwt.ExpiredSignatureError:
             raise Unauthorized("Expired token")
-        except jwt.InvalidTokenError:
+        except (jwt.InvalidTokenError, KeyError):
             raise Unauthorized("Invalid token")
 
     def _login(self, request):
