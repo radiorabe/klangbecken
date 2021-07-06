@@ -153,7 +153,7 @@ echo "#######################"
 echo "# Finalize deployment #"
 echo "#######################"
 git tag "v$NEW_VERSION"
-git push upstream --tags
+git push upstream master --tags
 
 echo
 echo "Deployment successful!"
