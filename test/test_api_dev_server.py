@@ -6,7 +6,6 @@ import unittest
 import uuid
 
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
 from .utils import capture
 
@@ -61,7 +60,7 @@ class DevServerTestCase(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
         init_cmd(self.tempdir)
         app = development_server(self.tempdir, "secret")
-        self.client = Client(app, BaseResponse)
+        self.client = Client(app)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)

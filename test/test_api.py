@@ -9,7 +9,6 @@ from unittest import mock
 
 from werkzeug.datastructures import FileStorage
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
 
 
 class GenericAPITestCase(unittest.TestCase):
@@ -25,7 +24,7 @@ class GenericAPITestCase(unittest.TestCase):
                 "data_dir",
                 "player.sock",
             )
-        self.client = Client(self.app, BaseResponse)
+        self.client = Client(self.app)
 
     def test_application(self):
         self.assertTrue(callable(self.app))
@@ -100,7 +99,7 @@ class AuthTestCase(unittest.TestCase):
                 "secret",
                 "nix.sock",
             )
-        self.client = Client(app, BaseResponse)
+        self.client = Client(app)
 
     def testFailingAuth(self):
         resp = self.client.post("/playlist/music/")
@@ -154,7 +153,7 @@ class PlaylistAPITestCase(unittest.TestCase):
                 "data_dir",
                 "player.sock",
             )
-        self.client = Client(app, BaseResponse)
+        self.client = Client(app)
 
     def testUpload(self):
         from klangbecken.playlist import FileAddition, MetadataChange
@@ -293,7 +292,7 @@ class PlayerAPITestCase(unittest.TestCase):
         os.mkdir(os.path.join(self.tempdir, "music"))
         with open(os.path.join(self.tempdir, "music", "titi.mp3"), "w"):
             pass
-        self.client = Client(app, BaseResponse)
+        self.client = Client(app)
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
