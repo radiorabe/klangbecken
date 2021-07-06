@@ -216,7 +216,7 @@ def _json_response(data, status=200):
         return werkzeug.Response(status=status)
     else:
         data = json.dumps(data, indent=2) + "\n"
-        return werkzeug.Response(data, status=status, mimetype="text/json")
+        return werkzeug.Response(data, status=status, mimetype="application/json")
 
 
 def _parse_json_body_wrapper(func, body_type, content_types):  # noqa: C901
