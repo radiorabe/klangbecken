@@ -213,11 +213,6 @@ def on_air_func(state) =
   end
 end
 
-server.register(namespace='klangbecken',
-                description="Control, if the player is on air. Returns the current state, if called without argument.",
-                usage="onair [true|false]",
-                "onair",
-                on_air_func)
 server.register(
   namespace='klangbecken',
   "on_air",
