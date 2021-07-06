@@ -112,6 +112,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
         command_calls = [
             ("uptime", "0d 00h 08m 54s"),
             ("version", "Liquidsoap 1.4.2"),
+            ("klangbecken.on_air", "true"),
             (
                 "music.next",
                 "[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3",
@@ -121,7 +122,6 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 """[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3""",
             ),
             ("jingles.next", ""),
-            ("klangbecken.on_air", "true"),
             ("request.on_air", "8"),
             (
                 "request.metadata 8",
@@ -178,6 +178,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
         command_calls = [
             ("uptime", "0d 00h 08m 54s"),
             ("version", "Liquidsoap 1.4.2"),
+            ("klangbecken.on_air", "true"),
             (
                 "music.next",
                 "[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3",
@@ -187,7 +188,6 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3",
             ),
             ("jingles.next", ""),
-            ("klangbecken.on_air", "true"),
             ("request.on_air", ""),
             ("queue.queue", "0 1"),
             (
@@ -233,24 +233,6 @@ class LiquidsoapClientTestCase(unittest.TestCase):
         command_calls = [
             ("uptime", "0d 00h 08m 54s"),
             ("version", "Liquidsoap 1.4.2"),
-            (
-                "music.next",
-                """[ready] data/music/2e3fc9b6-36ee-4640-9efd-cdf10560adb4.mp3
-                [ready] data/music/3819cd8d-cb4b-49e0-8710-e091bb7dd4dd.mp3
-                data/music/b78cc27d-e4a5-40d5-852e-a2a9f641a490.mp3""",
-            ),
-            (
-                "classics.next",
-                """[playing] data/classics/4daabe44-6d48-47c4-a187-592cf048b039.mp3
-                [ready] data/classics/49080554-1a0f-41a4-9f00-f1158c2bd7e5.mp3
-                data/classics/4fbf6158-7d18-47e1-b9a4-fa3f3cf1d15b.mp3""",
-            ),
-            (
-                "jingles.next",
-                """[ready] data/jingles/4c4903fe-7c1f-4dbf-925c-a43a9ac1e55f.mp3
-                [ready] data/jingles/86fde5f3-47aa-4ac7-ad47-bfc82612224f.mp3
-                data/jingles/17e716e1-8a03-4a1f-bb40-7d8d90e97f98.mp3""",
-            ),
             ("klangbecken.on_air", "false"),
             ("queue.queue", "0 1"),
             (
@@ -287,10 +269,10 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "uptime": "0d 00h 08m 54s",
                 "liquidsoap_version": "Liquidsoap 1.4.2",
                 "api_version": __version__,
-                "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
-                "classics": "49080554-1a0f-41a4-9f00-f1158c2bd7e5",
-                "jingles": "4c4903fe-7c1f-4dbf-925c-a43a9ac1e55f",
                 "on_air": False,
+                "music": "",
+                "classics": "",
+                "jingles": "",
                 "queue": "4daabe44-6d48-47c4-a187-592cf048b039",
             },
         )

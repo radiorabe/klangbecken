@@ -118,15 +118,20 @@ class LiquidsoapClient:
             "liquidsoap_version": self.command("version"),
             "api_version": __version__,
         }
-        for playlist in PLAYLISTS:
-            lines = self.command(f"{playlist}.next").strip().split("\n")
-            lines = [
-                line for line in lines if line and not line.startswith("[playing] ")
-            ]
-            info[playlist] = _extract_id(lines[0], playlist) if lines else ""
-
         on_air = self.command("klangbecken.on_air").lower() == "true"
         info["on_air"] = on_air
+
+        if on_air:
+            for playlist in PLAYLISTS:
+                lines = self.command(f"{playlist}.next").strip().split("\n")
+                lines = [
+                    line for line in lines if line and not line.startswith("[playing] ")
+                ]
+                info[playlist] = _extract_id(lines[0], playlist) if lines else ""
+        else:
+            for playlist in PLAYLISTS:
+                info[playlist] = ""
+
         if on_air:
             on_air_rid = self.command("request.on_air").strip()
             if on_air_rid:
