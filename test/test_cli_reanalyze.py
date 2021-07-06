@@ -31,7 +31,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
                 pass
         except SystemExit as e:
             if e.code != 0:
-                print(err, file=sys.stderr)
+                print(e, file=sys.stderr)
                 raise (RuntimeError("Command execution failed"))
 
         for filename in os.listdir(os.path.join(self.data_dir, "music")):

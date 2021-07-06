@@ -28,7 +28,7 @@ class FsckTestCase(unittest.TestCase):
                 pass
         except SystemExit as e:
             if e.code != 0:
-                print(err, file=sys.stderr)
+                print(e, file=sys.stderr)
                 raise (RuntimeError("Command execution failed"))
 
     def tearDown(self):
@@ -45,7 +45,7 @@ class FsckTestCase(unittest.TestCase):
                 pass
         except SystemExit as e:
             if e.code != 0:
-                print(err, file=sys.stderr)
+                print(e, file=sys.stderr)
                 raise (RuntimeError("Command execution failed"))
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
         try:

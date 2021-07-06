@@ -44,7 +44,7 @@ class PlaylogCmdTestCase(unittest.TestCase):
                 pass
         except SystemExit as e:
             if e.code != 0:
-                print(err, file=sys.stderr)
+                print(e, file=sys.stderr)
                 raise (RuntimeError("Command execution failed"))
 
     def tearDown(self):
@@ -108,6 +108,3 @@ class PlaylogCmdTestCase(unittest.TestCase):
         with open(os.path.join(self.data_dir, "log", "2018-04.csv")) as f:
             reader = csv.DictReader(f)
             self.assertEqual(len(list(reader)), 2)
-
-        with open(id_file) as f:
-            self.assertEqual(f.read().strip(), filename.split(".")[0])
