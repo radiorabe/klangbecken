@@ -157,12 +157,13 @@ class AnalyzersTestCase(unittest.TestCase):
             fs = FileStorage(f)
 
             changes = ffmpeg_audio_analyzer("music", name, ext, fs)
-            self.assertEqual(len(changes), 3)
+            self.assertEqual(len(changes), 6)
             for change in changes:
                 self.assertIsInstance(change, MetadataChange)
             changes = {key: val for key, val in changes}
             self.assertEqual(
-                set(changes.keys()), set("track_gain cue_in cue_out".split())
+                set(changes.keys()),
+                set("channels samplerate bitrate track_gain cue_in cue_out".split()),
             )
 
             # Track gain negativ and with units
@@ -271,7 +272,7 @@ class AnalyzersTestCase(unittest.TestCase):
         with open(path, "rb") as f:
             fs = FileStorage(f)
             changes = ffmpeg_audio_analyzer("jingles", "id1", "mp3", fs)
-        self.assertEqual(len(changes), 3)
+        self.assertEqual(len(changes), 6)
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "silence-112kbps.mp3")

@@ -33,6 +33,9 @@ ALLOWED_METADATA = {
     "play_count": (int, lambda n: n >= 0),
     "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_RE)),
     "last_play_epoch": (float, lambda n: n >= 0.0),
+    "channels": (int, lambda n: n in (1, 2)),
+    "samplerate": (int, lambda n: n in (44100, 48000)),
+    "bitrate": (int, lambda n: n >= 128),
 }
 
 UPDATE_KEYS = "artist title album weight".split()

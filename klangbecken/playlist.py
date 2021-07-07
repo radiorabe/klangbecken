@@ -91,25 +91,30 @@ audio_quality_re = re.compile(
 )
 
 
-def _check_audio_quality(ffmpeg_output, playlist):
+def _extract_audio_quality(ffmpeg_output, playlist):
     quality_match = audio_quality_re.search(ffmpeg_output)
     if quality_match is None:  # pragma: no cover
         # Should not happen
         raise UnprocessableEntity("Cannot detect audio quality")
 
     filetype, samplerate, channels, bitrate = quality_match.groups()
+    channels = 1 if channels == "mono" else 2
+    samplerate = int(samplerate)
+    bitrate = int(bitrate)
 
     if filetype != "mp3":
         raise UnprocessableEntity(f"The track is not a valid MP3 file: {filetype}")
 
-    if samplerate not in ("44100", "48000"):
+    if samplerate not in (44100, 48000):
         raise UnprocessableEntity(f"Invalid sample rate: {samplerate}")
 
-    if playlist != "jingles" and channels == "mono":
+    if playlist != "jingles" and channels == 1:
         raise UnprocessableEntity("Track must be stereo")
 
-    if int(bitrate) < 128:
+    if bitrate < 128:
         raise UnprocessableEntity(f"Track bitrate too low: {bitrate} < 128 kb/s")
+
+    return channels, samplerate, bitrate
 
 
 def _extract_cue_points(ffmpeg_output):
@@ -186,7 +191,7 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
         raise UnprocessableEntity("Cannot process audio data")
 
     # Check audio quality
-    _check_audio_quality(output, playlist)
+    channels, samplerate, bitrate = _extract_audio_quality(output, playlist)
 
     # Extract ReplayGain value
     gain = trackgain_re.search(output).groups()[0]
@@ -196,6 +201,9 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
 
     file_.seek(0)
     return [
+        MetadataChange("channels", channels),
+        MetadataChange("samplerate", samplerate),
+        MetadataChange("bitrate", bitrate),
         MetadataChange("track_gain", gain),
         MetadataChange("cue_in", cue_in),
         MetadataChange("cue_out", cue_out),
