@@ -358,6 +358,11 @@ def reanalyze_cmd(data_dir, ids, all, yes):
         print(f'File: {path} ({data[id]["artist"]} - {data[id]["title"]})')
         with open(path) as f:
             file_changes = ffmpeg_audio_analyzer(playlist, id, ext, f)
+
+        # Temporarily add uploader field
+        if "uploader" not in data[id]:
+            file_changes.append(MetadataChange("uploader", ""))
+
         changes.append((playlist, id, ext, file_changes))
         for key, val in file_changes:
             print(f" * {key}: {val}")
