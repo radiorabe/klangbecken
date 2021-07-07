@@ -349,13 +349,14 @@ def reanalyze_cmd(data_dir, ids, all, yes):
         data = json.load(f)
     if all:
         ids = data.keys()
+    total = len(ids)
 
     changes = []
-    for id in ids:
+    for i, id in enumerate(ids, 1):
         playlist = data[id]["playlist"]
         ext = data[id]["ext"]
         path = os.path.join(data_dir, playlist, id + "." + ext)
-        print(f'File: {path} ({data[id]["artist"]} - {data[id]["title"]})')
+        print(f'File ({i}/{total}): {path} ({data[id]["artist"]} - {data[id]["title"]})')
         with open(path) as f:
             file_changes = ffmpeg_audio_analyzer(playlist, id, ext, f)
 
