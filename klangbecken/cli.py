@@ -21,7 +21,13 @@ from .playlist import (
     ffmpeg_audio_analyzer,
     locked_open,
 )
-from .settings import ALLOWED_METADATA, PLAYLISTS, SUPPORTED_FILE_TYPES, TAG_KEYS
+from .settings import (
+    ALLOWED_METADATA,
+    LOG_KEYS,
+    PLAYLISTS,
+    SUPPORTED_FILE_TYPES,
+    TAG_KEYS,
+)
 
 
 def _check_data_dir(data_dir, create=False):
@@ -315,14 +321,12 @@ def playlog_cmd(data_dir, filename):
     if not os.path.exists(log_file_path):
         # Initialize file for new month
         with open(log_file_path, "w", encoding="utf-8", newline="") as csv_file:
-            fieldnames = ALLOWED_METADATA.keys()
-            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer = csv.DictWriter(csv_file, fieldnames=LOG_KEYS)
             writer.writeheader()
 
     with open(log_file_path, "a", encoding="utf-8", newline="") as csv_file:
-        fieldnames = ALLOWED_METADATA.keys()
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-        writer.writerow(entry)
+        writer = csv.DictWriter(csv_file, fieldnames=LOG_KEYS)
+        writer.writerow({key: val for key, val in entry.items() if key in LOG_KEYS})
 
     if EXTERNAL_PLAY_LOGGER:
         # Quote inserted field values to prevent shell injections

@@ -16,9 +16,6 @@ ISO8601_RE = (
     r"(Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?"
 )
 
-# Attention: The order of metadata keys is used when writing CSV log files.
-# Do not reorder or delete metadata keys. Renaming or addition at the end is
-# okay.
 ALLOWED_METADATA = {
     "id": (str, r"^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$"),
     "ext": (str, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
@@ -45,6 +42,7 @@ TAG_KEYS = (
     "last_play_epoch"
 ).split()
 
+LOG_KEYS = "id playlist original_filename artist title play_count last_play".split()
 
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key="cue_in", desc="CUE_IN")
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key="cue_out", desc="CUE_OUT")
