@@ -166,7 +166,9 @@ class PlaylistAPITestCase(unittest.TestCase):
         data = json.loads(resp.data)
         fileId = list(data.keys())[0]
         self.assertEqual(fileId, str(uuid.UUID(fileId)))
-        self.assertEqual(list(data.values())[0], {"testkey": "testvalue"})
+        self.assertEqual(
+            list(data.values())[0], {"testkey": "testvalue", "uploader": ""}
+        )
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_called_once()
         args = self.upload_analyzer.call_args[0]
@@ -183,7 +185,11 @@ class PlaylistAPITestCase(unittest.TestCase):
             "music",
             fileId,
             "mp3",
-            [FileAddition("testfile"), MetadataChange("testkey", "testvalue")],
+            [
+                FileAddition("testfile"),
+                MetadataChange("testkey", "testvalue"),
+                MetadataChange("uploader", ""),
+            ],
         )
 
         self.upload_analyzer.reset_mock()

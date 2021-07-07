@@ -36,6 +36,7 @@ ALLOWED_METADATA = {
     "channels": (int, lambda n: n in (1, 2)),
     "samplerate": (int, lambda n: n in (44100, 48000)),
     "bitrate": (int, lambda n: n >= 128),
+    "uploader": str,
 }
 
 UPDATE_KEYS = "artist title album weight".split()

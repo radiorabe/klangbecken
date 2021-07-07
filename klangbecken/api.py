@@ -78,6 +78,8 @@ def playlist_api(  # noqa: C901
             for analyzer in upload_analyzers:
                 actions += analyzer(playlist, fileId, ext, uploadFile)
 
+            actions.append(MetadataChange("uploader", request.remote_user or ""))
+
             for processor in processors:
                 processor(data_dir, playlist, fileId, ext, actions)
 

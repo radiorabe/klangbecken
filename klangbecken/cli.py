@@ -164,6 +164,7 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime):
         for analyzer in DEFAULT_UPLOAD_ANALYZERS:
             actions += analyzer(playlist, fileId, ext, importFile)
 
+        actions.append(MetadataChange("uploader", "import"))
         actions.append(MetadataChange("original_filename", os.path.basename(filename)))
 
         if use_mtime:
