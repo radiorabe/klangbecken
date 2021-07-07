@@ -360,7 +360,7 @@ def reanalyze_cmd(data_dir, ids, all, yes):
             file_changes = ffmpeg_audio_analyzer(playlist, id, ext, f)
 
         # Temporarily add uploader field
-        if "uploader" not in data[id]:
+        if "uploader" not in data[id]:   # pragma: no cover
             file_changes.append(MetadataChange("uploader", ""))
 
         changes.append((playlist, id, ext, file_changes))
