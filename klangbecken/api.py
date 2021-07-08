@@ -70,14 +70,16 @@ def playlist_api(  # noqa: C901
 
         try:
             uploadFile = request.files["file"]
-
             ext = os.path.splitext(uploadFile.filename)[1].lower()[1:]
             fileId = str(uuid.uuid4())  # Generate new file id
+            tempFile = os.path.join(data_dir, "upload", f"{fileId}.{ext}")
+            uploadFile.save(tempFile)
 
             actions = []
             for analyzer in upload_analyzers:
-                actions += analyzer(playlist, fileId, ext, uploadFile)
+                actions += analyzer(playlist, fileId, ext, tempFile)
 
+            actions.append(MetadataChange("original_filename", uploadFile.filename))
             actions.append(MetadataChange("uploader", request.remote_user or ""))
 
             for processor in processors:
@@ -92,7 +94,10 @@ def playlist_api(  # noqa: C901
             e.description = f"{uploadFile.filename}: {e.description}"
             raise e
         finally:
-            uploadFile.close()
+            try:
+                uploadFile.close()
+            finally:
+                os.remove(tempFile)
 
         return {fileId: response}
 

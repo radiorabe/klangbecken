@@ -7,7 +7,6 @@ import unittest
 import uuid
 from unittest import mock
 
-from werkzeug.datastructures import FileStorage
 from werkzeug.test import Client
 
 
@@ -155,6 +154,8 @@ class PlaylistAPITestCase(unittest.TestCase):
             )
         self.client = Client(app)
 
+    @mock.patch("werkzeug.datastructures.FileStorage.save", lambda *args: None)
+    @mock.patch("os.remove", lambda fname: None)
     def testUpload(self):
         from klangbecken.playlist import FileAddition, MetadataChange
 
@@ -167,7 +168,8 @@ class PlaylistAPITestCase(unittest.TestCase):
         fileId = list(data.keys())[0]
         self.assertEqual(fileId, str(uuid.UUID(fileId)))
         self.assertEqual(
-            list(data.values())[0], {"testkey": "testvalue", "uploader": ""}
+            list(data.values())[0],
+            {"testkey": "testvalue", "original_filename": "test.mp3", "uploader": ""},
         )
         self.update_analyzer.assert_not_called()
         self.upload_analyzer.assert_called_once()
@@ -175,10 +177,8 @@ class PlaylistAPITestCase(unittest.TestCase):
         self.assertEqual(args[0], "music")
         self.assertEqual(args[1], fileId)
         self.assertEqual(args[2], "mp3")
-        self.assertTrue(isinstance(args[3], FileStorage))
-        self.assertEqual(args[3].filename, "test.mp3")
-        self.assertEqual(args[3].mimetype, "audio/mpeg")
-        self.assertTrue(args[3].closed)
+        self.assertTrue(isinstance(args[3], str))
+        self.assertTrue(args[3].startswith("data_dir/upload/"))
 
         self.processor.assert_called_once_with(
             "data_dir",
@@ -188,6 +188,7 @@ class PlaylistAPITestCase(unittest.TestCase):
             [
                 FileAddition("testfile"),
                 MetadataChange("testkey", "testvalue"),
+                MetadataChange("original_filename", "test.mp3"),
                 MetadataChange("uploader", ""),
             ],
         )

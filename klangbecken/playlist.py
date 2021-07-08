@@ -22,7 +22,7 @@ from .settings import ALLOWED_METADATA, SUPPORTED_FILE_TYPES, TAG_KEYS, UPDATE_K
 ####################
 # Change-"Classes" #
 ####################
-FileAddition = collections.namedtuple("FileAddition", ("file"))
+FileAddition = collections.namedtuple("FileAddition", ("filename"))
 MetadataChange = collections.namedtuple("MetadataChange", ("key", "value"))
 FileDeletion = collections.namedtuple("FileDeletion", ())
 
@@ -30,28 +30,24 @@ FileDeletion = collections.namedtuple("FileDeletion", ())
 #############
 # Analyzers #
 #############
-def raw_file_analyzer(playlist, fileId, ext, file_):
+def raw_file_analyzer(playlist, fileId, ext, filename):
     """Initial analysis of the file.
 
     Set the import timestamp, and default values for various metadata fields.
     """
-    if not file_:
+    if not filename:
         raise UnprocessableEntity("No File found")
 
     if ext not in SUPPORTED_FILE_TYPES.keys():
         raise UnprocessableEntity(f"Unsupported file extension: {ext}")
 
-    # Be compatible with werkzeug.datastructures.FileStorage and plain files
-    filename = file_.filename if hasattr(file_, "filename") else file_.name
-
     now = datetime.datetime.now().astimezone()
 
     return [
-        FileAddition(file_),
+        FileAddition(filename),
         MetadataChange("id", fileId),
         MetadataChange("ext", ext),
         MetadataChange("playlist", playlist),
-        MetadataChange("original_filename", filename),
         MetadataChange("import_timestamp", now.isoformat()),
         MetadataChange("weight", 1),
         MetadataChange("play_count", 0),
@@ -60,7 +56,7 @@ def raw_file_analyzer(playlist, fileId, ext, file_):
     ]
 
 
-def mutagen_tag_analyzer(playlist, fileId, ext, file_):
+def mutagen_tag_analyzer(playlist, fileId, ext, filename):
     """Extract tag information from the file.
 
     Artist name, track title, album title and track length are extracted.
@@ -68,7 +64,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
     with _mutagenLock:
         MutagenFileType = SUPPORTED_FILE_TYPES[ext]
         try:
-            mutagenfile = MutagenFileType(file_)
+            mutagenfile = MutagenFileType(filename)
         except mutagen.MutagenError:
             raise UnprocessableEntity(
                 "Unsupported file type: " + "Cannot read metadata."
@@ -80,7 +76,6 @@ def mutagen_tag_analyzer(playlist, fileId, ext, file_):
             MetadataChange("length", mutagenfile.info.length),
         ]
     # Seek back to the start of the file for whoever comes next
-    file_.seek(0)
     return changes
 
 
@@ -162,7 +157,7 @@ def _extract_cue_points(ffmpeg_output):
     return cue_in, cue_out
 
 
-def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
+def ffmpeg_audio_analyzer(playlist, fileId, ext, filename):
     """Analyze the audio data with ffmpeg.
 
     This function does three things:
@@ -178,13 +173,19 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     # Also, we have no a priori knowledge of the exact length of the track, to which
     # we could fall back to. Whereas at the start of the track it is easy: we can
     # always fall back to 0.0.
-    command = """ffmpeg -i - -af
-    replaygain,apad=pad_len=10000,silencedetect=d=0.01 -f null -""".split()
+    command = [
+        "ffmpeg",
+        "-i",
+        filename,
+        "-af",
+        "replaygain,apad=pad_len=10000,silencedetect=d=0.01",
+        "-f",
+        "null",
+        "-",
+    ]
 
     try:
-        raw_output = subprocess.check_output(
-            command, stdin=file_, stderr=subprocess.STDOUT
-        )
+        raw_output = subprocess.check_output(command, stderr=subprocess.STDOUT)
         # Non-ASCII characters can safely be ignored
         output = str(raw_output, "ascii", errors="ignore")
     except subprocess.CalledProcessError:
@@ -199,7 +200,6 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, file_):
     # Extract cue points
     cue_in, cue_out = _extract_cue_points(output)
 
-    file_.seek(0)
     return [
         MetadataChange("channels", channels),
         MetadataChange("samplerate", samplerate),
@@ -312,12 +312,7 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
     path = os.path.join(data_dir, playlist, fileId + "." + ext)
     for change in changes:
         if isinstance(change, FileAddition):
-            file_ = change.file
-            if isinstance(file_, str):
-                shutil.copy(file_, path)
-            else:
-                with open(path, "wb") as dest:
-                    shutil.copyfileobj(file_, dest)
+            shutil.copy(change.filename, path)
         elif isinstance(change, FileDeletion):
             if not os.path.isfile(path):
                 raise NotFound()

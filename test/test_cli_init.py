@@ -44,7 +44,7 @@ class InitCmdTestCase(unittest.TestCase):
         from klangbecken.cli import _check_data_dir
         from klangbecken.settings import PLAYLISTS
 
-        for playlist in PLAYLISTS + ("log",):
+        for playlist in PLAYLISTS + ("log", "upload"):
             path = os.path.join(self.tempdir, playlist)
             with self.assertRaises(Exception) as cm:
                 _check_data_dir(self.tempdir, False)

@@ -15,7 +15,6 @@ from .api import development_server
 from .playlist import (
     DEFAULT_PROCESSORS,
     DEFAULT_UPLOAD_ANALYZERS,
-    FileAddition,
     MetadataChange,
     check_processor,
     ffmpeg_audio_analyzer,
@@ -32,9 +31,9 @@ from .settings import (
 
 def _check_data_dir(data_dir, create=False):
     """Create local data directory structure for testing and development."""
-    for path in [data_dir, os.path.join(data_dir, "log")] + [
-        os.path.join(data_dir, playlist) for playlist in PLAYLISTS
-    ]:
+    dirs = [data_dir, os.path.join(data_dir, "log"), os.path.join(data_dir, "upload")]
+    dirs += [os.path.join(data_dir, playlist) for playlist in PLAYLISTS]
+    for path in dirs:
         if not os.path.isdir(path):
             if create:
                 os.mkdir(path)
@@ -158,22 +157,20 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime):
     if ext not in SUPPORTED_FILE_TYPES.keys():
         raise UnprocessableEntity("File extension not supported: " + ext)
 
-    with open(filename, "rb") as importFile:
-        fileId = str(uuid.uuid4())
-        actions = []
-        for analyzer in DEFAULT_UPLOAD_ANALYZERS:
-            actions += analyzer(playlist, fileId, ext, importFile)
+    fileId = str(uuid.uuid4())
+    actions = []
+    for analyzer in DEFAULT_UPLOAD_ANALYZERS:
+        actions += analyzer(playlist, fileId, ext, filename)
 
-        actions.append(MetadataChange("uploader", "import"))
-        actions.append(MetadataChange("original_filename", os.path.basename(filename)))
+    actions.append(MetadataChange("uploader", "import"))
+    actions.append(MetadataChange("original_filename", os.path.basename(filename)))
 
-        if use_mtime:
-            mtime = os.stat(filename).st_mtime
-            mtime = datetime.datetime.fromtimestamp(mtime)
-            mtime = mtime.isoformat()
-            actions.append(MetadataChange("import_timestamp", mtime))
+    if use_mtime:
+        mtime = os.stat(filename).st_mtime
+        mtime = datetime.datetime.fromtimestamp(mtime)
+        mtime = mtime.isoformat()
+        actions.append(MetadataChange("import_timestamp", mtime))
 
-        actions[0] = FileAddition(filename)
     return (filename, fileId, ext, actions)
 
 
@@ -353,15 +350,15 @@ def reanalyze_cmd(data_dir, ids, all, yes):
 
     changes = []
     for i, id in enumerate(ids, 1):
-        playlist = data[id]["playlist"]
-        ext = data[id]["ext"]
+        entry = data[id]
+        playlist = entry["playlist"]
+        ext = entry["ext"]
         path = os.path.join(data_dir, playlist, id + "." + ext)
-        print(f'File ({i}/{total}): {path} ({data[id]["artist"]} - {data[id]["title"]})')
-        with open(path) as f:
-            file_changes = ffmpeg_audio_analyzer(playlist, id, ext, f)
+        print(f'File ({i}/{total}): {path} ({entry["artist"]} - {entry["title"]})')
+        file_changes = ffmpeg_audio_analyzer(playlist, id, ext, path)
 
         # Temporarily add uploader field
-        if "uploader" not in data[id]:   # pragma: no cover
+        if "uploader" not in entry:  # pragma: no cover
             file_changes.append(MetadataChange("uploader", ""))
 
         changes.append((playlist, id, ext, file_changes))

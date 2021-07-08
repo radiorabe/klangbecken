@@ -73,18 +73,12 @@ class AnalyzersTestCase(unittest.TestCase):
         )
 
         # Correct file
-        fileStorage = FileStorage(filename="filename-äöü")
-        result = raw_file_analyzer("jingles", "fileId", "mp3", fileStorage)
+        result = raw_file_analyzer("jingles", "fileId", "mp3", "xyz.temp")
 
-        # Assure file is reset correctly
-        self.assertEqual(fileStorage.tell(), 0)
-        self.assertFalse(fileStorage.closed)
-
-        self.assertEqual(result[0], FileAddition(fileStorage))
+        self.assertEqual(result[0], FileAddition("xyz.temp"))
         self.assertTrue(MetadataChange("playlist", "jingles") in result)
         self.assertTrue(MetadataChange("id", "fileId") in result)
         self.assertTrue(MetadataChange("ext", "mp3") in result)
-        self.assertTrue(MetadataChange("original_filename", "filename-äöü") in result)
         import_timestamp = [
             ch
             for ch in result
@@ -101,50 +95,37 @@ class AnalyzersTestCase(unittest.TestCase):
         # Test regular files
         for ext in ["mp3"]:
             path = os.path.join(self.current_path, "audio", "silence." + ext)
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                changes = mutagen_tag_analyzer("music", "fileId", ext, fs)
-                self.assertEqual(len(changes), 4)
-                self.assertIn(Change("artist", "Silence Artist"), changes)
-                self.assertIn(Change("title", "Silence Track"), changes)
-                self.assertIn(Change("album", "Silence Album"), changes)
-                self.assertIn(Change("length", 1.0), changes)
-
-                # Assure file is reset correctly
-                self.assertEqual(f.tell(), 0)
-                self.assertFalse(f.closed)
+            changes = mutagen_tag_analyzer("music", "fileId", ext, path)
+            self.assertEqual(len(changes), 4)
+            self.assertIn(Change("artist", "Silence Artist"), changes)
+            self.assertIn(Change("title", "Silence Track"), changes)
+            self.assertIn(Change("album", "Silence Album"), changes)
+            self.assertIn(Change("length", 1.0), changes)
 
         # Test regular files with unicode tags
         for suffix in ["-jointstereo.mp3", "-stereo.mp3"]:
             extra, ext = suffix.split(".")
             name = "silence-unicode" + extra + "." + ext
             path = os.path.join(self.current_path, "audio", name)
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                changes = mutagen_tag_analyzer("music", "fileId", ext, fs)
-                self.assertEqual(len(changes), 4)
-                self.assertIn(Change("artist", "ÀÉÈ"), changes)
-                self.assertIn(Change("title", "ÄÖÜ"), changes)
-                self.assertIn(Change("album", "☀⚛♬"), changes)
-                self.assertIn(Change("length", 1.0), changes)
+            changes = mutagen_tag_analyzer("music", "fileId", ext, path)
+            self.assertEqual(len(changes), 4)
+            self.assertIn(Change("artist", "ÀÉÈ"), changes)
+            self.assertIn(Change("title", "ÄÖÜ"), changes)
+            self.assertIn(Change("album", "☀⚛♬"), changes)
+            self.assertIn(Change("length", 1.0), changes)
 
         # Test MP3 without any tags
         path = os.path.join(self.current_path, "audio", "silence-stripped.mp3")
-        with open(path, "rb") as f:
-            fs = FileStorage(f)
-            changes = mutagen_tag_analyzer("music", "fileId", "mp3", fs)
-            self.assertEqual(len(changes), 4)
-            self.assertIn(Change("artist", ""), changes)
-            self.assertIn(Change("title", ""), changes)
-            self.assertIn(Change("album", ""), changes)
-            self.assertIn(Change("length", 1.0), changes)
+        changes = mutagen_tag_analyzer("music", "fileId", "mp3", path)
+        self.assertEqual(len(changes), 4)
+        self.assertIn(Change("artist", ""), changes)
+        self.assertIn(Change("title", ""), changes)
+        self.assertIn(Change("album", ""), changes)
+        self.assertIn(Change("length", 1.0), changes)
 
         # Test invalid files
-        for ext in ["mp3"]:
-            path = os.path.join(self.current_path, "audio", "silence." + ext)
-            fs = FileStorage(io.BytesIO(b"\0" * 1024))
-            with self.assertRaises(UnprocessableEntity):
-                mutagen_tag_analyzer("music", "fileId", ext, fs)
+        with self.assertRaises(UnprocessableEntity):
+            mutagen_tag_analyzer("music", "fileId", "mp3", self.invalid_file)
 
     def _analyzeOneFile(self, prefix, postfix, gain, cue_in, cue_out):
         from klangbecken.playlist import MetadataChange, ffmpeg_audio_analyzer
@@ -153,36 +134,29 @@ class AnalyzersTestCase(unittest.TestCase):
         ext = postfix.split(".")[1]
 
         path = os.path.join(self.current_path, "audio", name + "." + ext)
-        with open(path, "rb") as f:
-            fs = FileStorage(f)
+        changes = ffmpeg_audio_analyzer("music", name, ext, path)
+        self.assertEqual(len(changes), 6)
+        for change in changes:
+            self.assertIsInstance(change, MetadataChange)
+        changes = {key: val for key, val in changes}
+        self.assertEqual(
+            set(changes.keys()),
+            set("channels samplerate bitrate track_gain cue_in cue_out".split()),
+        )
 
-            changes = ffmpeg_audio_analyzer("music", name, ext, fs)
-            self.assertEqual(len(changes), 6)
-            for change in changes:
-                self.assertIsInstance(change, MetadataChange)
-            changes = {key: val for key, val in changes}
-            self.assertEqual(
-                set(changes.keys()),
-                set("channels samplerate bitrate track_gain cue_in cue_out".split()),
-            )
+        # Track gain negativ and with units
+        measured_gain = changes["track_gain"]
+        self.assertTrue(measured_gain.endswith(" dB"))
 
-            # Track gain negativ and with units
-            measured_gain = changes["track_gain"]
-            self.assertTrue(measured_gain.endswith(" dB"))
+        # Be within ±0.5 dB of expected gain value
+        self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
 
-            # Be within ±0.5 dB of expected gain value
-            self.assertLess(abs(float(measured_gain[:-3]) - gain), 0.5)
-
-            # Be within the expected values for cue points
-            # Don't fade in late, or fade out early!
-            self.assertGreater(float(changes["cue_in"]), cue_in - 0.1)
-            self.assertLess(float(changes["cue_in"]), cue_in + 0.01)
-            self.assertGreater(float(changes["cue_out"]), cue_out - 0.02)
-            self.assertLess(float(changes["cue_out"]), cue_out + 0.1)
-
-            # Assure file is reset correctly
-            self.assertEqual(f.tell(), 0)
-            self.assertFalse(f.closed)
+        # Be within the expected values for cue points
+        # Don't fade in late, or fade out early!
+        self.assertGreater(float(changes["cue_in"]), cue_in - 0.1)
+        self.assertLess(float(changes["cue_in"]), cue_in + 0.01)
+        self.assertGreater(float(changes["cue_out"]), cue_out - 0.02)
+        self.assertLess(float(changes["cue_out"]), cue_out + 0.1)
 
     def testFFmpegAudioAnalyzer(self):
         from klangbecken.playlist import ffmpeg_audio_analyzer
@@ -205,40 +179,30 @@ class AnalyzersTestCase(unittest.TestCase):
             path = os.path.join(
                 self.current_path, "audio", "silence-unicode-stereo.mp3"
             )
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("track only contains silence", cm.exception.description.lower())
 
         # too long silence intro file
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "padded-start-long.mp3")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("too much silence", cm.exception.description.lower())
 
         # invalid file
         with self.assertRaises(UnprocessableEntity):
-            with open(self.invalid_file, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", self.invalid_file)
 
     def testFFmpegAudioAnalyzerAudioQuality(self):
         from klangbecken.playlist import ffmpeg_audio_analyzer
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "not-an-audio-file.mp3")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("cannot process audio data", cm.exception.description.lower())
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "silence.wav")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn(
             "the track is not a valid mp3 file", cm.exception.description.lower()
         )
@@ -246,9 +210,7 @@ class AnalyzersTestCase(unittest.TestCase):
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "silence.ogg")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn(
             "the track is not a valid mp3 file", cm.exception.description.lower()
         )
@@ -256,29 +218,21 @@ class AnalyzersTestCase(unittest.TestCase):
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "silence-32kHz.mp3")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("invalid sample rate: 32", cm.exception.description.lower())
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "sine-unicode-mono.mp3")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("stereo", cm.exception.description.lower())
 
         path = os.path.join(self.current_path, "audio", "sine-unicode-mono.mp3")
-        with open(path, "rb") as f:
-            fs = FileStorage(f)
-            changes = ffmpeg_audio_analyzer("jingles", "id1", "mp3", fs)
+        changes = ffmpeg_audio_analyzer("jingles", "id1", "mp3", path)
         self.assertEqual(len(changes), 6)
 
         with self.assertRaises(UnprocessableEntity) as cm:
             path = os.path.join(self.current_path, "audio", "silence-112kbps.mp3")
-            with open(path, "rb") as f:
-                fs = FileStorage(f)
-                ffmpeg_audio_analyzer("music", "id1", "mp3", fs)
+            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("bitrate too low: 112 < 128", cm.exception.description.lower())
 
 
@@ -373,8 +327,8 @@ class ProcessorsTestCase(unittest.TestCase):
             raw_file_processor,
         )
 
-        file_ = FileStorage(io.BytesIO(b"abc"), "filename-éàè.txt")
-        addition = FileAddition(file_)
+        filename = os.path.join(self.tempdir, "music", "silence.mp3")
+        addition = FileAddition(filename)
         change = MetadataChange("key", "value")
         delete = FileDeletion()
 
@@ -382,8 +336,6 @@ class ProcessorsTestCase(unittest.TestCase):
         raw_file_processor(self.tempdir, "music", "id1", "mp3", [addition])
         path = os.path.join(self.tempdir, "music", "id1.mp3")
         self.assertTrue(os.path.isfile(path))
-        with open(path) as f:
-            self.assertEqual(f.read(), "abc")
 
         # File change (nothing happens) and deletion
         raw_file_processor(self.tempdir, "music", "id1", "mp3", [change])
@@ -411,9 +363,12 @@ class ProcessorsTestCase(unittest.TestCase):
         index_path = os.path.join(self.tempdir, "index.json")
 
         # Add two new files
-        file_ = FileStorage(io.BytesIO(b"abc"), "filename.txt")
-        index_processor(self.tempdir, "music", "fileId1", "mp3", [FileAddition(file_)])
-        index_processor(self.tempdir, "music", "fileId2", "mp3", [FileAddition(file_)])
+        index_processor(
+            self.tempdir, "music", "fileId1", "mp3", [FileAddition("filename.txt")]
+        )
+        index_processor(
+            self.tempdir, "music", "fileId2", "mp3", [FileAddition("filename.txt")]
+        )
 
         with open(index_path) as f:
             data = json.load(f)
@@ -483,15 +438,19 @@ class ProcessorsTestCase(unittest.TestCase):
         # Try duplicating file ids
         with self.assertRaisesRegex(UnprocessableEntity, "Duplicate"):
             index_processor(
-                self.tempdir, "music", "fileId2", ".mp3", [FileAddition(file_)]
+                self.tempdir, "music", "fileId2", ".mp3", [FileAddition("filename.txt")]
             )
         with self.assertRaisesRegex(UnprocessableEntity, "Duplicate"):
             index_processor(
-                self.tempdir, "jingles", "fileId2", ".mp3", [FileAddition(file_)]
+                self.tempdir,
+                "jingles",
+                "fileId2",
+                ".mp3",
+                [FileAddition("filename.txt")],
             )
         with self.assertRaisesRegex(UnprocessableEntity, "Duplicate"):
             index_processor(
-                self.tempdir, "music", "fileId2", ".mp3", [FileAddition(file_)]
+                self.tempdir, "music", "fileId2", ".mp3", [FileAddition("filename.txt")]
             )
 
         # Try modifying non existent files

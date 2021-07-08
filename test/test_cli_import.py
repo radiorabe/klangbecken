@@ -72,7 +72,7 @@ class ImporterTestCase(unittest.TestCase):
             )
 
         # Import two file
-        args = [self.tempdir, "music", [audio1_path, audio2_path], True]
+        args = [self.tempdir, "jingles", [audio1_path, audio2_path], True]
         with self.assertRaises(SystemExit) as cm:
             with capture(import_cmd, *args) as (out, err, ret):
                 self.assertIn("Successfully imported 2 of 2 files.", out)
@@ -80,15 +80,15 @@ class ImporterTestCase(unittest.TestCase):
 
         files = [
             f
-            for f in os.listdir(self.music_dir)
-            if os.path.isfile(os.path.join(self.music_dir, f))
+            for f in os.listdir(self.jingles_dir)
+            if os.path.isfile(os.path.join(self.jingles_dir, f))
         ]
-        self.assertEqual(len(files), 3)
+        self.assertEqual(len(files), 2)
         with open(os.path.join(self.tempdir, "index.json")) as file:
             self.assertEqual(len(json.load(file).keys()), 3)
 
         # Try importing inexistent file
-        args = [self.tempdir, "music", [audio1_path, "inexistent"], True]
+        args = [self.tempdir, "music", [audio2_path, "inexistent"], True]
         with self.assertRaises(SystemExit) as cm:
             with capture(import_cmd, *args) as (out, err, ret):
                 self.assertIn("Successfully imported 1 of 2 files.", out)
