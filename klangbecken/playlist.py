@@ -82,7 +82,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, filename):
 silence_re = re.compile(r"silencedetect.*silence_(start|end):\s*(\S*)")
 trackgain_re = re.compile(r"replaygain.*track_gain = (\S* dB)")
 audio_quality_re = re.compile(
-    r"Stream #0:0: Audio: (.*), (\d*) Hz, (stereo|mono), \S*, (\d*) kb/s"
+    r"Stream #0:0: Audio: (\S*).*, (\d*) Hz, (stereo|mono), \S*, (\d*) kb/s"
 )
 
 
