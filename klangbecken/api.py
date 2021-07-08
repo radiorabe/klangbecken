@@ -88,6 +88,9 @@ def playlist_api(  # noqa: C901
                 for change in actions
                 if isinstance(change, MetadataChange)
             }
+        except UnprocessableEntity as e:
+            e.description = f"{uploadFile.filename}: {e.description}"
+            raise e
         finally:
             uploadFile.close()
 

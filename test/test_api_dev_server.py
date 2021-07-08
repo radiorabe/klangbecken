@@ -107,6 +107,19 @@ class DevServerTestCase(unittest.TestCase):
         self.assertLessEqual(set(expected.items()), set(data[fileId].items()))
         resp.close()
 
+        # Failing upload
+        path = os.path.join(self.current_path, "audio", "not-an-audio-file.mp3")
+        with open(path, "rb") as f:
+            resp = self.client.post(
+                "/api/playlist/music/",
+                data={"file": (f, "not-an-audio-file.mp3")},
+                headers=[("Authorization", f"Bearer {token}")],
+            )
+        self.assertEqual(resp.status_code, 422)
+        data = json.loads(resp.data)
+        self.assertIn("Cannot read metadata", data["description"])
+        self.assertIn("not-an-audio-file.mp3", data["description"])
+
         # Update
         resp = self.client.put(
             "/api/playlist/music/" + fileId + ".mp3",
