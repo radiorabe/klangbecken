@@ -322,9 +322,11 @@ def raw_file_processor(data_dir, playlist, fileId, ext, changes):
                 raise NotFound()
 
 
-def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
+def index_processor(data_dir, playlist, fileId, ext, changes):
     """Save metadata in the index cache."""
     with locked_open(os.path.join(data_dir, "index.json")) as f:
+        # print("should be locked", flush=True)
+        # try:
         data = json.load(f)
         for change in changes:
             if isinstance(change, FileAddition):
@@ -342,7 +344,7 @@ def index_processor(data_dir, playlist, fileId, ext, changes, json_opts={}):
                 data[fileId][key] = value
         f.seek(0)
         f.truncate()
-        json.dump(data, f, **json_opts)
+        json.dump(data, f, separators=(",", ":"))
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
