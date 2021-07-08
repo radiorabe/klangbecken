@@ -1,7 +1,6 @@
 import collections
 import contextlib
 import datetime
-import fcntl
 import json
 import os
 import random
@@ -9,6 +8,7 @@ import re
 import shutil
 import subprocess
 import threading
+import time
 
 import mutagen
 import mutagen.easyid3
@@ -284,11 +284,11 @@ def _check_value(key, val, check):
 
 def filter_duplicates_processor(data_dir, playlist, file_id, ext, changes):
     """Prevent uploading of obvious duplicate audio tracks."""
-    with locked_open(os.path.join(data_dir, "index.json")) as f:
-        data = json.load(f)
-
     addition = [c for c in changes if isinstance(c, FileAddition)]
     if addition:
+        with open(os.path.join(data_dir, "index.json")) as f:
+            data = json.load(f)
+
         changes = [c for c in changes if isinstance(c, MetadataChange)]
 
         filename = [c.value for c in changes if c.key == "original_filename"][0]
@@ -417,18 +417,34 @@ _mutagenLock = threading.Lock()
 
 
 @contextlib.contextmanager
-def locked_open(path, mode="r+"):
+def locked_open(path):
     """Lock a file for writing.
 
-    Serialize access from other threads and processes (voluntary).
+    Serialize write access to file from other threads and processes.
     """
     if path not in _locks:
         _locks[path] = threading.Lock()
     with _locks[path]:  # Prevent more than one thread accessing the file
-        with open(path, mode) as f:
-            # Prevent more than one process accessing the file (voluntarily)
-            fcntl.lockf(f, fcntl.LOCK_EX)
-            try:
+        try:
+            # Lock file
+            have_lock = False
+            while not have_lock:
+                try:
+                    open(path + ".lock", "x").close()
+                    have_lock = True
+                except FileExistsError:  # pragma: no cover
+                    time.sleep(0.001)
+
+            # Create full shadow copy
+            shadow_path = f"{path}~"
+            shutil.copy(path, shadow_path)
+
+            with open(shadow_path, "r+") as f:
+                # "return" rw-able file object
                 yield f
-            finally:
-                fcntl.lockf(f, fcntl.LOCK_UN)
+
+            # Atomically "commit" changes
+            os.replace(shadow_path, path)
+        finally:
+            # Release lock
+            os.remove(path + ".lock")

@@ -18,7 +18,6 @@ from .playlist import (
     MetadataChange,
     check_processor,
     ffmpeg_audio_analyzer,
-    locked_open,
 )
 from .settings import (
     ALLOWED_METADATA,
@@ -193,7 +192,7 @@ def fsck_cmd(data_dir):  # noqa: C901
         err("ERROR: Problem with data directory.", str(e))
         sys.exit(1)
 
-    with locked_open(os.path.join(data_dir, "index.json")) as f:
+    with open(os.path.join(data_dir, "index.json")) as f:
         try:
             data = json.load(f)
         except ValueError as e:
@@ -296,7 +295,7 @@ def playlog_cmd(data_dir, filename):
     now = datetime.datetime.now().astimezone()
 
     # Update metadata (play_count and last_play)
-    with locked_open(os.path.join(data_dir, "index.json")) as f:
+    with open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
         entry = data[file_id]
         play_count = entry.get("play_count", 0) + 1
@@ -342,7 +341,7 @@ def reanalyze_cmd(data_dir, ids, all, yes):
 
     Re-run audio analyzer for selected files and update gain values and cue points.
     """
-    with locked_open(os.path.join(data_dir, "index.json")) as f:
+    with open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
     if all:
         ids = data.keys()
