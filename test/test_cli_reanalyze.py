@@ -92,6 +92,17 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
         self.assertIn("cue_out", mutagenFile)
         self.assertIn("track_gain", mutagenFile)
 
+        # failing analysis: overwrite file
+        open(os.path.join(self.data_dir, "music", filename), "w").close()
+
+        with mock.patch(
+            "sys.argv", ["", "reanalyze", "-d", self.data_dir, file_id, "--yes"]
+        ):
+            with capture(main) as (out, err, ret):
+                pass
+        self.assertIn("FAILED: Cannot process audio data", out)
+        self.assertIn(f"Failed Tracks:\n - music/{file_id}.mp3", out)
+
     def testAllFilesMocked(self):
         from klangbecken.cli import reanalyze_cmd
 

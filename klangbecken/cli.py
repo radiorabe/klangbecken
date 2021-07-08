@@ -348,13 +348,19 @@ def reanalyze_cmd(data_dir, ids, all, yes):
     total = len(ids)
 
     changes = []
+    failed = []
     for i, id in enumerate(ids, 1):
         entry = data[id]
         playlist = entry["playlist"]
         ext = entry["ext"]
         path = os.path.join(data_dir, playlist, id + "." + ext)
         print(f'File ({i}/{total}): {path} ({entry["artist"]} - {entry["title"]})')
-        file_changes = ffmpeg_audio_analyzer(playlist, id, ext, path)
+        try:
+            file_changes = ffmpeg_audio_analyzer(playlist, id, ext, path)
+        except UnprocessableEntity as e:
+            print("FAILED:", e.description)
+            failed.append((playlist, id, ext))
+            continue
 
         # Temporarily add uploader field
         if "uploader" not in entry:  # pragma: no cover
@@ -368,6 +374,10 @@ def reanalyze_cmd(data_dir, ids, all, yes):
         for playlist, id, ext, file_changes in changes:
             for processor in DEFAULT_PROCESSORS:
                 processor(data_dir, playlist, id, ext, file_changes)
+
+    print("Failed Tracks:")
+    for playlist, id, ext in failed:
+        print(f" - {playlist}/{id}.{ext}")
 
 
 def main():
