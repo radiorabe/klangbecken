@@ -199,89 +199,89 @@ def fsck_cmd(data_dir):  # noqa: C901
             err("ERROR: Cannot read index.json", str(e))
             sys.exit(1)  # abort
 
-        files = set()
-        playlist_counts = collections.Counter()
-        for playlist in PLAYLISTS:
-            files.update(
-                os.path.join(playlist, entry)
-                for entry in os.listdir(os.path.join(data_dir, playlist))
+    files = set()
+    playlist_counts = collections.Counter()
+    for playlist in PLAYLISTS:
+        files.update(
+            os.path.join(playlist, entry)
+            for entry in os.listdir(os.path.join(data_dir, playlist))
+        )
+        with open(os.path.join(data_dir, playlist + ".m3u")) as f1:
+            playlist_counts.update(line.strip() for line in f1.readlines())
+    for song_id, entries in data.items():
+        keys = set(entries.keys())
+        missing = set(ALLOWED_METADATA.keys()) - keys
+        if missing:
+            err("ERROR: missing entries:", ", ".join(missing))
+            continue  # cannot continue with missing entries
+        too_many = keys - set(ALLOWED_METADATA.keys())
+        if too_many:
+            err("ERROR: too many entries:", ", ".join(too_many))
+        try:
+            check_processor(
+                data_dir,
+                entries["playlist"],
+                entries["id"],
+                entries["ext"],
+                (MetadataChange(key, val) for key, val in entries.items()),
             )
-            with open(os.path.join(data_dir, playlist + ".m3u")) as f1:
-                playlist_counts.update(line.strip() for line in f1.readlines())
-        for song_id, entries in data.items():
-            keys = set(entries.keys())
-            missing = set(ALLOWED_METADATA.keys()) - keys
-            if missing:
-                err("ERROR: missing entries:", ", ".join(missing))
-                continue  # cannot continue with missing entries
-            too_many = keys - set(ALLOWED_METADATA.keys())
-            if too_many:
-                err("ERROR: too many entries:", ", ".join(too_many))
-            try:
-                check_processor(
-                    data_dir,
-                    entries["playlist"],
-                    entries["id"],
-                    entries["ext"],
-                    (MetadataChange(key, val) for key, val in entries.items()),
-                )
-            except UnprocessableEntity as e:
-                err("ERROR:", str(e))
-            if song_id != entries["id"]:
-                err("ERROR: Id missmatch", song_id, entries["id"])
-            if entries["cue_in"] > 10:
-                err("WARNING: cue_in after more than ten seconds:", entries["cue_in"])
-            if entries["cue_out"] < entries["length"] - 10:
-                err(
-                    "WARNING: cue_out earlier than ten seconds before end of song:",
-                    entries["cue_out"],
-                )
-            if entries["cue_in"] > entries["cue_out"]:
-                err(
-                    "ERROR: cue_in larger than cue_out",
-                    str(entries["cue_in"]),
-                    str(entries["cue_out"]),
-                )
-            # Tolerate small differences, as the length calculation is not
-            # perfectly accurate.
-            if entries["cue_out"] > entries["length"] + 0.1:
-                err(
-                    "ERROR: cue_out larger than length",
-                    str(entries["cue_out"]),
-                    str(entries["length"]),
-                )
-            if entries["playlist"] != "jingles" and entries["length"] < 30:
-                err("WARNING: very short song found:", entries["length"])
-            file_path = os.path.join(
-                entries["playlist"], entries["id"] + "." + entries["ext"]
+        except UnprocessableEntity as e:
+            err("ERROR:", str(e))
+        if song_id != entries["id"]:
+            err("ERROR: Id missmatch", song_id, entries["id"])
+        if entries["cue_in"] > 10:
+            err("WARNING: cue_in after more than ten seconds:", entries["cue_in"])
+        if entries["cue_out"] < entries["length"] - 10:
+            err(
+                "WARNING: cue_out earlier than ten seconds before end of song:",
+                entries["cue_out"],
             )
-            file_full_path = os.path.join(data_dir, file_path)
-            if not os.path.isfile(file_full_path):
-                err("ERROR: file does not exist:", file_full_path)
-            else:
-                files.remove(file_path)
-                FileType = SUPPORTED_FILE_TYPES[entries["ext"]]
-                mutagenfile = FileType(file_full_path)
-                for key in TAG_KEYS:
-                    tag_value = mutagenfile.get(key, [""])[0]
-                    if str(entries[key]) != tag_value:
-                        err(
-                            f"ERROR: Tag value mismatch '{key}': "
-                            f"{entries[key]} != {tag_value}"
-                        )
-
-                count = playlist_counts[file_path]
-                del playlist_counts[file_path]
-                if count != entries["weight"]:
+        if entries["cue_in"] > entries["cue_out"]:
+            err(
+                "ERROR: cue_in larger than cue_out",
+                str(entries["cue_in"]),
+                str(entries["cue_out"]),
+            )
+        # Tolerate small differences, as the length calculation is not
+        # perfectly accurate.
+        if entries["cue_out"] > entries["length"] + 0.1:
+            err(
+                "ERROR: cue_out larger than length",
+                str(entries["cue_out"]),
+                str(entries["length"]),
+            )
+        if entries["playlist"] != "jingles" and entries["length"] < 30:
+            err("WARNING: very short song found:", entries["length"])
+        file_path = os.path.join(
+            entries["playlist"], entries["id"] + "." + entries["ext"]
+        )
+        file_full_path = os.path.join(data_dir, file_path)
+        if not os.path.isfile(file_full_path):
+            err("ERROR: file does not exist:", file_full_path)
+        else:
+            files.remove(file_path)
+            FileType = SUPPORTED_FILE_TYPES[entries["ext"]]
+            mutagenfile = FileType(file_full_path)
+            for key in TAG_KEYS:
+                tag_value = mutagenfile.get(key, [""])[0]
+                if str(entries[key]) != tag_value:
                     err(
-                        f"ERROR: Playlist weight mismatch: "
-                        f"{entries['weight']} != {count}"
+                        f"ERROR: Tag value mismatch '{key}': "
+                        f"{entries[key]} != {tag_value}"
                     )
 
-        if files:
-            err("ERROR: Dangling files:", ", ".join(files))
-        if playlist_counts:
-            err("ERROR: Dangling playlist entry:", ", ".join(playlist_counts.keys()))
+            count = playlist_counts[file_path]
+            del playlist_counts[file_path]
+            if count != entries["weight"]:
+                err(
+                    f"ERROR: Playlist weight mismatch: "
+                    f"{entries['weight']} != {count}"
+                )
+    files = [file for file in files if not file.endswith(".temp")]
+    if files:
+        err("ERROR: Dangling files:", ", ".join(files))
+    if playlist_counts:
+        err("ERROR: Dangling playlist entry:", ", ".join(playlist_counts.keys()))
 
     sys.exit(1 if err.count else 0)
 
@@ -297,8 +297,8 @@ def playlog_cmd(data_dir, filename):
     # Update metadata (play_count and last_play)
     with open(os.path.join(data_dir, "index.json")) as f:
         data = json.load(f)
-        entry = data[file_id]
-        play_count = entry.get("play_count", 0) + 1
+    entry = data[file_id]
+    play_count = entry.get("play_count", 0) + 1
 
     changes = [
         MetadataChange("play_count", play_count),
