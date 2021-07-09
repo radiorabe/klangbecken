@@ -286,7 +286,7 @@ def fsck_cmd(data_dir):  # noqa: C901
     sys.exit(1 if err.count else 0)
 
 
-def playlog_cmd(data_dir, filename):
+def playlog_cmd(data_dir, filename):  # noqa: C901
     """Entry point for `playlog` command.
 
     Log track play in metadata, log files, and with external command.
