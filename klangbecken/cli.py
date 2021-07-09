@@ -286,7 +286,7 @@ def fsck_cmd(data_dir):  # noqa: C901
     sys.exit(1 if err.count else 0)
 
 
-def playlog_cmd(data_dir, filename):  # noqa: C901
+def playlog_cmd(data_dir, filename):
     """Entry point for `playlog` command.
 
     Log track play in metadata, log files, and with external command.
@@ -336,7 +336,7 @@ def playlog_cmd(data_dir, filename):  # noqa: C901
 EXTERNAL_PLAY_LOGGER = os.environ.get("KLANGBECKEN_EXTERNAL_PLAY_LOGGER", "")
 
 
-def reanalyze_cmd(data_dir, ids, all, yes):
+def reanalyze_cmd(data_dir, ids, all, yes):  # noqa: C901
     """Entry point for `reanalyze` command.
 
     Re-run audio analyzer for selected files and update gain values and cue points.
