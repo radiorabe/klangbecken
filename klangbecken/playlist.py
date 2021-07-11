@@ -427,17 +427,8 @@ def locked_open(path):
     if path not in _locks:
         _locks[path] = threading.Lock()
     with _locks[path]:  # Prevent more than one thread accessing the file
-        try:
-            # Lock file
-            have_lock = False
-            while not have_lock:
-                try:
-                    open(path + ".lock", "x").close()
-                    have_lock = True
-                except FileExistsError:  # pragma: no cover
-                    time.sleep(0.001)
-
-            # Create full shadow copy
+        with fs_spin_lock(path):  # Prevent more than one process accessing the file
+            # Create full shadow copy for writing
             shadow_path = f"{path}~"
             shutil.copy(path, shadow_path)
 
@@ -445,8 +436,23 @@ def locked_open(path):
                 # "return" rw-able file object
                 yield f
 
-            # Atomically "commit" changes
+            # Atomically "write"/"commit" changes (an thus allow parallel reading)
+            # (only commit when no error ocurred)
             os.replace(shadow_path, path)
-        finally:
-            # Release lock
-            os.remove(path + ".lock")
+
+
+@contextlib.contextmanager
+def fs_spin_lock(path):
+    # Lock file
+    have_lock = False
+    while not have_lock:
+        try:
+            open(path + ".lock", "x").close()
+            have_lock = True
+        except FileExistsError:  # pragma: no cover
+            time.sleep(0.001)
+    try:
+        yield
+    finally:
+        # Release lock
+        os.remove(path + ".lock")
