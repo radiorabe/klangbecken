@@ -359,25 +359,28 @@ def reanalyze_cmd(data_dir, ids, all, yes):  # noqa: C901
             file_changes = ffmpeg_audio_analyzer(playlist, id, ext, path)
         except UnprocessableEntity as e:
             print("FAILED:", e.description)
-            failed.append((playlist, id, ext))
+            failed.append((playlist, id, ext, e.description))
             continue
 
-        # Temporarily add uploader field
-        if "uploader" not in entry:  # pragma: no cover
-            file_changes.append(MetadataChange("uploader", ""))
+        file_changes = [c for c in file_changes if entry[c.key] != c.value]
 
-        changes.append((playlist, id, ext, file_changes))
+        if file_changes:
+            changes.append((playlist, id, ext, file_changes))
+
         for key, val in file_changes:
             print(f" * {key}: {val}")
 
-    if yes or input("Apply changes now? [y/N] ").strip().lower() == "y":
-        for playlist, id, ext, file_changes in changes:
+    print(f"Failed Tracks ({len(failed)}):")
+    for playlist, id, ext, reason in failed:
+        print(f" - {playlist}/{id}.{ext}: {reason}")
+
+    total = len(changes)
+    if yes or input(f"Apply {total} changes now? [y/N] ").strip().lower() == "y":
+        for i, (playlist, id, ext, file_changes) in enumerate(changes, 1):
+            print(f"{i}/{total}", end="\r")
             for processor in DEFAULT_PROCESSORS:
                 processor(data_dir, playlist, id, ext, file_changes)
-
-    print("Failed Tracks:")
-    for playlist, id, ext in failed:
-        print(f" - {playlist}/{id}.{ext}")
+    print()
 
 
 def main():
