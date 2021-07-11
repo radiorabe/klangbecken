@@ -363,7 +363,8 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
                     mutagenfile[key] = str(value)
 
         if mutagenfile:
-            mutagenfile.save()
+            with fs_spin_lock(path):
+                mutagenfile.save()
 
 
 def playlist_processor(data_dir, playlist, fileId, ext, changes):
