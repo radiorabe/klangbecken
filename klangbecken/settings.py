@@ -41,8 +41,7 @@ ALLOWED_METADATA = {
 UPDATE_KEYS = "artist title weight".split()
 
 TAG_KEYS = (
-    "artist title cue_in cue_out track_gain original_filename import_timestamp "
-    "last_play_epoch"
+    "artist title cue_in cue_out track_gain original_filename last_play_epoch"
 ).split()
 
 LOG_KEYS = "id playlist original_filename artist title play_count last_play".split()
@@ -53,5 +52,4 @@ mutagen.easyid3.EasyID3.RegisterTXXXKey(key="track_gain", desc="REPLAYGAIN_TRACK
 mutagen.easyid3.EasyID3.RegisterTXXXKey(
     key="original_filename", desc="ORIGINAL_FILENAME"
 )
-mutagen.easyid3.EasyID3.RegisterTXXXKey(key="import_timestamp", desc="IMPORT_TIMESTAMP")
 mutagen.easyid3.EasyID3.RegisterTXXXKey(key="last_play_epoch", desc="LAST_PLAY_EPOCH")
