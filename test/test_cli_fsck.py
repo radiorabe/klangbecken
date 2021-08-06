@@ -34,30 +34,6 @@ class FsckTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    def testTooShortMusicFile(self):
-        from klangbecken.cli import import_cmd, main
-
-        # Correctly import a couple of files
-        file_path = os.path.join(self.current_path, "audio", "padded-jointstereo.mp3")
-        try:
-            args = [self.tempdir, "music", [file_path], True]
-            with capture(import_cmd, *args) as (out, err, ret):
-                pass
-        except SystemExit as e:
-            if e.code != 0:
-                print(e, file=sys.stderr)
-                raise (RuntimeError("Command execution failed"))
-        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
-        try:
-            with self.assertRaises(SystemExit) as cm:
-                with capture(main) as (out, err, ret):
-                    self.assertIn("ERROR", err)
-                    self.assertIn("WARNING", err)
-                    self.assertIn("very short", err)
-            self.assertEqual(cm.exception.code, 1)
-        finally:
-            sys.arv = argv
-
     def testFsckCorruptIndexJson(self):
         from klangbecken.cli import main
 
@@ -129,108 +105,6 @@ class FsckTestCase(unittest.TestCase):
                 with capture(main) as (out, err, ret):
                     self.assertIn("ERROR", err)
                     self.assertIn("Id missmatch", err)
-            self.assertEqual(cm.exception.code, 1)
-        finally:
-            sys.arv = argv
-
-    def testIndexWithWrongCueIn(self):
-        from klangbecken.cli import main
-
-        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
-
-        index_path = os.path.join(self.tempdir, "index.json")
-        with open(index_path) as f:
-            data = json.load(f)
-
-        entry = next(iter(data.values()))
-        entry["cue_in"], entry["cue_out"] = entry["cue_out"], entry["cue_in"]
-
-        with open(index_path, "w") as f:
-            json.dump(data, f)
-
-        try:
-            with self.assertRaises(SystemExit) as cm:
-                with capture(main) as (out, err, ret):
-                    self.assertIn("ERROR", err)
-                    self.assertIn("cue_in larger than cue_out", err)
-            self.assertEqual(cm.exception.code, 1)
-        finally:
-            sys.arv = argv
-
-    def testIndexWithWrongCueOut(self):
-        from klangbecken.cli import main
-
-        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
-
-        index_path = os.path.join(self.tempdir, "index.json")
-        with open(index_path) as f:
-            data = json.load(f)
-
-        entry = next(iter(data.values()))
-        entry["cue_out"], entry["length"] = entry["length"], entry["cue_out"]
-
-        with open(index_path, "w") as f:
-            json.dump(data, f)
-
-        try:
-            with self.assertRaises(SystemExit) as cm:
-                with capture(main) as (out, err, ret):
-                    self.assertIn("ERROR", err)
-                    self.assertIn("cue_out larger than length", err)
-            self.assertEqual(cm.exception.code, 1)
-        finally:
-            sys.arv = argv
-
-    def testIndexWithSilenceStart(self):
-        from klangbecken.cli import main
-
-        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
-
-        index_path = os.path.join(self.tempdir, "index.json")
-        with open(index_path) as f:
-            data = json.load(f)
-
-        entry = next(iter(data.values()))
-        entry["cue_in"] = 11
-        entry["cue_out"] = 100
-        entry["length"] = 101
-
-        with open(index_path, "w") as f:
-            json.dump(data, f)
-
-        try:
-            with self.assertRaises(SystemExit) as cm:
-                with capture(main) as (out, err, ret):
-                    self.assertIn("ERROR", err)
-                    self.assertIn("cue_in after more than ten seconds", err)
-            self.assertEqual(cm.exception.code, 1)
-        finally:
-            sys.arv = argv
-
-    def testIndexWithSilenceEnd(self):
-        from klangbecken.cli import main
-
-        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
-
-        index_path = os.path.join(self.tempdir, "index.json")
-        with open(index_path) as f:
-            data = json.load(f)
-
-        entry = next(iter(data.values()))
-        entry["cue_in"] = 1
-        entry["cue_out"] = 90
-        entry["length"] = 101
-
-        with open(index_path, "w") as f:
-            json.dump(data, f)
-
-        try:
-            with self.assertRaises(SystemExit) as cm:
-                with capture(main) as (out, err, ret):
-                    self.assertIn("ERROR", err)
-                    self.assertIn(
-                        "cue_out earlier than ten seconds before end of song", err
-                    )
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv

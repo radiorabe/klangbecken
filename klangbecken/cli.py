@@ -174,8 +174,10 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime):
 
 
 def fsck_cmd(data_dir):  # noqa: C901
-    """Entry point for `fsck` command."""
+    """Entry point for `fsck` command.
 
+    Check data directory for structural consistency.
+    """
     song_id = None
 
     def err(*args):
@@ -229,29 +231,6 @@ def fsck_cmd(data_dir):  # noqa: C901
             err("ERROR:", str(e))
         if song_id != entries["id"]:
             err("ERROR: Id missmatch", song_id, entries["id"])
-        if entries["cue_in"] > 10:
-            err("WARNING: cue_in after more than ten seconds:", entries["cue_in"])
-        if entries["cue_out"] < entries["length"] - 10:
-            err(
-                "WARNING: cue_out earlier than ten seconds before end of song:",
-                entries["cue_out"],
-            )
-        if entries["cue_in"] > entries["cue_out"]:
-            err(
-                "ERROR: cue_in larger than cue_out",
-                str(entries["cue_in"]),
-                str(entries["cue_out"]),
-            )
-        # Tolerate small differences, as the length calculation is not
-        # perfectly accurate.
-        if entries["cue_out"] > entries["length"] + 0.1:
-            err(
-                "ERROR: cue_out larger than length",
-                str(entries["cue_out"]),
-                str(entries["length"]),
-            )
-        if entries["playlist"] != "jingles" and entries["length"] < 30:
-            err("WARNING: very short song found:", entries["length"])
         file_path = os.path.join(
             entries["playlist"], entries["id"] + "." + entries["ext"]
         )
@@ -277,7 +256,9 @@ def fsck_cmd(data_dir):  # noqa: C901
                     f"ERROR: Playlist weight mismatch: "
                     f"{entries['weight']} != {count}"
                 )
-    files = [file for file in files if not file.endswith(".temp")]
+    files = [
+        file for file in files if not (file.endswith(".lock") or file.endswith("~"))
+    ]
     if files:
         err("ERROR: Dangling files:", ", ".join(files))
     if playlist_counts:
