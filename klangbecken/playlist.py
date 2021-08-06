@@ -343,7 +343,7 @@ def index_processor(data_dir, playlist, fileId, ext, changes):
                 data[fileId][key] = value
         f.seek(0)
         f.truncate()
-        json.dump(data, f, separators=(",", ":"))
+        json.dump(data, f, indent=2)
 
 
 def file_tag_processor(data_dir, playlist, fileId, ext, changes):
