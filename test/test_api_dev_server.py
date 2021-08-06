@@ -96,7 +96,6 @@ class DevServerTestCase(unittest.TestCase):
         expected = {
             "original_filename": "sine-unicode-jointstereo.mp3",
             "length": 5.0,
-            "album": "Sine Album 👌👍🖖",
             "title": "Sine Title éàè",
             "artist": "Sine Artist öäü",
             "ext": "mp3",

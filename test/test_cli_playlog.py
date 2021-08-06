@@ -30,7 +30,6 @@ class PlaylogCmdTestCase(unittest.TestCase):
             print(f"echo $1 > {self.out_file}", file=f)
             print(f"echo $3 >> {self.out_file}", file=f)
             print(f"echo $5 >> {self.out_file}", file=f)
-            print(f"echo $7 >> {self.out_file}", file=f)
         os.chmod(self.playlog_script, 0o700)
 
         # Correctly import a couple of files
@@ -59,7 +58,7 @@ class PlaylogCmdTestCase(unittest.TestCase):
         path = os.path.join(self.data_dir, "music", filename)
 
         # Make sure that the external command does not get interpreted by a shell
-        external_command = self.playlog_script + " {id} >> {artist} | {title} * {album}"
+        external_command = self.playlog_script + " {id} >> {artist} | {title}"
 
         with mock.patch("klangbecken.cli.datetime") as dt:
             with mock.patch("klangbecken.cli.EXTERNAL_PLAY_LOGGER", external_command):
@@ -91,7 +90,6 @@ class PlaylogCmdTestCase(unittest.TestCase):
             self.assertEqual(contents[0], filename.split(".")[0])
             self.assertEqual(contents[1], "'Padded' `Artist`")
             self.assertEqual(contents[2], 'Padded | "Title"')
-            self.assertEqual(contents[3], "Padded > Album")
 
         now = now + datetime.timedelta(days=1)
         with mock.patch("klangbecken.cli.datetime") as dt:

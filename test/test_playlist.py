@@ -96,10 +96,9 @@ class AnalyzersTestCase(unittest.TestCase):
         for ext in ["mp3"]:
             path = os.path.join(self.current_path, "audio", "silence." + ext)
             changes = mutagen_tag_analyzer("music", "fileId", ext, path)
-            self.assertEqual(len(changes), 4)
+            self.assertEqual(len(changes), 3)
             self.assertIn(Change("artist", "Silence Artist"), changes)
             self.assertIn(Change("title", "Silence Track"), changes)
-            self.assertIn(Change("album", "Silence Album"), changes)
             self.assertIn(Change("length", 1.0), changes)
 
         # Test regular files with unicode tags
@@ -108,19 +107,17 @@ class AnalyzersTestCase(unittest.TestCase):
             name = "silence-unicode" + extra + "." + ext
             path = os.path.join(self.current_path, "audio", name)
             changes = mutagen_tag_analyzer("music", "fileId", ext, path)
-            self.assertEqual(len(changes), 4)
+            self.assertEqual(len(changes), 3)
             self.assertIn(Change("artist", "ÀÉÈ"), changes)
             self.assertIn(Change("title", "ÄÖÜ"), changes)
-            self.assertIn(Change("album", "☀⚛♬"), changes)
             self.assertIn(Change("length", 1.0), changes)
 
         # Test MP3 without any tags
         path = os.path.join(self.current_path, "audio", "silence-stripped.mp3")
         changes = mutagen_tag_analyzer("music", "fileId", "mp3", path)
-        self.assertEqual(len(changes), 4)
+        self.assertEqual(len(changes), 3)
         self.assertIn(Change("artist", ""), changes)
         self.assertIn(Change("title", ""), changes)
-        self.assertIn(Change("album", ""), changes)
         self.assertIn(Change("length", 1.0), changes)
 
         # Test invalid files
@@ -502,7 +499,6 @@ class ProcessorsTestCase(unittest.TestCase):
         changes = {
             "artist": "New Artist (๛)",
             "title": "New Title (᛭)",
-            "album": "New Album (٭)",
             "cue_in": "0.123",
             "cue_out": "123",
             "track_gain": "-12 dB",
