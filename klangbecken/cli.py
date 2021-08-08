@@ -343,6 +343,7 @@ def reanalyze_cmd(data_dir, ids, all, yes):  # noqa: C901
             continue
 
         file_changes = [c for c in file_changes if entry[c.key] != c.value]
+        file_changes.append(MetadataChange("last_play", entry["last_play"]))
 
         if file_changes:
             changes.append((playlist, id, ext, file_changes))

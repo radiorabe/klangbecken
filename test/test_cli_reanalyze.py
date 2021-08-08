@@ -82,7 +82,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
             self.data_dir,
             "music",
             *filename.split("."),
-            [MetadataChange("cue_in", 3.0)],
+            [MetadataChange("cue_in", 3.0), MetadataChange("last_play", "")],
         )
 
     def testSingleFile(self):
@@ -131,9 +131,9 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
                     pass
 
         self.assertEqual(processors[0].call_count, self.file_count)
-        changed_fields = {"cue_in", "cue_out", "track_gain"}
+        changed_fields = {"cue_in", "cue_out", "track_gain", "last_play"}
         for call_args in processors[0].call_args_list:
             changes = call_args[0][4]
-            self.assertEqual(len(changes), 3)
+            self.assertEqual(len(changes), 4)
             self.assertTrue(all(isinstance(c, MetadataChange) for c in changes))
             self.assertTrue(all(c.key in changed_fields for c in changes))
