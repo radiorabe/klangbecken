@@ -140,15 +140,6 @@ def _extract_cue_points(ffmpeg_output):
         # Nothing but silence found
         raise UnprocessableEntity("The track only contains silence: Check your file.")
 
-    if cue_in > 10:
-        # Fail for unusually large cue_in values:
-        # This will generate an error when uploading, and thus make it easier to sort
-        # out bogus audio tracks, or catch clearly wrong audio file analysis results.
-        raise UnprocessableEntity(
-            f"Too much silence ({cue_in}s) found at the start of the track: "
-            f"Check your file."
-        )
-
     return cue_in, cue_out
 
 

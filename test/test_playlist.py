@@ -176,12 +176,6 @@ class AnalyzersTestCase(unittest.TestCase):
             ffmpeg_audio_analyzer("music", "id1", "mp3", path)
         self.assertIn("track only contains silence", cm.exception.description.lower())
 
-        # too long silence intro file
-        with self.assertRaises(UnprocessableEntity) as cm:
-            path = os.path.join(self.current_path, "audio", "padded-start-long.mp3")
-            ffmpeg_audio_analyzer("music", "id1", "mp3", path)
-        self.assertIn("too much silence", cm.exception.description.lower())
-
         # invalid file
         with self.assertRaises(UnprocessableEntity):
             ffmpeg_audio_analyzer("music", "id1", "mp3", self.invalid_file)
