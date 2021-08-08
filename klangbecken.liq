@@ -75,17 +75,22 @@ skipped = ref 0
 def check_next_func(r) =
   metadata = request.metadata(r)
   filename = request.filename(r)
+  last_play_str = string.trim(metadata["last_play"])
 
-  last_play = float_of_string(metadata["last_play_epoch"])
   if not (!on_air) then
     true
   elsif filename == "" then
     false
-  elsif last_play == 0.0 then
+  elsif last_play_str == "" then
     skipped := 0
     log("track was never played before: #{filename}", label="check_next_func")
     true
   else
+    # Convert ISO-8601 timestamp to epoch seconds
+    last_play_str = get_process_output("date +%s -d #{last_play_str}")
+    last_play_str = string.trim(last_play_str)
+    last_play = float_of_string(last_play_str)
+
     diff = gettimeofday() - last_play
     playlist = metadata["source"]
     if diff < calc_wait(playlist) then

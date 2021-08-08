@@ -52,7 +52,6 @@ def raw_file_analyzer(playlist, fileId, ext, filename):
         MetadataChange("weight", 1),
         MetadataChange("play_count", 0),
         MetadataChange("last_play", ""),
-        MetadataChange("last_play_epoch", 0.0),
     ]
 
 

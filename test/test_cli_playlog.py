@@ -74,7 +74,7 @@ class PlaylogCmdTestCase(unittest.TestCase):
         self.assertEqual(entry["play_count"], 1)
 
         mutagenFile = File(path, easy=True)
-        self.assertEqual(mutagenFile["last_play_epoch"][0], str(now.timestamp()))
+        self.assertEqual(mutagenFile["last_play"][0], now.isoformat())
 
         with open(os.path.join(self.data_dir, "log", "2018-04.csv")) as f:
             reader = csv.DictReader(f)
