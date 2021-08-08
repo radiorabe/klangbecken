@@ -95,7 +95,6 @@ class DevServerTestCase(unittest.TestCase):
         self.assertEqual(fileId, str(uuid.UUID(fileId)))
         expected = {
             "original_filename": "sine-unicode-jointstereo.mp3",
-            "length": 5.0,
             "title": "Sine Title éàè",
             "artist": "Sine Artist öäü",
             "ext": "mp3",

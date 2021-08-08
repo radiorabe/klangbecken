@@ -96,10 +96,9 @@ class AnalyzersTestCase(unittest.TestCase):
         for ext in ["mp3"]:
             path = os.path.join(self.current_path, "audio", "silence." + ext)
             changes = mutagen_tag_analyzer("music", "fileId", ext, path)
-            self.assertEqual(len(changes), 3)
+            self.assertEqual(len(changes), 2)
             self.assertIn(Change("artist", "Silence Artist"), changes)
             self.assertIn(Change("title", "Silence Track"), changes)
-            self.assertIn(Change("length", 1.0), changes)
 
         # Test regular files with unicode tags
         for suffix in ["-jointstereo.mp3", "-stereo.mp3"]:
@@ -107,18 +106,16 @@ class AnalyzersTestCase(unittest.TestCase):
             name = "silence-unicode" + extra + "." + ext
             path = os.path.join(self.current_path, "audio", name)
             changes = mutagen_tag_analyzer("music", "fileId", ext, path)
-            self.assertEqual(len(changes), 3)
+            self.assertEqual(len(changes), 2)
             self.assertIn(Change("artist", "ÀÉÈ"), changes)
             self.assertIn(Change("title", "ÄÖÜ"), changes)
-            self.assertIn(Change("length", 1.0), changes)
 
         # Test MP3 without any tags
         path = os.path.join(self.current_path, "audio", "silence-stripped.mp3")
         changes = mutagen_tag_analyzer("music", "fileId", "mp3", path)
-        self.assertEqual(len(changes), 3)
+        self.assertEqual(len(changes), 2)
         self.assertIn(Change("artist", ""), changes)
         self.assertIn(Change("title", ""), changes)
-        self.assertIn(Change("length", 1.0), changes)
 
         # Test invalid files
         with self.assertRaises(UnprocessableEntity):
@@ -282,10 +279,10 @@ class ProcessorsTestCase(unittest.TestCase):
         self.assertTrue("Invalid data format" in cm.exception.description)
         self.assertTrue("Regex" in cm.exception.description)
 
-        # Wrong data format (negative length)
+        # Wrong data format (negative weight)
         with self.assertRaises(UnprocessableEntity) as cm:
             check_processor(
-                self.tempdir, "playlist", "id", "ext", [MetadataChange("length", -5.0)]
+                self.tempdir, "playlist", "id", "ext", [MetadataChange("weight", -5)]
             )
         self.assertTrue("Invalid data format" in cm.exception.description)
 
@@ -490,7 +487,6 @@ class ProcessorsTestCase(unittest.TestCase):
                 MetadataChange("id", "abc"),
                 MetadataChange("playlist", "abc"),
                 MetadataChange("ext", "abc"),
-                MetadataChange("length", "abc"),
                 MetadataChange("nonexistant", "abc"),
                 FileDeletion(),
             ],

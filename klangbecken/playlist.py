@@ -59,7 +59,7 @@ def raw_file_analyzer(playlist, fileId, ext, filename):
 def mutagen_tag_analyzer(playlist, fileId, ext, filename):
     """Extract tag information from the file.
 
-    Artist name, track title and track length are extracted.
+    Artist name and track title are extracted.
     """
     with _mutagenLock:
         MutagenFileType = SUPPORTED_FILE_TYPES[ext]
@@ -69,13 +69,10 @@ def mutagen_tag_analyzer(playlist, fileId, ext, filename):
             raise UnprocessableEntity(
                 "Unsupported file type: " + "Cannot read metadata."
             )
-        changes = [
+        return [
             MetadataChange("artist", mutagenfile.get("artist", [""])[0]),
             MetadataChange("title", mutagenfile.get("title", [""])[0]),
-            MetadataChange("length", mutagenfile.info.length),
         ]
-    # Seek back to the start of the file for whoever comes next
-    return changes
 
 
 silence_re = re.compile(r"silencedetect.*silence_(start|end):\s*(\S*)")

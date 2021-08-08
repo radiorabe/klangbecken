@@ -25,7 +25,6 @@ ALLOWED_METADATA = {
     "weight": (int, lambda c: c >= 0),
     "artist": str,
     "title": str,
-    "length": (float, lambda n: n >= 0.0),
     "track_gain": (str, r"^[+-]?[0-9]+(\.[0-9]*) dB$"),
     "cue_in": (float, lambda n: n >= 0.0),
     "cue_out": (float, lambda n: n >= 0.0),
