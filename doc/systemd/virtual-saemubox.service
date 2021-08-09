@@ -6,7 +6,7 @@ After=liquidsoap@klangbecken.service
 Type=simple
 User=liquidsoap
 Group=liquidsoap
-ExecStart=/usr/local/bin/virtual-saemubox --udp=false --socket=true --socket-path=/var/run/liquidsoap/klangbecken.sock --pathfinder=pathfinder-01.audio.int.rabe.ch:9600
+ExecStart=/usr/local/bin/virtual-saemubox --udp=false --socket=true --socket-path=/var/run/liquidsoap/klangbecken.sock --socket-pattern "klangbecken.on_air %%v\n" --pathfinder=pathfinder-01.audio.int.rabe.ch:9600 --pathfinder-auth "Admin 720d1b70409186e4775b3f2f082753bb"
 StandardOutput=syslog
 StandardError=syslog
 Restart=always
