@@ -227,7 +227,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(main) as (out, err, ret):
                     self.assertIn("ERROR", err)
-                    self.assertIn("Dangling playlist entry", err)
+                    self.assertIn("Dangling playlist entries", err)
                     self.assertIn("not_an_uuid", err)
             self.assertEqual(cm.exception.code, 1)
         finally:

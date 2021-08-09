@@ -256,13 +256,14 @@ def fsck_cmd(data_dir):  # noqa: C901
                     f"ERROR: Playlist weight mismatch: "
                     f"{entries['weight']} != {count}"
                 )
+    song_id = None
     files = [
         file for file in files if not (file.endswith(".lock") or file.endswith("~"))
     ]
     if files:
         err("ERROR: Dangling files:", ", ".join(files))
     if playlist_counts:
-        err("ERROR: Dangling playlist entry:", ", ".join(playlist_counts.keys()))
+        err("ERROR: Dangling playlist entries:", ", ".join(playlist_counts.keys()))
 
     sys.exit(1 if err.count else 0)
 
