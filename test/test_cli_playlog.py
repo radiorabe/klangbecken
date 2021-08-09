@@ -38,7 +38,7 @@ class PlaylogCmdTestCase(unittest.TestCase):
             for ext in "-jointstereo.mp3 -stereo.mp3".split()
         ]
         try:
-            args = [self.data_dir, "music", files, True]
+            args = [self.data_dir, "jingles", files, True]
             with capture(import_cmd, *args) as (out, err, ret):
                 pass
         except SystemExit as e:
@@ -54,8 +54,8 @@ class PlaylogCmdTestCase(unittest.TestCase):
 
         now = datetime.datetime(2018, 4, 28).astimezone()
 
-        filename = os.listdir(os.path.join(self.data_dir, "music"))[0]
-        path = os.path.join(self.data_dir, "music", filename)
+        filename = os.listdir(os.path.join(self.data_dir, "jingles"))[0]
+        path = os.path.join(self.data_dir, "jingles", filename)
 
         # Make sure that the external command does not get interpreted by a shell
         external_command = self.playlog_script + " {id} >> {artist} | {title}"

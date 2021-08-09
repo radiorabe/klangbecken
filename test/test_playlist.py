@@ -128,7 +128,7 @@ class AnalyzersTestCase(unittest.TestCase):
         ext = postfix.split(".")[1]
 
         path = os.path.join(self.current_path, "audio", name + "." + ext)
-        changes = ffmpeg_audio_analyzer("music", name, ext, path)
+        changes = ffmpeg_audio_analyzer("jingles", name, ext, path)
         self.assertEqual(len(changes), 6)
         for change in changes:
             self.assertIsInstance(change, MetadataChange)

@@ -27,7 +27,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
         self.file_count = len(files)
 
         try:
-            args = [self.data_dir, "music", files, True]
+            args = [self.data_dir, "jingles", files, True]
             with capture(import_cmd, *args) as (out, err, ret):
                 pass
         except SystemExit as e:
@@ -35,9 +35,9 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
                 print(e, file=sys.stderr)
                 raise (RuntimeError("Command execution failed"))
 
-        for filename in os.listdir(os.path.join(self.data_dir, "music")):
+        for filename in os.listdir(os.path.join(self.data_dir, "jingles")):
             mutagenFile = File(
-                os.path.join(self.data_dir, "music", filename), easy=True
+                os.path.join(self.data_dir, "jingles", filename), easy=True
             )
             mutagenFile["cue_in"] = "0.0"
             mutagenFile["cue_out"] = "5.0"
@@ -61,7 +61,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
         from klangbecken.cli import reanalyze_cmd
         from klangbecken.playlist import MetadataChange
 
-        filename = os.listdir(os.path.join(self.data_dir, "music"))[0]
+        filename = os.listdir(os.path.join(self.data_dir, "jingles"))[0]
 
         # mocked call: single file
         with mock.patch(
@@ -76,11 +76,11 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
                 ):
                     pass
 
-        analyzer.assert_called_once_with("music", *filename.split("."), mock.ANY)
+        analyzer.assert_called_once_with("jingles", *filename.split("."), mock.ANY)
         analyzer.reset_mock()
         processors[0].assert_called_once_with(
             self.data_dir,
-            "music",
+            "jingles",
             *filename.split("."),
             [MetadataChange("cue_in", 3.0), MetadataChange("last_play", "")],
         )
@@ -88,7 +88,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
     def testSingleFile(self):
         from klangbecken.cli import main
 
-        filename = os.listdir(os.path.join(self.data_dir, "music"))[0]
+        filename = os.listdir(os.path.join(self.data_dir, "jingles"))[0]
         file_id = filename.split(".")[0]
 
         with mock.patch(
@@ -97,7 +97,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
             with capture(main):
                 pass
 
-        mutagenFile = File(os.path.join(self.data_dir, "music", filename), easy=True)
+        mutagenFile = File(os.path.join(self.data_dir, "jingles", filename), easy=True)
         self.assertIn("cue_in", mutagenFile)
         self.assertIn("cue_out", mutagenFile)
         self.assertIn("track_gain", mutagenFile)
@@ -106,7 +106,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
         self.assertNotEqual(mutagenFile["track_gain"][0], "-3.0 dB")
 
         # failing analysis: overwrite file
-        open(os.path.join(self.data_dir, "music", filename), "w").close()
+        open(os.path.join(self.data_dir, "jingles", filename), "w").close()
 
         with mock.patch(
             "sys.argv", ["", "reanalyze", "-d", self.data_dir, file_id, "--yes"]
@@ -115,7 +115,7 @@ class ReanalyzeCmdTestCase(unittest.TestCase):
                 pass
 
         self.assertIn("FAILED: Cannot process audio data", out)
-        self.assertIn(f"Failed Tracks (1):\n - music/{file_id}.mp3", out)
+        self.assertIn(f"Failed Tracks (1):\n - jingles/{file_id}.mp3", out)
 
     def testAllFilesMocked(self):
         from klangbecken.cli import reanalyze_cmd

@@ -135,8 +135,8 @@ def _extract_cue_points(ffmpeg_output):
     # Fix small negative values (for old ffmpeg versions)
     cue_out = max(start_times[-1], 0.0)
 
-    # Empty or almost empty track (there should be more than 0.5 seconds of audio)
-    if cue_in >= cue_out - 0.5:
+    # Empty track
+    if cue_in >= cue_out:
         # Nothing but silence found
         raise UnprocessableEntity("The track only contains silence: Check your file.")
 
@@ -185,6 +185,12 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, filename):
 
     # Extract cue points
     cue_in, cue_out = _extract_cue_points(output)
+
+    duration = cue_out - cue_in
+    if playlist != "jingles" and duration < 5.0:
+        raise UnprocessableEntity(f"Track too short: {duration} < 5 seconds")
+    elif playlist == "jingles" and duration < 0.5:
+        raise UnprocessableEntity(f"Track too short: {duration} < 0.5 seconds")
 
     return [
         MetadataChange("channels", channels),
