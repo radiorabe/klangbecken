@@ -2,7 +2,8 @@
 
 Radio Bern RaBe is an open comunity radio based in Bern, Switzerland.  The station is driven by volunteers, broadcasting more than 80 different shows in more than 20 languages live from our studios.
 
-When no live or pre-programmed radio shows are on air, we broadcast a twentyfour hour music program, the _Klangbecken_. This project implements the software needed for the _Klangbecken_.
+When no live or pre-programmed radio shows are on air, we broadcast a twentyfour hour music program, the _Klangbecken_. This project implements the software for the _Klangbecken_.
+
 
 ## Requirements
 
@@ -27,24 +28,28 @@ Music programmers have to be able to ...
 
 The IT operations team wants ...
  * ... a stable, reliable system
- * ... a Klangbecken system that allows maintenance work on other core systems during the time the Klangbecken is on air
- * ... fast disaster recovery FIXME: not yet
- * ... good maintainability and future-proofness
+ * ... an independent system that allows maintenance work on other core systems during the time the Klangbecken is on air
+ * ... fast disaster recovery
+ * ... easy maintainability and future-proofness
 
 
 ## General Goals
 
 Apart from the required features for the listeners and music programmers, we aim for the following goals:
 
-**Self-contained system**: The Klangbecken installation only requires a minimal amount of external services. These are a virtual machine runtime environment, local networking, authentication service, file backup, and monitoring. But the Klangbecken does for example not use the database server.
+**Self-contained system**: The Klangbecken installation only requires a minimal amount of external services. These are a virtual machine runtime environment, local networking, authentication service, file backup, and monitoring.
 
-**Automated testing**: Central components of the system are automatically tested with multiple versions of our core dependencies (See [actions](https://github.com/radiorabe/klangbecken/actions)).
+**Fast recovery**: All data is stored in regular files. A previous state of the system can be restored by simply restoring the files from backup, or alternatively by manually fixing the human-readable files.
 
-**Full test coverage**: All code is covered by meaningful tests.
+**Automated testing**: All central components of the system are automatically tested by meaningful test cases against multiple versions of our core dependencies (See [actions](https://github.com/radiorabe/klangbecken/actions)).
 
-**Minimal runtime and test dependencies**: To reduce maintenance, we aim for a sensible minimal set of dependencies.
+**Minimal and mature runtime and test dependencies**: To reduce maintenance, we aim for a sensible minimal set of dependencies. We only depend on stable, mature and maintained libraries.
 
-**Mature dependencies**: We only depend on stable, mature and maintained libraries.
+
+## CLI
+
+The [CLI](../klangbecken/cli.py) provides commands to manage the data directory and run the development serve. For details see the [command line interface documentation](cli.md).
+
 
 ## API
 
@@ -81,7 +86,8 @@ $ curl -X POST -H "Content-Type: text/json" --data '{"a": 15, "b": 27}' http://l
 }
 ```
 
-## Playlists
+
+## Playlist Management
 
 The [playlist code](../klangbecken/api.py) manages the static playlist files in the data directory.
 
@@ -99,18 +105,18 @@ There are three types of changes: `FileAddition`, `MetadataChange` and `FileDele
 
 _Analyzer functions_ have the following signature, and return a list of change objects:
 ```python
-def analyzer(playlist, fileId, ext, file_): pass
+def analyzer(playlist, fileId, ext, filename):
 ```
-> Where `playlist` is the name of the playlist, `fileId` the UUID of the file, `ext` the file extension and thus the file type, and `file_` an open and readable file object.
+> Where `playlist` is the name of the playlist, `fileId` the UUID of the file, `ext` the file extension and thus the file type, and `filename` the temporary path to the uploaded file.
 
 _Processor functions_ process the generated changes. They validate them or write them to the file system. The functions have the following signature:
 ```python
-def processor(data_dir, playlist, fileId, ext, changes): pass
+def processor(data_dir, playlist, fileId, ext, changes):
 ```
 > Where `data_dir` is the data directory, `playlist` the name of the playlist, `fileId` the UUID of the file, `ext` the extension and file type of the file, and `changes` a list of change objects.
 
 
-## Player
+## Player Management
 
 The player [itself](../klangbecken.liq) is written in the [Liquidsoap](https://www.liquidsoap.info/) language.
 
@@ -119,7 +125,6 @@ It reads and monitors the static playlist files, to build it's playlist. The dif
 In normal operation the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox) sends a signal to the Klangbecken to come "on air". The Klangbecken then skips to the next track, to start the program at the beginning of an audio track.
 
 Every played track is logged with using the [play log command](cli.md) at the start of the track.
-
 
 Liquidsoap provides a telnet interface for querying run-time information and for the modification of dynamic _queue_ playlists.
 
@@ -137,13 +142,10 @@ Here is an example session:
 >>> client.close()
 ```
 
-The `LiquidsoapClient` should be used as a context manager, to reliably open and close the connection to the player:
+Use the `LiquidsoapClient` as a context manager, to reliably open and close the connection to the player:
 
 ```python
-
-client = LiquidsoapClient(("localhost", 1234))
-
-with client:
+with LiquidsoapClient(("localhost", 1234)) as client:
     queue_id = client.push("data/music/072f12ef-f4ae-4a9d-ad41-d76f92f6931b.mp3")
-    return queue_id
+    print(f"Queued track under ID {queue_id}")
 ```

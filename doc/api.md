@@ -47,7 +47,7 @@ Endpoint example: `/api/player/queue/15`
 
 ## Static Data
 
-`/data` provides read-only access to all static playlist and log files. The metadata cache `index.json` speeds up client operation, by removing the need to perform client-side audio file metadata parsing.
+`/data` provides read-only access to the data directory containing the audio, playlist and log files. The metadata cache `index.json` speeds up client operation, by removing the need to perform client-side audio file metadata parsing.
 
 Base: `/data`
 
