@@ -46,6 +46,11 @@ Apart from the required features for the listeners and music programmers, we aim
 **Minimal and mature runtime and test dependencies**: To reduce maintenance, we aim for a sensible minimal set of dependencies. We only depend on stable, mature and maintained libraries.
 
 
+## Data Directory
+
+The data directory contains the data files for the entire system. This includes audio, playlist, and log files plus a metadata cache.  Except for the audio files, human readable text files are used to store the data.  The `fsck` command can be used, to verify the consistency of the directory. For details see the [data directory documentation](data-dir.md)
+
+
 ## CLI
 
 The [CLI](../klangbecken/cli.py) provides commands to manage the data directory and run the development serve. For details see the [command line interface documentation](cli.md).

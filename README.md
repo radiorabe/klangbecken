@@ -8,7 +8,7 @@ _Klangbecken_ is the minimalistic endless music player for Radio Bern RaBe based
 
 It supports configurable and editable playlists, jingle insertion, metadata publishing and more.
 
-It is [designed](doc/design.md) for stand-alone operation, robustness and easy maintainability.
+It is [designed](doc/design.md) for stand-alone operation, robustness and easy maintainability. All files are stored in a single [data directory](doc/data-dir.md).
 
 This repository contains three components of the RaBe-Klangbecken:
 * The [API](doc/api.md)
