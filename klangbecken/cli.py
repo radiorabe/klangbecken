@@ -258,7 +258,7 @@ def fsck_cmd(data_dir):  # noqa: C901
                 )
     song_id = None
     files = [
-        file for file in files if not (file.endswith(".lock") or file.endswith("~"))
+        file for file in files if not file.endswith(".lock")
     ]
     if files:
         err("ERROR: Dangling files:", ", ".join(files))
