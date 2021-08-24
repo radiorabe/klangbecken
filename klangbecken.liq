@@ -200,7 +200,7 @@ radio = on_track(on_track_func, radio)
 # REGISTER EXTERNAL RESTART COMMAND                 #
 # ================================================= #
 
-restart = ref true
+restart = ref false
 
 def on_air_func(state) =
   state = string.case(state)
