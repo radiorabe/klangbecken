@@ -93,7 +93,7 @@ def import_cmd(  # noqa: C901
 
     try:
         _check_data_dir(data_dir)
-    except Exception as e:  # pragma: no cover
+    except Exception as e:
         err("ERROR: Problem with data directory.", str(e))
         sys.exit(1)
 
@@ -137,6 +137,7 @@ def import_cmd(  # noqa: C901
                     processor(data_dir, playlist, fileId, ext, actions)
                 count += 1
             except Exception as e:  # pragma: no cover
+                # Should not happen
                 err(
                     "WARNING: File cannot be imported: " + filename,
                     e.description if hasattr(e, "description") else str(e),
