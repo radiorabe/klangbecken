@@ -24,6 +24,19 @@ class ImporterTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+    def testCorruptDataDir(self):
+        from klangbecken.cli import main
+
+        os.unlink(os.path.join(self.tempdir, "index.json"))
+        audio_path = os.path.join(self.current_path, "audio")
+        cmd = f"klangbecken import -d {self.tempdir} -y -m jingles {audio_path}"
+        with self.assertRaises(SystemExit) as cm:
+            with mock.patch("sys.argv", cmd.split()):
+                with capture(main) as (out, err, ret):
+                    pass
+        self.assertIn("ERROR: Problem with data directory.", err)
+        self.assertEqual(cm.exception.code, 1)
+
     def testImportMtime(self):
         from klangbecken.cli import main
 
