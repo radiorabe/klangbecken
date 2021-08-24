@@ -29,7 +29,7 @@ def getenv_fallback(var, fallback) =
 end
 
 # log file
-set("log.file", false)
+set("log.file", true)
 set("log.stdout", true)
 set("server.telnet", false)
 set("server.telnet.port", 1234)
@@ -45,6 +45,10 @@ DATA_DIR = getenv_fallback("KLANGBECKEN_DATA_DIR", "./data")
 if not file.is_directory(DATA_DIR) then
     log("ERROR: Cannot find data directory: #{DATA_DIR}", level=0)
     shutdown()
+end
+
+if DATA_DIR == "./data" then
+  set("log.file.path", "./klangbecken.log")
 end
 
 # Get the klangbecken command
