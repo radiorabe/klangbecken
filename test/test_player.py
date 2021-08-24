@@ -61,6 +61,11 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 self.assertIn(
                     "Timeout while trying to read until", cm.exception.args[0]
                 )
+                with client:
+                    result = client.command(
+                        "\r\n\r\nThis is the END of the world\r\n\r\nEND"
+                    )
+                self.assertEqual(result, "This is the END of the world")
                 serv.shutdown()
                 thread.join()
 

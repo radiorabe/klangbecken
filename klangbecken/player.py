@@ -74,7 +74,7 @@ class LiquidsoapClient:
         Returns the response.
         """
         self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
-        ans = self.tel.read_until(b"END", timeout=0.2)
+        ans = self.tel.read_until(b"\r\nEND", timeout=0.2)
         if ans == b"":  # pragma: no cover
             raise ConnectionError(
                 "Timeout while trying to read from player. Got no answer."
