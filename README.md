@@ -27,7 +27,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 * Unix-like operating system environment
 * **Python** >= 3.6
   * *docopt* library for parsing command line arguments
-  * *Werkzeug* library for WSGI support
+  * *Werkzeug* library (>= v2.0.0) for WSGI support
   * *PyJWT* library (>= v2.0.0) for creating and verifing JWT authentication tokens
   * *mutagen* library for audio tag editing
 * **ffmpeg** binary (>=4.0) for audio analysis

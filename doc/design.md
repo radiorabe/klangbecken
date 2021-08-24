@@ -58,7 +58,7 @@ The [CLI](../klangbecken/cli.py) provides commands to manage the data directory 
 
 ## API
 
-The [APIs](../klangbecken/api.py) are built with [werkzeug](https://FIXME) and a set of [helpers](../klangbecken/api_utils.py). For details about the available endpoints see the [API documentation](api.md).
+The [APIs](../klangbecken/api.py) are built with [werkzeug](https://werkzeug.palletsprojects.com/) and a set of [helpers](../klangbecken/api_utils.py). For details about the available endpoints see the [API documentation](api.md).
 
 The APIs are built from handler functions, and accept and return JSON data.  Required data types can be enforced with type annotations.
 
