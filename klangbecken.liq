@@ -250,28 +250,29 @@ radio = fallback(track_sensitive=false,
 # LOGGING METADATA                                  #
 # ================================================= #
 
-have_new_metadata = ref false
-filename = ref ""
+to_log_filenames = ref []
 
 def log_metadata_func(m) =
   if !on_air and m["filename"] != "" then
     # Prepare play logger
-    have_new_metadata := true
-    filename := m["filename"]
-    log("INFO: Playing: #{!filename}", label="log_metadata_func", level=2)
+    filename = m["filename"]
+    to_log_filenames := list.append(!to_log_filenames, [filename])
+    log("INFO: Playing: #{filename}", label="log_metadata_func", level=2)
   end
 end
 radio = on_track(log_metadata_func, radio)
 
 def run_play_logger() =
-  have_new_metadata := false
-  log("#{KLANGBECKEN_COMMAND} playlog -d #{DATA_DIR} #{!filename}", label="run_play_logger")
-
-  system("#{KLANGBECKEN_COMMAND} playlog -d #{DATA_DIR} #{!filename}")
+  filename = list.hd(!to_log_filenames, default="")
+  to_log_filenames := list.tl(!to_log_filenames)
+  if (filename != "") then
+    log("#{KLANGBECKEN_COMMAND} playlog -d #{DATA_DIR} #{filename}", label="run_play_logger")
+    system("#{KLANGBECKEN_COMMAND} playlog -d #{DATA_DIR} #{filename}")
+  end
 end
 
 # Run the logging command in the background, not to lock up the player
-exec_at(pred=fun() -> !have_new_metadata, run_play_logger)
+exec_at(pred=fun() -> list.length(!to_log_filenames) > 0, run_play_logger)
 
 
 # ================================================= #
