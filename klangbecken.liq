@@ -33,7 +33,7 @@ set("log.file", true)
 set("log.stdout", true)
 set("server.telnet", false)
 set("server.telnet.port", 1234)
-set("log.level", 2)
+set("log.level", 3)
 
 # socket
 set("server.socket", true)
