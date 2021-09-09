@@ -392,9 +392,9 @@ def playlist_processor(data_dir, playlist, fileId, ext, changes):
 DEFAULT_PROCESSORS = [
     check_processor,  # type and contract check changes
     filter_duplicates_processor,  # filter obvious duplicates
+    playlist_processor,  # update playlist file
     raw_file_processor,  # save file
     file_tag_processor,  # update tags
-    playlist_processor,  # update playlist file
     index_processor,  # commit file to the index cache at last
 ]
 
