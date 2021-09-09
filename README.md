@@ -25,13 +25,13 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 
 ## System requirements
 * Unix-like operating system environment
-* **Python** >= 3.7
+* **Python** (>= v3.7)
   * *docopt* library for parsing command line arguments
-  * *Werkzeug* library (>= v2.0.0) for WSGI support
-  * *PyJWT* library (>= v2.0.0) for creating and verifing JWT authentication tokens
+  * *Werkzeug* library (>= v2.0) for WSGI support
+  * *PyJWT* library (>= v2.0) for creating and verifing JWT authentication tokens
   * *mutagen* library for audio tag editing
-* **ffmpeg** binary (>=4.0) for audio analysis
-* **Liquidsoap** audio player
+* **ffmpeg** binary (>= v2.8) for audio analysis
+* **Liquidsoap** audio player (v1.3 _without_ inotify support)
 
 
 ## Setup
@@ -65,6 +65,7 @@ opam init
 opam switch create klangbecken 4.07.0
 opam depext alsa mad lame vorbis taglib liquidsoap.1.3.7
 opam install alsa mad lame vorbis taglib liquidsoap.1.3.7
+eval $(opam env)
 ```
 
 Install the client UI:
@@ -140,17 +141,19 @@ We recommend the use of `tox`, `black` and `isort` for development.
 ```bash
 pip install tox black isort
 ```
-
-Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.9). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it.
+##### tox
+Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.9). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it. To call it simply type:
 ```bash
 tox
 ```
 
+##### black
 Manually fixing coding style mistakes is a pain. `black` formats your code automatically.
 ```bash
 black .
 ```
 
+##### isort
 Finally, `isort` helps to consistantly organize package imports.
 ```bash
 isort .
@@ -190,7 +193,7 @@ _Run the script:_
 It perfoms the following steps:
 - Increment and commit a new version number.
 - Download all run-time dependencies.
-- Optionally download `mod_wsgi` (requires httpd-devel libraries to be installed locally).
+- Optionally download `mod_wsgi` (requires `httpd-devel` libraries to be installed locally).
 - `scp` the dependencies to production.
 - Push your code to production.
 - Install all dependencies in production.
