@@ -30,8 +30,8 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
   * *Werkzeug* library (>= v2.0.0) for WSGI support
   * *PyJWT* library (>= v2.0.0) for creating and verifing JWT authentication tokens
   * *mutagen* library for audio tag editing
-* **ffmpeg** binary for audio analysis
-* **Liquidsoap** audio player (version 1.3.x)
+* **ffmpeg** binary (>= v4.0) for audio analysis
+* **Liquidsoap** audio player (version 1.3.X _without_ inotify support)
 
 
 ## Setup
