@@ -315,6 +315,16 @@ class PlayerAPITestCase(unittest.TestCase):
         self.assertIn(b"info", resp.data)
         self.liquidsoap_client.info.assert_called_once_with()
 
+    def testReloadPlaylist(self):
+        self.liquidsoap_client.command = mock.Mock(return_value="")
+
+        with mock.patch(
+            "klangbecken.api.LiquidsoapClient", self.liquidsoap_client_class
+        ):
+            resp = self.client.post("/reload/jingles")
+        self.assertEqual(resp.status_code, 200)
+        self.liquidsoap_client.command.assert_called_once_with("jingles.reload")
+
     def testQueueListCorrect(self):
         self.liquidsoap_client.queue = mock.Mock(return_value="queue")
         with mock.patch(

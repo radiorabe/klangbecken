@@ -140,6 +140,11 @@ def player_api(player_socket, data_dir):
         except (FileNotFoundError, ConnectionError):
             raise NotFound("Player not running")
 
+    @api.POST("/reload/<any(" + ", ".join(PLAYLISTS) + "):playlist>")
+    def reload_playlist(request, playlist):
+        with LiquidsoapClient(player_socket) as client:
+            client.command(f"{playlist}.reload")
+
     return DispatcherMiddleware(api, {"/queue": queue_api(player_socket, data_dir)})
 
 
