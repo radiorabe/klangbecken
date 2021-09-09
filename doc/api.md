@@ -38,6 +38,7 @@ Base: `/api/player`
 Endpoint | Method | Description
 ---------|--------|------------
 `/`| `GET`| Get player information.
+`/reload/<PLAYLIST>`| `POST`| Force player to reload a playlist (usually after modifications).
 `/queue/` | `GET` | List queue entries.
 `/queue/` | `POST` | Add audio track to queue. Requires a `filename` argument and returns the `queue_id`.
 `/queue/<QUEUE_ID>` | `DELETE` | Delete queue entry.
