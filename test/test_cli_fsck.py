@@ -64,7 +64,7 @@ class FsckTestCase(unittest.TestCase):
         finally:
             sys.arv = argv
 
-    def testFsck(self):
+    def testFsckInexistentDataDir(self):
         from klangbecken.cli import main
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", "invalid"]
@@ -75,9 +75,14 @@ class FsckTestCase(unittest.TestCase):
                     self.assertIn("ERROR", err)
                     self.assertIn("Data directory 'invalid' does not exist", err)
             self.assertEqual(cm.exception.code, 1)
+        finally:
+            sys.arv = argv
 
-            sys.argv[-1] = self.tempdir
+    def testFsck(self):
+        from klangbecken.cli import main
 
+        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
+        try:
             # correct invocation
             with self.assertRaises(SystemExit) as cm:
                 with capture(main) as (out, err, ret):
