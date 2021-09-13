@@ -20,7 +20,7 @@ class FsckTestCase(unittest.TestCase):
         # Correctly import a couple of files
         files = [
             os.path.join(self.current_path, "audio", "padded" + ext)
-            for ext in "-stereo.mp3 -jointstereo.mp3".split()
+            for ext in "-stereo.mp3 -jointstereo.mp3 -end-stereo.mp3".split()
         ]
         try:
             args = [self.tempdir, "jingles", files, True]
@@ -83,6 +83,78 @@ class FsckTestCase(unittest.TestCase):
                 with capture(main) as (out, err, ret):
                     self.assertEqual(err.strip(), "")
             self.assertEqual(cm.exception.code, 0)
+        finally:
+            sys.arv = argv
+
+    def testFsckWithInterleavingPlaylogs(self):
+        from klangbecken.cli import main, playlog_cmd
+
+        # log one one track play
+        track1 = os.listdir(self.jingles_dir)[0]
+        track2 = os.listdir(self.jingles_dir)[1]
+        playlog_cmd(self.tempdir, os.path.join("jingles", track1))
+
+        # back up index.json cache
+        shutil.copy(
+            os.path.join(self.tempdir, "index.json"),
+            os.path.join(self.tempdir, "index.json.bak"),
+        )
+
+        # log two mor track plays
+        playlog_cmd(self.tempdir, os.path.join("jingles", track1))
+        playlog_cmd(self.tempdir, os.path.join("jingles", track2))
+
+        # restore index.json cache
+        shutil.copy(
+            os.path.join(self.tempdir, "index.json.bak"),
+            os.path.join(self.tempdir, "index.json"),
+        )
+
+        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
+
+        try:
+            # correct invocation (should not raise error)
+            with self.assertRaises(SystemExit) as cm:
+                with capture(main) as (out, err, ret):
+                    self.assertEqual(err.strip(), "")
+            self.assertEqual(cm.exception.code, 0)
+        finally:
+            sys.arv = argv
+
+    def testFsckWithTooManyInterleavingPlaylogs(self):
+        from klangbecken.cli import main, playlog_cmd
+
+        # log one one track play
+        track1 = os.listdir(self.jingles_dir)[0]
+        track2 = os.listdir(self.jingles_dir)[1]
+        track3 = os.listdir(self.jingles_dir)[2]
+        playlog_cmd(self.tempdir, os.path.join("jingles", track1))
+
+        # back up index.json cache
+        shutil.copy(
+            os.path.join(self.tempdir, "index.json"),
+            os.path.join(self.tempdir, "index.json.bak"),
+        )
+
+        # log two mor track plays
+        playlog_cmd(self.tempdir, os.path.join("jingles", track1))
+        playlog_cmd(self.tempdir, os.path.join("jingles", track2))
+        playlog_cmd(self.tempdir, os.path.join("jingles", track3))
+
+        # restore index.json cache
+        shutil.copy(
+            os.path.join(self.tempdir, "index.json.bak"),
+            os.path.join(self.tempdir, "index.json"),
+        )
+
+        argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
+
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                with capture(main) as (out, err, ret):
+                    self.assertIn("ERROR", err)
+                    self.assertIn("last_play", err)
+            self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
 
@@ -189,7 +261,8 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(main) as (out, err, ret):
                     self.assertIn("ERROR", err)
-                    self.assertIn("Tag value mismatch 'artist'", err)
+                    self.assertIn("tag value mismatch", err)
+                    self.assertIn("artist", err)
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv

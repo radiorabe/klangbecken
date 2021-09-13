@@ -204,6 +204,7 @@ def fsck_cmd(data_dir):  # noqa: C901
 
     files = set()
     playlist_counts = collections.Counter()
+    allowed_last_play_missmatches = 2
     for playlist in PLAYLISTS:
         files.update(
             os.path.join(playlist, entry)
@@ -241,13 +242,29 @@ def fsck_cmd(data_dir):  # noqa: C901
         else:
             files.remove(file_path)
             FileType = SUPPORTED_FILE_TYPES[entries["ext"]]
-            mutagenfile = FileType(file_full_path)
+            tags = FileType(file_full_path)
+            tag_misses = set()
             for key in TAG_KEYS:
-                tag_value = mutagenfile.get(key, [""])[0]
+                tag_value = tags.get(key, [""])[0]
                 if str(entries[key]) != tag_value:
+                    tag_misses.add(key)
+
+            if tag_misses:
+                if (
+                    allowed_last_play_missmatches > 0
+                    and tag_misses == {"last_play"}
+                    and entries["last_play"] < tags.get("last_play", [""])[0]
+                ):
+                    # do not log up to two 'last_play' missmatches that might
+                    # happend when track plays are logged while we are running fsck
+                    allowed_last_play_missmatches -= 1
+                else:
                     err(
-                        f"ERROR: Tag value mismatch '{key}': "
-                        f"{entries[key]} != {tag_value}"
+                        "ERROR: Audio file tag value mismatch(es):\n",
+                        *(
+                            f"- {key}: {entries[key]} != {tags.get(key, [''])[0]}"
+                            for key in tag_misses
+                        ),
                     )
 
             count = playlist_counts[file_path]
