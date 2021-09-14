@@ -1,15 +1,24 @@
+import pathlib
+
 from setuptools import find_packages, setup
+
+here = pathlib.Path(__file__).parent.resolve()
+long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="klangbecken",
     version="0.0.34",
     description="Klangbecken Audio Player",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/radiorabe/klangbecken",
     author="Marco Schmalz",
     author_email="marco@schess.ch ",
     packages=find_packages(include=["klangbecken"]),
+    platforms="linux",
     python_requires=">=3.6",
     license="AGPLv3",
+    license_file="LICENSE",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
