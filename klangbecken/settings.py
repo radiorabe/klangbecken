@@ -34,9 +34,10 @@ ALLOWED_METADATA = {
     "samplerate": (int, lambda n: n in (44100, 48000)),
     "bitrate": (int, lambda n: n >= 128),
     "uploader": str,
+    "expiration": str,
 }
 
-UPDATE_KEYS = "artist title weight".split()
+UPDATE_KEYS = "artist title weight expiration".split()
 
 TAG_KEYS = "artist title cue_in cue_out track_gain original_filename last_play".split()
 
