@@ -7,13 +7,13 @@ SUPPORTED_FILE_TYPES = {
     "mp3": mutagen.mp3.EasyMP3,
 }
 
-ISO8601_RE = (
+ISO8601_TZ_AWARE_RE = (
     # Date
     r"(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T"
     # Time (optionally with a fraction of a second)
     r"(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?"
-    # Timezone information (Z for UTC or +/- offset from UTC)
-    r"(Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?"
+    # Timezone information (+/- offset from UTC)
+    r"[+-](?:2[0-3]|[01][0-9]):[0-5][0-9]"
 )
 
 ALLOWED_METADATA = {
@@ -21,7 +21,7 @@ ALLOWED_METADATA = {
     "ext": (str, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
     "playlist": (str, lambda pl: pl in PLAYLISTS),
     "original_filename": str,
-    "import_timestamp": ISO8601_RE,
+    "import_timestamp": ISO8601_TZ_AWARE_RE,
     "weight": (int, lambda c: c >= 0),
     "artist": str,
     "title": str,
@@ -29,7 +29,7 @@ ALLOWED_METADATA = {
     "cue_in": (float, lambda n: n >= 0.0),
     "cue_out": (float, lambda n: n >= 0.0),
     "play_count": (int, lambda n: n >= 0),
-    "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_RE)),
+    "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_TZ_AWARE_RE)),
     "channels": (int, lambda n: n in (1, 2)),
     "samplerate": (int, lambda n: n in (44100, 48000)),
     "bitrate": (int, lambda n: n >= 128),
