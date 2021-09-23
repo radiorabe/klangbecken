@@ -1,3 +1,4 @@
+import datetime
 import io
 import json
 import os
@@ -31,11 +32,20 @@ class AnalyzersTestCase(unittest.TestCase):
 
         # Correct multiple updates
         changes = update_data_analyzer(
-            "playlist", "id", "ext", {"artist": "A", "title": "Ø"}
+            "playlist",
+            "id",
+            "ext",
+            {"artist": "A", "title": "Ø", "expiration": "2021-09-23T15:52:47.003Z"},
         )
-        self.assertEqual(len(changes), 2)
-        self.assertTrue(MetadataChange("artist", "A") in changes)
-        self.assertTrue(MetadataChange("title", "Ø") in changes)
+        self.assertEqual(len(changes), 3)
+        self.assertIn(MetadataChange("artist", "A"), changes)
+        self.assertIn(MetadataChange("title", "Ø"), changes)
+        self.assertTrue(any(change.key == "expiration" for change in changes))
+        exp = [change for change in changes if change.key == "expiration"][0].value
+        # Convert date back to UTC, as we do not know the time zone on the CI server
+        exp = datetime.datetime.fromisoformat(exp)
+        exp = exp.astimezone(datetime.timezone.utc).isoformat()
+        self.assertEqual(exp, "2021-09-23T15:52:47.003000+00:00")
 
         # Update not allowed property (original_filename)
         self.assertRaises(
