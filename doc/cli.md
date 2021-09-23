@@ -13,6 +13,7 @@ Usage:
     klangbecken fsck [-d DATA_DIR]
     klangbecken playlog [-d DATA_DIR] FILE
     klangbecken reanalyze [-d DATA_DIR] [-y] (--all | ID...)
+    klangbecken disable-expired [-d DATA_DIR]
 
 Options:
     -h, --help
@@ -77,3 +78,7 @@ KLANGBECKEN_EXTERNAL_PLAY_LOGGER="/usr/local/bin/myscript.sh {playlist} {id} {ar
 ### `reanalyze`
 
 Re-run the audio analyzer for the specified files.
+
+### `disable-expired`
+
+Disable expired tracks, by removing their entries from the playlist file. This command is usually called at least once a day as a cron job or similar.
