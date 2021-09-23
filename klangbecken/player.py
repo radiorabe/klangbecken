@@ -117,6 +117,7 @@ class LiquidsoapClient:
             "uptime": self.command("uptime"),
             "liquidsoap_version": self.command("version"),
             "api_version": __version__,
+            "python_version": sys.version.split()[0],
         }
         on_air = self.command("klangbecken.on_air").lower() == "true"
         info["on_air"] = on_air

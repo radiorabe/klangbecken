@@ -3,6 +3,7 @@ import random
 import shutil
 import socket
 import socketserver
+import sys
 import tempfile
 import threading
 import unittest
@@ -163,6 +164,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "uptime": "0d 00h 08m 54s",
                 "liquidsoap_version": "Liquidsoap 1.4.2",
                 "api_version": __version__,
+                "python_version": sys.version.split()[0],
                 "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
                 "classics": "",
                 "jingles": "",
@@ -221,6 +223,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "uptime": "0d 00h 08m 54s",
                 "liquidsoap_version": "Liquidsoap 1.4.2",
                 "api_version": __version__,
+                "python_version": sys.version.split()[0],
                 "music": "2e3fc9b6-36ee-4640-9efd-cdf10560adb4",
                 "classics": "",
                 "jingles": "",
@@ -274,6 +277,7 @@ class LiquidsoapClientTestCase(unittest.TestCase):
                 "uptime": "0d 00h 08m 54s",
                 "liquidsoap_version": "Liquidsoap 1.4.2",
                 "api_version": __version__,
+                "python_version": sys.version.split()[0],
                 "on_air": False,
                 "music": "",
                 "classics": "",
