@@ -218,7 +218,12 @@ def update_data_analyzer(playlist, fileId, ext, data):
     for key, value in data.items():
         if key not in UPDATE_KEYS:
             raise UnprocessableEntity(f"Invalid data format: Key not allowed: {key}")
-        changes.append(MetadataChange(key, value))
+        if key == "expiration":
+            tz_date = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+            tz_date = tz_date.astimezone().isoformat()
+            changes.append(MetadataChange(key, tz_date))
+        else:
+            changes.append(MetadataChange(key, value))
     return changes
 
 
