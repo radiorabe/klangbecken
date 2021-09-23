@@ -167,7 +167,7 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime):
 
     if use_mtime:
         mtime = os.stat(filename).st_mtime
-        mtime = datetime.datetime.fromtimestamp(mtime)
+        mtime = datetime.datetime.fromtimestamp(mtime).astimezone()
         mtime = mtime.isoformat()
         actions.append(MetadataChange("import_timestamp", mtime))
 
