@@ -81,7 +81,6 @@ def playlist_api(  # noqa: C901
 
             actions.append(MetadataChange("original_filename", uploadFile.filename))
             actions.append(MetadataChange("uploader", request.remote_user or ""))
-            actions.append(MetadataChange("expiration", ""))
 
             for processor in processors:
                 processor(data_dir, playlist, fileId, ext, actions)
