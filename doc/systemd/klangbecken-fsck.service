@@ -3,7 +3,7 @@ Description=Klangbecken data directory consistency check
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c "/usr/local/venvs/klangbecken-py36/bin/klangbecken -d /var/lib/klangbecken fsck 2> /var/lib/klangbecken/log/fsck.log"
+ExecStart=/bin/bash -c "/usr/local/venvs/klangbecken-py39/bin/klangbecken -d /var/lib/klangbecken fsck 2> /var/lib/klangbecken/log/fsck.log"
 
 [Install]
 WantedBy=multi-user.target

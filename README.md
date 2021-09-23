@@ -25,7 +25,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 
 ## System requirements
 * Unix-like operating system environment
-* **Python** >= 3.6
+* **Python** >= 3.7
   * *docopt* library for parsing command line arguments
   * *Werkzeug* library (>= v2.0.0) for WSGI support
   * *PyJWT* library (>= v2.0.0) for creating and verifing JWT authentication tokens
@@ -141,7 +141,7 @@ We recommend the use of `tox`, `black` and `isort` for development.
 pip install tox black isort
 ```
 
-Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.6). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it.
+Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.9). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it.
 ```bash
 tox
 ```
