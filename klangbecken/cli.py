@@ -380,6 +380,31 @@ def reanalyze_cmd(data_dir, ids, all, yes):  # noqa: C901
     print()
 
 
+def disable_expired_cmd(data_dir):
+    with open(os.path.join(data_dir, "index.json")) as f:
+        data = json.load(f)
+
+    now = datetime.datetime.now().astimezone()
+
+    for entry in data.values():
+        if entry["expiration"]:
+            expiration = datetime.datetime.fromisoformat(entry["expiration"])
+            expiration = expiration.astimezone()
+            if expiration < now:
+                print(
+                    f"Disabling {entry['playlist']}/{entry['id']}.{entry['ext']} "
+                    f"({entry['artist']} - {entry['title']})"
+                )
+                for processor in DEFAULT_PROCESSORS:
+                    processor(
+                        data_dir,
+                        entry["playlist"],
+                        entry["id"],
+                        entry["ext"],
+                        [MetadataChange("weight", 0)],
+                    )
+
+
 def main():
     """Klangbecken audio playout system.
 
@@ -391,6 +416,7 @@ def main():
       klangbecken fsck [-d DATA_DIR]
       klangbecken playlog [-d DATA_DIR] FILE
       klangbecken reanalyze [-d DATA_DIR] [-y] (--all | ID...)
+      klangbecken disable-expired [-d DATA_DIR]
 
     Options:
       -h, --help
@@ -453,3 +479,5 @@ def main():
         playlog_cmd(data_dir, args["FILE"][0])
     elif args["reanalyze"]:
         reanalyze_cmd(data_dir, args["ID"], args["--all"], args["--yes"])
+    elif args["disable-expired"]:
+        disable_expired_cmd(data_dir)
