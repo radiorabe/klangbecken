@@ -34,7 +34,7 @@ ALLOWED_METADATA = {
     "samplerate": (int, lambda n: n in (44100, 48000)),
     "bitrate": (int, lambda n: n >= 128),
     "uploader": str,
-    "expiration": str,
+    "expiration": (str, r"(^$)|(^{0}$)".format(ISO8601_TZ_AWARE_RE)),
 }
 
 UPDATE_KEYS = "artist title weight expiration".split()
