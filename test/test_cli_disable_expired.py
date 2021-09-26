@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import shutil
 import sys
@@ -16,6 +17,7 @@ class DisableExpiredTestCase(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
         self.jingles_dir = os.path.join(self.tempdir, "jingles")
         self.jingles_playlist = os.path.join(self.tempdir, "jingles.m3u")
+        self.index = os.path.join(self.tempdir, "index.json")
         _check_data_dir(self.tempdir, create=True)
 
         # Correctly import a couple of files
@@ -70,6 +72,10 @@ class DisableExpiredTestCase(unittest.TestCase):
                 *track2.split("."),
                 [MetadataChange("expiration", future.astimezone().isoformat())],
             )
+        with open(self.index) as f:
+            data = json.load(f)
+        for entry in data.values():
+            self.assertEqual(entry["weight"], 1)
 
         # run for real
         argv, sys.argv = sys.argv, ["", "disable-expired", "-d", self.tempdir]
@@ -88,3 +94,12 @@ class DisableExpiredTestCase(unittest.TestCase):
         self.assertNotIn(f"jingles/{track1}", lines)
         self.assertIn(f"jingles/{track2}", lines)
         self.assertIn(f"jingles/{track3}", lines)
+
+        track1_id = track1.split(".")[0]
+        with open(self.index) as f:
+            data = json.load(f)
+        for key, entry in data.items():
+            if key == track1_id:
+                self.assertEqual(entry["weight"], 0)
+            else:
+                self.assertEqual(entry["weight"], 1)
