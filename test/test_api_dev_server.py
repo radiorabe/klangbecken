@@ -65,13 +65,6 @@ class DevServerTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    def testIndexHtml(self):
-        resp = self.client.get("/")
-        self.assertEqual(resp.status_code, 200)
-        self.assertIn(b"Welcome", resp.data)
-        self.assertIn(b"Klangbecken", resp.data)
-        resp.close()
-
     def testApi(self):
         # Login
         resp = self.client.post("/api/auth/login/")
