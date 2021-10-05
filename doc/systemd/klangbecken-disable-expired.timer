@@ -1,0 +1,8 @@
+[Unit]
+Description=Run klangbecken-disable-expired.service hourly
+
+[Timer]
+OnCalendar=*-*-* *:05:00
+
+[Install]
+WantedBy=timers.target

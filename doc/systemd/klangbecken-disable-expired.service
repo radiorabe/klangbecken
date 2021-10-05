@@ -1,0 +1,10 @@
+[Unit]
+Description=Disable expired Klangbecken tracks
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/klangbecken.conf
+ExecStart=/bin/bash -c '${KLANGBECKEN_COMMAND} disable-expired -d ${KLANGBECKEN_DATA_DIR}'
+
+[Install]
+WantedBy=multi-user.target
