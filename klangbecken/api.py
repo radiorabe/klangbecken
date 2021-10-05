@@ -20,15 +20,21 @@ from .playlist import (
 from .settings import FILE_TYPES, PLAYLISTS
 
 
-def klangbecken_api(secret, data_dir, player_socket):
+def klangbecken_api(
+    secret,
+    data_dir,
+    player_socket,
+    *,
+    upload_analyzers=DEFAULT_UPLOAD_ANALYZERS,
+    update_analyzers=DEFAULT_UPDATE_ANALYZERS,
+    processors=DEFAULT_PROCESSORS,
+):
     """Construct the Klangbecken API WSGI application.
 
     This combines the two APIs for the playlists and the player
     with the authorization middleware.
     """
-    playlist = playlist_api(
-        data_dir, DEFAULT_UPLOAD_ANALYZERS, DEFAULT_UPDATE_ANALYZERS, DEFAULT_PROCESSORS
-    )
+    playlist = playlist_api(data_dir, upload_analyzers, update_analyzers, processors)
     player = player_api(player_socket, data_dir)
 
     app = API()
@@ -211,19 +217,16 @@ def development_server(data_dir, player_socket):
             file=sys.stderr,
         )
 
-    # Create a slightly customized application
-    playlist = playlist_api(
-        data_dir, upload_analyzers, DEFAULT_UPDATE_ANALYZERS, DEFAULT_PROCESSORS
+    # Create an API with optional audio analyzer
+    api = klangbecken_api(
+        "no secret", data_dir, player_socket, upload_analyzers=upload_analyzers
     )
-
-    player = player_api(player_socket, data_dir)
 
     dummy_app = API()
     dummy_app.GET("/")(
         lambda request: f"Welcome to the Klangbecken API version {__version__}"
     )
 
-    api = DispatcherMiddleware(dummy_app, {"/playlist": playlist, "/player": player})
     auth_exempt = [
         ("GET", "/player/"),
         ("GET", "/player/queue/"),

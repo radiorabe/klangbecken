@@ -15,14 +15,14 @@ class GenericAPITestCase(unittest.TestCase):
     def setUp(self):
         from klangbecken.api import klangbecken_api
 
-        with mock.patch("klangbecken.api.DEFAULT_UPLOAD_ANALYZERS", []), mock.patch(
-            "klangbecken.api.DEFAULT_UPDATE_ANALYZERS", []
-        ), mock.patch("klangbecken.api.DEFAULT_PROCESSORS", []):
-            self.app = klangbecken_api(
-                "secret",
-                "data_dir",
-                "player.sock",
-            )
+        self.app = klangbecken_api(
+            "secret",
+            "data_dir",
+            "player.sock",
+            upload_analyzers=[],
+            update_analyzers=[],
+            processors=[],
+        )
         self.client = Client(self.app)
 
     def test_application(self):
@@ -140,18 +140,14 @@ class PlaylistAPITestCase(unittest.TestCase):
         self.update_analyzer = mock.Mock(return_value=["UpdateChange"])
         self.processor = mock.MagicMock()
 
-        with mock.patch(
-            "klangbecken.api.DEFAULT_UPLOAD_ANALYZERS", [self.upload_analyzer]
-        ), mock.patch(
-            "klangbecken.api.DEFAULT_UPDATE_ANALYZERS", [self.update_analyzer]
-        ), mock.patch(
-            "klangbecken.api.DEFAULT_PROCESSORS", [self.processor]
-        ):
-            app = klangbecken_api(
-                "secret",
-                "data_dir",
-                "player.sock",
-            )
+        app = klangbecken_api(
+            "secret",
+            "data_dir",
+            "player.sock",
+            upload_analyzers=[self.upload_analyzer],
+            update_analyzers=[self.update_analyzer],
+            processors=[self.processor],
+        )
         self.client = Client(app)
 
     @mock.patch("werkzeug.datastructures.FileStorage.save", lambda *args: None)
