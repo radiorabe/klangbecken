@@ -17,7 +17,7 @@ ISO8601_TZ_AWARE_RE = (
 )
 
 ALLOWED_METADATA = {
-    "id": (str, r"^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$"),
+    "id": r"^[a-z0-9]{8}-([a-z0-9]{4}-){3}[a-z0-9]{12}$",
     "ext": (str, lambda ext: ext in SUPPORTED_FILE_TYPES.keys()),
     "playlist": (str, lambda pl: pl in PLAYLISTS),
     "original_filename": str,
@@ -25,16 +25,16 @@ ALLOWED_METADATA = {
     "weight": (int, lambda c: c >= 0),
     "artist": str,
     "title": str,
-    "track_gain": (str, r"^[+-]?[0-9]+(\.[0-9]*) dB$"),
+    "track_gain": r"^[+-]?[0-9]+(\.[0-9]*) dB$",
     "cue_in": (float, lambda n: n >= 0.0),
     "cue_out": (float, lambda n: n >= 0.0),
     "play_count": (int, lambda n: n >= 0),
-    "last_play": (str, r"(^$)|(^{0}$)".format(ISO8601_TZ_AWARE_RE)),
+    "last_play": r"(^$)|(^{0}$)".format(ISO8601_TZ_AWARE_RE),
     "channels": (int, lambda n: n in (1, 2)),
     "samplerate": (int, lambda n: n in (44100, 48000)),
     "bitrate": (int, lambda n: n >= 128),
     "uploader": str,
-    "expiration": (str, r"(^$)|(^{0}$)".format(ISO8601_TZ_AWARE_RE)),
+    "expiration": r"(^$)|(^{0}$)".format(ISO8601_TZ_AWARE_RE),
 }
 
 UPDATE_KEYS = "artist title weight expiration".split()

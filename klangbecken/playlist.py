@@ -271,6 +271,11 @@ def _check_value(key, val, check):
                 f'Invalid data format for "{key}": Check failed (value: "{val}").'
             )
     elif isinstance(check, str):
+        if not isinstance(val, str):
+            raise UnprocessableEntity(
+                f"Invalid data format for '{key}': Type error "
+                f"(expected str for regex check, got {type(val).__name__})."
+            )
         if re.match(check, val) is None:
             raise UnprocessableEntity(
                 f"Invalid data format for '{key}': Regex check failed (value: '{val}'"
