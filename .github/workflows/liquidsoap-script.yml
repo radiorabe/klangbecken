@@ -1,6 +1,8 @@
 name: Liquidsoap script
 
-on: [push]
+on:
+- push
+- pull_request
 
 env:
   KLANGBECKEN_DATA: /tmp/data
