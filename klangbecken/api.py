@@ -8,7 +8,7 @@ from werkzeug.exceptions import NotFound, UnprocessableEntity
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from . import __version__
-from .api_utils import API, DummyAuth, ExternalAuth
+from .api_utils import API, DummyAuthenticationMiddleware, JWTAuthorizationMiddleware
 from .player import LiquidsoapClient
 from .playlist import (
     DEFAULT_PROCESSORS,
@@ -46,7 +46,7 @@ def klangbecken_api(
         ("GET", "/player/"),
         ("GET", "/player/queue/"),
     ]
-    app = ExternalAuth(app, secret, exempt=auth_exempts)
+    app = JWTAuthorizationMiddleware(app, secret, exempt=auth_exempts)
     return app
 
 
@@ -221,13 +221,8 @@ def development_server(data_dir, player_socket):
     api = klangbecken_api(
         "no secret", data_dir, player_socket, upload_analyzers=upload_analyzers
     )
-
-    auth_exempt = [
-        ("GET", "/player/"),
-        ("GET", "/player/queue/"),
-    ]
-    api = DummyAuth(api, "no secret", exempt=auth_exempt)
-
+    # Dummy authentication (all username password combinations will pass)
+    api = DummyAuthenticationMiddleware(api)
     # Serve static files from the data directory
     app = SharedDataMiddleware(NotFound(), {"/data": data_dir})
     # Relay requests to /api to the klangbecken_api instance

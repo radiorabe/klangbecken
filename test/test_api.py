@@ -11,7 +11,9 @@ from werkzeug.test import Client
 
 
 class GenericAPITestCase(unittest.TestCase):
-    @mock.patch("klangbecken.api.ExternalAuth", lambda app, *args, **kwargs: app)
+    @mock.patch(
+        "klangbecken.api.JWTAuthorizationMiddleware", lambda app, *args, **kwargs: app
+    )
     def setUp(self):
         from klangbecken.api import klangbecken_api
 
@@ -126,7 +128,9 @@ class AuthTestCase(unittest.TestCase):
 
 
 class PlaylistAPITestCase(unittest.TestCase):
-    @mock.patch("klangbecken.api.ExternalAuth", lambda app, *args, **kwargs: app)
+    @mock.patch(
+        "klangbecken.api.JWTAuthorizationMiddleware", lambda app, *args, **kwargs: app
+    )
     def setUp(self):
         from klangbecken.api import klangbecken_api
         from klangbecken.playlist import FileAddition, MetadataChange
