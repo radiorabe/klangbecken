@@ -48,12 +48,13 @@ For every track the following information is stored in an object under the file 
 - `cue_in`: Cue in point (in seconds)
 - `cue_out`: Cue out point (in seconds)
 - `play_count`: Total play count
-- `last_play`: Date and time of the last play if the track has been played at least once (ISO8601 timestamp)
+- `last_play`: Date and time of the last play if the track has been played at least once (ISO8601 timestamp or empty string)
 - `channels`: Number of channels (1: mono, 2: stereo)
 - `samplerate`: Sample rate (44.1 or 48 kHz)
 - `bitrate`: Bitrate of the encoded stream
 - `uploader`: Username of the person uploading the file
+- `expiration`: Date and time after which this track should be disabled (ISO8601 timestamp or empty string)
 
-All information in the metadata cache (except for the `uploader` field) can be be restored or recalculated from the audio, playlist and log files.
+Information in the metadata cache (except for the `uploader` and `expiration` field) can be be restored or recalculated from the audio, playlist and log files.
 
 The [`fsck` command](cli.md) can be used to verify the consistency of the metadata cache.

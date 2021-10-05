@@ -21,8 +21,10 @@ Music programmers have to be able to ...
 * ... edit the audio track metadata
 * ... have a special playlist for _jingles_ that air four times an hour
 * ... control how often each jingle is aired
+* ... specify an end date until which a jingle is played
 * ... generate monthly statistics about the aired tracks (mostly jingles)
 * ... queue tracks for immediate airing
+* ... monitor the state of the system
 
 #### IT Operations
 
@@ -37,9 +39,9 @@ The IT operations team wants ...
 
 Apart from the required features for the listeners and music programmers, we aim for the following goals:
 
-**Self-contained system**: The Klangbecken installation only requires a minimal amount of external services. These are a virtual machine runtime environment, local networking, authentication service, file backup, and monitoring.
+**Self-contained system**: The Klangbecken installation only requires a minimal amount of external services. These are a virtual machine runtime environment and local networking for playback and manually monitoring the state of the system. Playlist editing requires the external authentication service. Additionally basic services like file backup and automatic monitoring are required.
 
-**Fast recovery**: All data is stored in regular files. A previous state of the system can be restored by simply restoring the files from backup, or alternatively by manually fixing the human-readable files.
+**Fast recovery**: All data is stored in regular human-readable (where possible) files. A previous state of the system can be restored by simply restoring the files from backup, or alternatively by manually fixing the human-readable files.
 
 **Automated testing**: All central components of the system are automatically tested by meaningful test cases against multiple versions of our core dependencies (See [actions](https://github.com/radiorabe/klangbecken/actions)).
 
@@ -53,7 +55,7 @@ The data directory contains the data files for the entire system. This includes 
 
 ## CLI
 
-The [CLI](../klangbecken/cli.py) provides commands to manage the data directory and run the development serve. For details see the [command line interface documentation](cli.md).
+The [CLI](../klangbecken/cli.py) provides commands to manage the data directory and run the development server. For details see the [command line interface documentation](cli.md).
 
 
 ## API
@@ -133,7 +135,7 @@ Every played track is logged with using the [play log command](cli.md) at the st
 
 Liquidsoap provides a telnet interface for querying run-time information and for the modification of dynamic _queue_ playlists.
 
-The [`LiquidsoapClient`](../klangbecken/player.py) encapsulates the liquidsoap telnet interface. Support connecting via TCP with a hostname and port tuple (e.g. `("localhost", 1234)`) or Unix domain sockets (e.g. `./klangbecken.sock`).
+The [`LiquidsoapClient`](../klangbecken/player.py) encapsulates the liquidsoap telnet interface. It supports connecting via TCP with a hostname and port tuple (e.g. `("localhost", 1234)`) or Unix domain sockets (e.g. `./klangbecken.sock`).
 
 It provides a number of methods to interact with the player.
 
