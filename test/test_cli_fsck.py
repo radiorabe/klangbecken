@@ -252,12 +252,12 @@ class FsckTestCase(unittest.TestCase):
 
     def testTagsValueMismatch(self):
         from klangbecken.cli import main
-        from klangbecken.settings import SUPPORTED_FILE_TYPES
+        from klangbecken.settings import FILE_TYPES
 
         argv, sys.argv = sys.argv, ["", "fsck", "-d", self.tempdir]
 
         file_path = os.path.join(self.jingles_dir, os.listdir(self.jingles_dir)[0])
-        FileType = SUPPORTED_FILE_TYPES[file_path.split(".")[-1]]
+        FileType = FILE_TYPES[file_path.split(".")[-1]]
         mutagenfile = FileType(file_path)
         mutagenfile["artist"] = "Whatever"
         mutagenfile.save()

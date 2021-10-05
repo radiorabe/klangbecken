@@ -17,7 +17,7 @@ from .playlist import (
     FileDeletion,
     MetadataChange,
 )
-from .settings import PLAYLISTS, SUPPORTED_FILE_TYPES
+from .settings import FILE_TYPES, PLAYLISTS
 
 
 def klangbecken_api(secret, data_dir, player_socket):
@@ -55,10 +55,7 @@ def playlist_api(  # noqa: C901
 
     playlist_url = "/<any(" + ", ".join(PLAYLISTS) + "):playlist>/"
     file_url = (
-        playlist_url
-        + "<uuid:fileId>.<any("
-        + ", ".join(SUPPORTED_FILE_TYPES.keys())
-        + "):ext>"
+        playlist_url + "<uuid:fileId>.<any(" + ", ".join(FILE_TYPES.keys()) + "):ext>"
     )
 
     api = API()
@@ -163,7 +160,7 @@ def queue_api(player_socket, data_dir):
     @api.POST("/")
     def queue_push(request, filename: str):
         filename_re = r"^({0})/([^/.]+).({1})$".format(
-            "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
+            "|".join(PLAYLISTS), "|".join(FILE_TYPES.keys())
         )
         if not re.match(filename_re, filename):
             raise UnprocessableEntity("Invalid file path format")

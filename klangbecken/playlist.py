@@ -17,7 +17,7 @@ import mutagen.mp3
 import mutagen.oggvorbis
 from werkzeug.exceptions import NotFound, UnprocessableEntity
 
-from .settings import ALLOWED_METADATA, SUPPORTED_FILE_TYPES, TAG_KEYS, UPDATE_KEYS
+from .settings import FILE_TYPES, METADATA, TAG_KEYS, UPDATE_KEYS
 
 ####################
 # Change-"Classes" #
@@ -38,7 +38,7 @@ def raw_file_analyzer(playlist, fileId, ext, filename):
     if not filename:
         raise UnprocessableEntity("No File found")
 
-    if ext not in SUPPORTED_FILE_TYPES.keys():
+    if ext not in FILE_TYPES.keys():
         raise UnprocessableEntity(f"Unsupported file extension: {ext}")
 
     now = datetime.datetime.now().astimezone()
@@ -62,7 +62,7 @@ def mutagen_tag_analyzer(playlist, fileId, ext, filename):
     Artist name and track title are extracted.
     """
     with _mutagenLock:
-        MutagenFileType = SUPPORTED_FILE_TYPES[ext]
+        MutagenFileType = FILE_TYPES[ext]
         try:
             mutagenfile = MutagenFileType(filename)
         except mutagen.MutagenError:
@@ -239,10 +239,10 @@ def check_processor(data_dir, playlist, fileId, ext, changes):
         if isinstance(change, MetadataChange):
             key, val = change
 
-            if key not in ALLOWED_METADATA.keys():
+            if key not in METADATA.keys():
                 raise UnprocessableEntity(f"Invalid metadata key: {key}")
 
-            checks = ALLOWED_METADATA[key]
+            checks = METADATA[key]
             if not isinstance(checks, (list, tuple)):
                 checks = (checks,)
 
@@ -357,7 +357,7 @@ def file_tag_processor(data_dir, playlist, fileId, ext, changes):
                 if key in TAG_KEYS:
                     if mutagenfile is None:
                         path = os.path.join(data_dir, playlist, fileId + "." + ext)
-                        FileType = SUPPORTED_FILE_TYPES[ext]
+                        FileType = FILE_TYPES[ext]
                         mutagenfile = FileType(path)
 
                     mutagenfile[key] = str(value)

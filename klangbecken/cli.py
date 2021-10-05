@@ -19,13 +19,7 @@ from .playlist import (
     check_processor,
     ffmpeg_audio_analyzer,
 )
-from .settings import (
-    ALLOWED_METADATA,
-    LOG_KEYS,
-    PLAYLISTS,
-    SUPPORTED_FILE_TYPES,
-    TAG_KEYS,
-)
+from .settings import FILE_TYPES, LOG_KEYS, METADATA, PLAYLISTS, TAG_KEYS
 
 
 def _check_data_dir(data_dir, create=False):
@@ -154,7 +148,7 @@ def _analyze_one_file(data_dir, playlist, filename, use_mtime):
         raise UnprocessableEntity("File not found: " + filename)
 
     ext = os.path.splitext(filename)[1].lower()[1:]
-    if ext not in SUPPORTED_FILE_TYPES.keys():
+    if ext not in FILE_TYPES.keys():
         raise UnprocessableEntity("File extension not supported: " + ext)
 
     fileId = str(uuid.uuid4())
@@ -214,11 +208,11 @@ def fsck_cmd(data_dir):  # noqa: C901
             playlist_counts.update(line.strip() for line in f1.readlines())
     for song_id, entries in data.items():
         keys = set(entries.keys())
-        missing = set(ALLOWED_METADATA.keys()) - keys
+        missing = set(METADATA.keys()) - keys
         if missing:
             err("ERROR: missing entries:", ", ".join(missing))
             continue  # cannot continue with missing entries
-        too_many = keys - set(ALLOWED_METADATA.keys())
+        too_many = keys - set(METADATA.keys())
         if too_many:
             err("ERROR: too many entries:", ", ".join(too_many))
         try:
@@ -241,7 +235,7 @@ def fsck_cmd(data_dir):  # noqa: C901
             err("ERROR: file does not exist:", file_full_path)
         else:
             files.remove(file_path)
-            FileType = SUPPORTED_FILE_TYPES[entries["ext"]]
+            FileType = FILE_TYPES[entries["ext"]]
             tags = FileType(file_full_path)
             tag_misses = set()
             for key in TAG_KEYS:
