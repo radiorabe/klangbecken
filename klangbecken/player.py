@@ -5,7 +5,7 @@ import telnetlib
 
 from werkzeug.exceptions import NotFound
 
-from .settings import PLAYLISTS, SUPPORTED_FILE_TYPES
+from .settings import FILE_TYPES, PLAYLISTS
 
 metadata_re = re.compile(r'^\s*(\S+?)="(.*?)"\s*$', re.M)
 
@@ -205,16 +205,14 @@ class LiquidsoapClient:
 
 filename_res = {
     playlist: re.compile(
-        r"^.*{0}/([0-9a-f-]+)\.(?:{1})$".format(
-            playlist, "|".join(SUPPORTED_FILE_TYPES.keys())
-        )
+        r"^.*{0}/([0-9a-f-]+)\.(?:{1})$".format(playlist, "|".join(FILE_TYPES.keys()))
     )
     for playlist in PLAYLISTS
 }
 
 filename_res[None] = re.compile(
     r"^.*(?:{0})/([0-9a-f-]+)\.(?:{1})$".format(
-        "|".join(PLAYLISTS), "|".join(SUPPORTED_FILE_TYPES.keys())
+        "|".join(PLAYLISTS), "|".join(FILE_TYPES.keys())
     )
 )
 
