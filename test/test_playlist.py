@@ -57,7 +57,7 @@ class AnalyzersTestCase(unittest.TestCase):
             {"original_filename": "test.mp3"},
         )
 
-        # Update with wrong data format
+        # Update with wrong data container format
         self.assertRaises(
             UnprocessableEntity,
             update_data_analyzer,
@@ -266,14 +266,14 @@ class ProcessorsTestCase(unittest.TestCase):
                 "ext",
                 [MetadataChange("invalid", "xyz")],
             )
-        self.assertTrue("Invalid metadata key" in cm.exception.description)
+        self.assertIn("Invalid metadata key", cm.exception.description)
 
         # Wrong data type (str instead of int)
         with self.assertRaises(UnprocessableEntity) as cm:
             check_processor(
                 self.tempdir, "playlist", "id", "ext", [MetadataChange("weight", "1")]
             )
-        self.assertTrue("Invalid data format" in cm.exception.description)
+        self.assertIn("Invalid data format", cm.exception.description)
 
         # Wrong data type (int for regex check)
         with self.assertRaises(UnprocessableEntity) as cm:
@@ -287,15 +287,15 @@ class ProcessorsTestCase(unittest.TestCase):
             check_processor(
                 self.tempdir, "playlist", "id", "ext", [MetadataChange("id", "xyz")]
             )
-        self.assertTrue("Invalid data format" in cm.exception.description)
-        self.assertTrue("Regex" in cm.exception.description)
+        self.assertIn("Invalid data format", cm.exception.description)
+        self.assertIn("Regex", cm.exception.description)
 
         # Wrong data format (negative weight)
         with self.assertRaises(UnprocessableEntity) as cm:
             check_processor(
                 self.tempdir, "playlist", "id", "ext", [MetadataChange("weight", -5)]
             )
-        self.assertTrue("Invalid data format" in cm.exception.description)
+        self.assertIn("Invalid data format", cm.exception.description)
 
         # Wrong data format (datetime without timezone information)
         with self.assertRaises(UnprocessableEntity) as cm:
