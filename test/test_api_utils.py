@@ -49,7 +49,11 @@ class AdditionalTestCase(unittest.TestCase):
 
 class TokenRenewalTestCase(unittest.TestCase):
     def setUp(self):
-        from klangbecken.api_utils import API, DummyAuth
+        from klangbecken.api_utils import (
+            API,
+            DummyAuthenticationMiddleware,
+            JWTAuthorizationMiddleware,
+        )
 
         api = API()
 
@@ -57,7 +61,8 @@ class TokenRenewalTestCase(unittest.TestCase):
         def root(request):
             return "Hello World"
 
-        app = DummyAuth(api, "no secret")
+        app = JWTAuthorizationMiddleware(api, "no secret")
+        app = DummyAuthenticationMiddleware(app)
         self.client = Client(app)
 
     def testImmediateRenewal(self):

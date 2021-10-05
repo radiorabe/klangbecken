@@ -270,10 +270,12 @@ def _parse_json_body_wrapper(func, body_type, content_types):  # noqa: C901
     return wrapper
 
 
-class BaseJWTAuthMiddleware:
+class JWTAuthorizationMiddleware:
     """Middleware authorizing access to chained application using JWT.
 
-    Attention: Authentication must be provided.
+    Attention: Authentication must be provided by intercepting POSTs to
+    `/auth/login/` and inserting a `REMOTE_USER` into the wsgi environment upon
+    successful authentication.
 
     This middleware exposes two endpoints:
      - /auth/login/ for generation new tokens.
@@ -356,7 +358,9 @@ class BaseJWTAuthMiddleware:
             raise Unauthorized("Invalid token")
 
     def _login(self, request):
-        user = self.authenticate(request)
+        if request.remote_user is None:
+            raise Unauthorized()
+        user = request.remote_user
         now = datetime.datetime.utcnow()
         claims = {"user": user, "iat": now, "exp": now + datetime.timedelta(minutes=15)}
         token = jwt.encode(claims, self.secret, algorithm="HS256")
@@ -399,28 +403,8 @@ class BaseJWTAuthMiddleware:
 
         return {"token": token}
 
-    def authenticate(self, request):
-        """Authenticate user.
 
-        Returns a user identification if authentication passed.
-        Raises Unauthorized otherwise.  This method must be overwritten
-        in an implementation class.
-        """
-        raise Unauthorized()  # pragma: no cover
-
-
-class ExternalAuth(BaseJWTAuthMiddleware):
-    def __init__(self, *args, login_methods=("GET", "POST"), **kwargs):
-        super().__init__(*args, login_methods=login_methods, **kwargs)
-
-    def authenticate(self, request):
-        if request.remote_user is None:
-            raise Unauthorized()
-
-        return request.remote_user
-
-
-class DummyAuth(BaseJWTAuthMiddleware):
+class DummyAuthenticationMiddleware:
     """Dummy Authenticator.
 
     Create an API:
@@ -431,7 +415,8 @@ class DummyAuth(BaseJWTAuthMiddleware):
     ...
 
     Wrap it with an authentication/authorization layer:
-    >>> app = DummyAuth(api, "not a secret")
+    >>> app = JWTAuthorizationMiddleware(api, "very very secret")
+    >>> app = DummyAuthenticationMiddleware(app)
 
     >>> from werkzeug.test import Client
     >>> client = Client(app)
@@ -440,7 +425,7 @@ class DummyAuth(BaseJWTAuthMiddleware):
     >>> client.get("/")
     <TestResponse streamed [401 UNAUTHORIZED]>
 
-    Login to get a token:
+    Login to get a token (no username or password is needed here):
     >>> response = client.post("/auth/login/")
     >>> response.status
     '200 OK'
@@ -454,5 +439,9 @@ class DummyAuth(BaseJWTAuthMiddleware):
     <TestResponse streamed [200 OK]>
     """
 
-    def authenticate(self, request):
-        return "dummyuser"
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        environ["REMOTE_USER"] = "dummyuser"
+        return self.app(environ, start_response)
