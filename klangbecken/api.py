@@ -190,7 +190,7 @@ def queue_api(player_socket, data_dir):
 # Stand-alone Application #
 ###########################
 def development_server(data_dir, player_socket):
-    """Construct the stand-alone Klangbecken WSGI application and development.
+    """Construct the stand-alone Klangbecken WSGI application for development.
 
     * Serves data files from the data directory
     * Relays API calls to the API
@@ -222,11 +222,6 @@ def development_server(data_dir, player_socket):
         "no secret", data_dir, player_socket, upload_analyzers=upload_analyzers
     )
 
-    dummy_app = API()
-    dummy_app.GET("/")(
-        lambda request: f"Welcome to the Klangbecken API version {__version__}"
-    )
-
     auth_exempt = [
         ("GET", "/player/"),
         ("GET", "/player/queue/"),
@@ -234,7 +229,7 @@ def development_server(data_dir, player_socket):
     api = DummyAuth(api, "no secret", exempt=auth_exempt)
 
     # Serve static files from the data directory
-    app = SharedDataMiddleware(dummy_app, {"/data": data_dir})
+    app = SharedDataMiddleware(NotFound(), {"/data": data_dir})
     # Relay requests to /api to the klangbecken_api instance
     app = DispatcherMiddleware(app, {"/api": api})
 
