@@ -389,7 +389,6 @@ def disable_expired_cmd(data_dir):
     for entry in data.values():
         if entry["expiration"]:
             expiration = datetime.datetime.fromisoformat(entry["expiration"])
-            expiration = expiration.astimezone()
             if expiration < now:
                 print(
                     f"Disabling {entry['playlist']}/{entry['id']}.{entry['ext']} "

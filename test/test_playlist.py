@@ -297,6 +297,17 @@ class ProcessorsTestCase(unittest.TestCase):
             )
         self.assertTrue("Invalid data format" in cm.exception.description)
 
+        # Wrong data format (datetime without timezone information)
+        with self.assertRaises(UnprocessableEntity) as cm:
+            check_processor(
+                self.tempdir,
+                "playlist",
+                "id",
+                "ext",
+                [MetadataChange("expiration", "2021-09-26T20:56:07.743")],
+            )
+        self.assertIn("Invalid data format", cm.exception.description)
+
         # Invalid action class
         with self.assertRaises(ValueError) as cm:
             check_processor(self.tempdir, "playlist", "id", "ext", ["whatever"])
