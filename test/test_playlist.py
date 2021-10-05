@@ -275,6 +275,13 @@ class ProcessorsTestCase(unittest.TestCase):
             )
         self.assertTrue("Invalid data format" in cm.exception.description)
 
+        # Wrong data type (int for regex check)
+        with self.assertRaises(UnprocessableEntity) as cm:
+            check_processor(
+                self.tempdir, "playlist", "id", "ext", [MetadataChange("id", 1)]
+            )
+        self.assertIn("Invalid data format", cm.exception.description)
+
         # Wrong data format (uuid)
         with self.assertRaises(UnprocessableEntity) as cm:
             check_processor(
