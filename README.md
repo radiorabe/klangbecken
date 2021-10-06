@@ -168,6 +168,10 @@ Liquidsoap lets you syntax check and type check your script:
 liquidsoap --check klangbecken.liq
 ```
 
+#### Simulation
+
+Apart from type checking the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit test. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accellerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
+
 ## Deployment
 
 The deploy script `deploy.sh` automates deploying the code.
