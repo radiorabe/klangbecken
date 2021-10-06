@@ -73,7 +73,7 @@ classics = sum(1 for entry in log_entries if entry["playlist"] == "classics")
 ratio = music / classics
 
 if abs(ratio - 5) > 0.1:
-    print(f"❌ Music vs. classics ration is off: {ratio:.2f} to 1")
+    print(f"❌ Music vs. classics ratio is off: {ratio:.2f} to 1")
 else:
     print(f"✅ Good: {ratio:.2f} to 1")
 print()
@@ -280,20 +280,20 @@ too_short = len(music_too_short) + len(jingles_too_short)
 percentage = too_short / logged * 100
 
 if too_short == 0:
-    print("✅ Waiting period always met")
+    print("✅ Waiting periods always met")
 elif percentage < 0.5:
     print(
-        "✅ Waiting period almost always met: {too_short} missed out of {logged} "
+        "✅ Waiting periods almost always met: {too_short} missed out of {logged} "
         f"({percentage:.2f}%)"
     )
 elif percentage < 2:
     print(
-        f"🔶 Waiting period mostly met: {too_short} missed out of {logged} "
+        f"🔶 Waiting periods mostly met: {too_short} missed out of {logged} "
         f"({percentage:.2f}%)"
     )
 else:
     print(
-        f"❌ Waiting period not met: {too_short} missed out of {logged} "
+        f"❌ Waiting periods not met: {too_short} missed out of {logged} "
         f"({percentage:.2f}%)"
     )
 print()
