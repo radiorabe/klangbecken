@@ -231,8 +231,8 @@ else:
     print("❌ No")
 print()
 
-print("10. Waiting time between track plays respected?")
-print("-----------------------------------------------")
+print("10. Waiting time between music and classic track plays respected?")
+print("-----------------------------------------------------------------")
 
 ids = index_entries.keys()
 
@@ -250,33 +250,13 @@ music_plays = {
     for id in ids
 }
 music_diffs = [
-    [(l2 - l1).total_seconds() for l1, l2 in zip(lst, lst[1:])]
+    (id, [(l2 - l1).total_seconds() for l1, l2 in zip(lst, lst[1:])])
     for id, lst in music_plays.items()
 ]
-music_too_short = [[v for v in lst if v < 1728] for lst in music_diffs if lst]
+music_too_short = [[id for v in lst if v < 1728] for id, lst in music_diffs if lst]
 music_too_short = list(itertools.chain(*music_too_short))
 
-jingles = [
-    (entry["id"], entry["last_play"])
-    for entry in log_entries
-    if entry["playlist"] == "jingles"
-]
-jingles_plays = {
-    id: [
-        datetime.datetime.fromisoformat(last_play)
-        for id_, last_play in jingles
-        if id_ == id
-    ]
-    for id in ids
-}
-jingles_diffs = [
-    [(l2 - l1).total_seconds() for l1, l2 in zip(lst, lst[1:])]
-    for id, lst in jingles_plays.items()
-]
-jingles_too_short = [[v for v in lst if v < 36] for lst in jingles_diffs if lst]
-jingles_too_short = list(itertools.chain(*jingles_too_short))
-
-too_short = len(music_too_short) + len(jingles_too_short)
+too_short = len(music_too_short)
 percentage = too_short / logged * 100
 
 if too_short == 0:
