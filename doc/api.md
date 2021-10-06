@@ -2,16 +2,16 @@
 
 ## Authorization and Authentication
 
-The API uses JSON web tokens (JWT) for authorizing access to non read-only endpoints.  The underlying authentication method must be provided by intercepting `POST` requests to `/api/auth/login/`. The API does not specify a specific authentication method, like password-based or Kerberos, but expects to receive a valid `REMOTE_USER` string upon a successful authentication.
+The API uses JSON web tokens (JWT) for authorizing access to non read-only endpoints.  The underlying authentication method must be provided by intercepting `POST` requests to `/api/auth/login/`. The API does not specify a specific authentication method, like password-based or Kerberos, but expects to receive a valid `REMOTE_USER` string in the wsgi environment upon a successful authentication.
 
 Tokens are valid for 15 minutes. Valid tokens can be renewed indefinitely. Expired tokens can be renewed up to one week after first issuing them.
 
-Base: `/api/auth`
+**Base Path:** `/api/auth`
 
-Endpoint | Method(s) | Description
----------|-----------|------------
-`/login`| `GET`, `POST`| Login and return an newly created token.
-`/renew`| `POST`| Renew existing Token.
+Endpoint | Method | Description
+---------|--------|------------
+`/login` | `POST` | Login and return an newly created token.
+`/renew` | `POST` | Renew existing Token.
 
 Endpoint example: `/api/auth/renew`
 
@@ -19,7 +19,7 @@ Endpoint example: `/api/auth/renew`
 
 The playlist API allows editing static playlist entries.  The allowed playlists and file formats are configured in [`klangbecken/settings.py`](../klangbecken/../klangbecken/settings.py).
 
-Base: `/api/playlist`
+**Base Path:** `/api/playlist`
 
 Endpoint | Method | Description
 ---------|--------|------------
@@ -41,7 +41,7 @@ _Note for datetime strings_: The string _must_ specify a date _and_ a time inclu
 
 The player API allows getting information about the running audio player and edit a "play next" queue.
 
-Base: `/api/player`
+**Base Path:** `/api/player`
 
 Endpoint | Method | Description
 ---------|--------|------------
@@ -58,7 +58,7 @@ Endpoint example: `/api/player/queue/15`
 
 `/data` provides read-only access to the data directory containing the audio, playlist and log files. The metadata cache `index.json` speeds up client operation, by removing the need to perform client-side audio file metadata parsing.
 
-Base: `/data`
+**Base Path:** `/data`
 
 Endpoint | Description | Example
 ---------|-------------|---------
