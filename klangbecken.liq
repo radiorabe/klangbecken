@@ -81,9 +81,7 @@ def check_next_func(r) =
   filename = request.filename(r)
   last_play_str = string.trim(metadata["last_play"])
 
-  if not (!on_air) then
-    true
-  elsif filename == "" then
+  if filename == "" then
     false
   elsif last_play_str == "" then
     skipped := 0
@@ -102,7 +100,9 @@ def check_next_func(r) =
       log("track was recently played: #{filename} (#{diff} seconds ago)", label="check_next_func")
       if !skipped >= 20 then
         skipped := 0
-        log("WARNING: too many skipped tracks, playing #{filename} anyway", level=1, label="check_next_func")
+        if !on_air then
+          log("WARNING: too many skipped tracks, playing #{filename} anyway", level=1, label="check_next_func")
+        end
         true
       else
         false
