@@ -174,7 +174,7 @@ After stopping everything, run the analysis script:
 python doc/simulation-scripts/analysis.py
 ```
 
-Example output:
+Example output of a two month simulation:
 ```
 1. Did errors occur?
 --------------------
@@ -186,37 +186,37 @@ Example output:
 
 3. Did all played tracks get logged?
 ------------------------------------
-✅ Yes
+✅ Yes (17727 track plays)
 
 4. Ratio music vs. classics
 ---------------------------
-✅ Good: 5.01 to 1
+✅ Good: 5.00 to 1
 
 5. Music play distribution
 --------------------------
-✅ Normal distribution: 5.63±1.46
+✅ Normal distribution: 9.02±2.03
 
 6. Classics play distribution
 -----------------------------
-✅ Normal distribution: 1.17±0.77
+✅ Normal distribution: 1.88±1.28
 
-6. Weighted jingle play distribution
+7. Weighted jingle play distribution
 ------------------------------------
-✅ Normal distribution: 41.51±5.82
+✅ Normal distribution: 66.82±9.49
 
-7. Disabled jingles not played?
+8. Disabled jingles not played?
 -------------------------------
 ✅ Yes
 
-8. Jingle weights respected?
+9. Jingle weights respected?
 ----------------------------
 ✅ Yes
 
-9. Are Jingles played regularly?
---------------------------------
+10. Are Jingles played regularly?
+---------------------------------
 ✅ Yes
 
-10. Waiting time between track plays respected?
------------------------------------------------
-🔶 Waiting period mostly met: 164 missed out of 11058 (1.48%)
+11. Waiting time between track plays (music & classics) respected?
+------------------------------------------------------------------
+✅ Waiting periods almost always met: 2 missed out of 14434 (0.014%)
 ```
