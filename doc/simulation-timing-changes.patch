@@ -1,0 +1,72 @@
+diff --git a/klangbecken.liq b/klangbecken.liq
+index ee300c3..997b229 100644
+--- a/klangbecken.liq
++++ b/klangbecken.liq
+@@ -65,9 +65,10 @@ on_air = ref false
+ 
+ # calculate waiting time for repeating a track depending on its playlist
+ def calc_wait(playlist) =
+-  if playlist == "music" then 172800.0 # 2 days
+-  elsif playlist == "classics" then 172800.0 # 2 days
+-  elsif playlist == "jingles" then 3600.0 # 1 hour
++  # WARNING: do not commit
++  if playlist == "music" then  1728.0 # 2 days / 100
++  elsif playlist == "classics" then 1728.0 # 2 days / 100
++  elsif playlist == "jingles" then 36.0 # 1 hour / 100
+   else
+     log("WARNING: invalid playlist: #{playlist}", level=1, label="calc_wait")
+     0.0
+@@ -172,7 +173,8 @@ music = random(weights=[5, 1], [music, classics])
+ insert_jingle = ref false
+ 
+ def jingle_timeout() =
+-  jingle_times = [5m0s, 20m0s, 35m0s, 50m0s]
++  # WARNING: do not commit
++  jingle_times = [0s, 10s, 20s, 30s, 40s, 50s] #[5m0s, 20m0s, 35m0s, 50m0s]
+   if list.fold(fun (a,b) -> a or b, false, jingle_times) then
+     log("Jingle up next", label="jingle_timeout")
+     insert_jingle := true
+@@ -232,8 +234,9 @@ server.register(
+ 
+ # Have restart delay and fade dynamically reconfigurable
+ # for debugging purpose
+-restart_delay = interactive.float("restart.delay", 1.0)
+-restart_fade = interactive.float("restart.fade", 1.0)
++# WARNING: do not commit
++restart_delay = interactive.float("restart.delay", .01)
++restart_fade = interactive.float("restart.fade", .01)
+ 
+ def trans(old, new) =
+   if !restart and source.id(new) == "radio" then
+@@ -286,7 +289,8 @@ exec_at(pred=fun() -> list.length(!to_log_filenames) > 0, run_play_logger)
+ # Apply calculated replay gain
+ radio = amplify(1., override="replaygain_track_gain", radio)
+ # Moderate cross-fading
+-radio = crossfade(start_next=.5, fade_out=1., fade_in=0., radio)
++# WARNING: do not commit
++radio = crossfade(start_next=.005, fade_out=.01, fade_in=0., radio)
+ 
+ 
+ # ================================================= #
+diff --git a/klangbecken/playlist.py b/klangbecken/playlist.py
+index c72712d..f858796 100644
+--- a/klangbecken/playlist.py
++++ b/klangbecken/playlist.py
+@@ -187,11 +187,12 @@ def ffmpeg_audio_analyzer(playlist, fileId, ext, filename):
+     # Extract cue points
+     cue_in, cue_out = _extract_cue_points(output)
+ 
+-    duration = cue_out - cue_in
+-    if playlist != "jingles" and duration < 5.0:
+-        raise UnprocessableEntity(f"Track too short: {duration} < 5 seconds")
+-    elif playlist == "jingles" and duration < 0.5:
+-        raise UnprocessableEntity(f"Track too short: {duration} < 0.5 seconds")
++    # WARNING: do not commit
++    # duration = cue_out - cue_in
++    # if playlist != "jingles" and duration < 5.0:
++    #     raise UnprocessableEntity(f"Track too short: {duration} < 5 seconds")
++    # elif playlist == "jingles" and duration < 0.5:
++    #     raise UnprocessableEntity(f"Track too short: {duration} < 0.5 seconds")
+ 
+     return [
+         MetadataChange("channels", channels),
