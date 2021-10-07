@@ -34,6 +34,20 @@ Jingles playlist: 22 tracks, 11.31±16.53 seconds (min: 2.24s, max: 76.49s)
 
 Some code needs to be adjusted, to make the player and import run as desired with the shortened track length.
 
+Apply the supplied patch before running the simulation:
+```bash
+patch -p1 < doc/simulation-timing-changes.patch
+```
+
+**Attention:** Make sure, that you do not accidentally commit these changes.
+
+After running the simulation you can revert the changes:
+```bash
+patch -p1 -R < doc/simulation-timing-changes.patch
+```
+
+##### Applying changes manually (optional)
+
 Comment out the section that checks the track length in the `ffmpeg_analyzer` function in the [playlist code](../klangbecken/playlist.py).
 ```python
     # WARNING: do not commit
