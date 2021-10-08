@@ -1,5 +1,7 @@
 # API
 
+API endpoints by default accept and return data as JSON objects.
+
 ## Authorization and Authentication
 
 The API uses JSON web tokens (JWT) for authorizing access to non read-only endpoints.  The underlying authentication method must be provided by intercepting `POST` requests to `/api/auth/login/`. The API does not specify a specific authentication method, like password-based or Kerberos, but expects to receive a valid `REMOTE_USER` string in the wsgi environment upon a successful authentication.
