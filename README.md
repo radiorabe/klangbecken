@@ -177,12 +177,18 @@ Apart from type checking the inherent nature of the liquidsoap language generati
 The deploy script `deploy.sh` automates deploying the code.
 
 _Preparation:_
-* Configure a remote repository `upstream` pointing at the upstream repository (https://github.com/radiorabe/klangbecken).
+* Configure a remote repository `upstream` pointing at this upstream repository:
+  ```bash
+  git remote add upstream git@github.com:radiorabe/klangbecken.git
+  ```
 * Configure git to automatically fetch tags from `upstream/master`:
   ```bash
   git config remote.upstream.tagOpt --tags
   ```
 * Configure a remote `prod` pointing at the repository on the production system.
+  ```bash
+  git add remote prod root@YOUR_PRODUCTION_VM_NAME:klangbecken.git
+  ```
 * Pull the latest version from `upstream`:
   ```bash
   git pull upstream master --ff-only
@@ -211,3 +217,5 @@ _Finalize deployment:_
   ```bash
   systemctl restart liquidsoap@klangbecken
   ```
+
+For detailed information on how to setup a productive server see [Deployment](doc/deployment.md).
