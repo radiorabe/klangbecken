@@ -219,7 +219,7 @@ def development_server(data_dir, player_socket):
 
     # Create an API with optional audio analyzer
     api = klangbecken_api(
-        "no secret", data_dir, player_socket, upload_analyzers=upload_analyzers
+        "very secret", data_dir, player_socket, upload_analyzers=upload_analyzers
     )
     # Dummy authentication (all username password combinations will pass)
     api = DummyAuthenticationMiddleware(api)

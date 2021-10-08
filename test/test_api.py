@@ -18,7 +18,7 @@ class GenericAPITestCase(unittest.TestCase):
         from klangbecken.api import klangbecken_api
 
         self.app = klangbecken_api(
-            "secret",
+            "very secret",
             "data_dir",
             "player.sock",
             upload_analyzers=[],
@@ -96,8 +96,8 @@ class AuthTestCase(unittest.TestCase):
             "klangbecken.api.DEFAULT_PROCESSORS", [lambda *args: None]
         ):
             app = klangbecken_api(
+                "very secret",
                 "inexistent_dir",
-                "secret",
                 "nix.sock",
             )
         self.client = Client(app)
@@ -145,7 +145,7 @@ class PlaylistAPITestCase(unittest.TestCase):
         self.processor = mock.MagicMock()
 
         app = klangbecken_api(
-            "secret",
+            "very secret",
             "data_dir",
             "player.sock",
             upload_analyzers=[self.upload_analyzer],
@@ -295,7 +295,7 @@ class PlayerAPITestCase(unittest.TestCase):
             return_value=self.liquidsoap_client
         )
         self.tempdir = tempfile.mkdtemp()
-        app = player_api("inexistant.sock", self.tempdir)
+        app = player_api("inexistent.sock", self.tempdir)
         os.mkdir(os.path.join(self.tempdir, "music"))
         with open(os.path.join(self.tempdir, "music", "titi.mp3"), "w"):
             pass
