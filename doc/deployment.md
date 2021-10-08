@@ -179,6 +179,11 @@ Configure the API in your Apache `VirtualHost` configuration:
 WSGIDaemonProcess klangbecken user=apache group=klangbecken python-home=/usr/local/venvs/klangbecken-py39
 WSGIProcessGroup klangbecken
 WSGIScriptAlias /api /var/www/klangbecken_api.wsgi
+
+# Forward authorization header to API
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
 ```
 
 ### Authentication
@@ -282,4 +287,41 @@ systemctl enable klangbecken-fsck.timer
 Install the [`klangbecken-disable-expired.service`](systemd/klangbecken-disable-expired.service) and [`klangbecken-disable-expired.timer`](systemd/klangbecken-disable-expired.timer) files for the `disable-expired` service, that hourly checks for and disables expired tracks (mostly jingles), and enable the timer:
 ```bash
 systemctl enable klangbecken-disable-expired.timer
+```
+
+## Monitoring Checks
+
+The following script checks whether the the Klangbecken had been off air for more than a day. Use it in your monitoring service.
+
+```bash
+cat > /usr/local/bin/check_off_air_status <<- __EOF__
+#!/bin/env python3.9
+
+import csv
+import datetime
+import os
+import pathlib
+
+
+if not hasattr(datetime.datetime, "fromisoformat"):
+    print("ERROR: datetime.fromisoformat missing")
+    print("Install 'fromisoformat' backport package or use a Python version >= 3.7")
+    exit(1)
+
+DATA_DIR = os.environ.get("KLANGBECKEN_DATA_DIR", "/var/lib/klangbecken")
+path = list((pathlib.Path(DATA_DIR) / "log").glob("*.csv"))[-1]
+with open(path) as f:
+    reader = csv.DictReader(f)
+    entry = list(reader)[-1]
+
+last_play = datetime.datetime.fromisoformat(entry["last_play"])
+now = datetime.datetime.now().astimezone()
+
+if now - last_play > datetime.timedelta(days=1):
+    print("WARNING: Klangbecken offline for more than one day.")
+    print(f"Last track play registered at {last_play}")
+    exit(1)
+__EOF__
+
+chmod +x /usr/local/bin/check_off_air_status
 ```
