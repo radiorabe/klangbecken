@@ -101,5 +101,6 @@ class DisableExpiredTestCase(unittest.TestCase):
         for key, entry in data.items():
             if key == track1_id:
                 self.assertEqual(entry["weight"], 0)
+                self.assertEqual(entry["expiration"], "")
             else:
                 self.assertEqual(entry["weight"], 1)
