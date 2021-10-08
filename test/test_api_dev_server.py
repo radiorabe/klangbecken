@@ -37,16 +37,16 @@ class DevServerStartupTestCase(unittest.TestCase):
         self.assertFalse(os.path.isdir(os.path.join(self.tempdir, "music")))
 
         with self.assertRaises(Exception):
-            development_server(self.tempdir, "secret")
+            development_server(self.tempdir, "very secret")
 
         init_cmd(self.tempdir)
-        development_server(self.tempdir, "secret")
+        development_server(self.tempdir, "very secret")
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, "music")))
 
         with open(os.path.join(self.tempdir, "music", "abc.txt"), "w"):
             pass
 
-        development_server(self.tempdir, "secret")
+        development_server(self.tempdir, "very secret")
         self.assertTrue(os.path.isdir(os.path.join(self.tempdir, "music")))
         self.assertTrue(os.path.isfile(os.path.join(self.tempdir, "music", "abc.txt")))
 
@@ -59,7 +59,7 @@ class DevServerTestCase(unittest.TestCase):
         self.current_path = os.path.dirname(os.path.realpath(__file__))
         self.tempdir = tempfile.mkdtemp()
         init_cmd(self.tempdir)
-        app = development_server(self.tempdir, "secret")
+        app = development_server(self.tempdir, "very secret")
         self.client = Client(app)
 
     def tearDown(self):

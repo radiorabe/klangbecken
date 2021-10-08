@@ -1,6 +1,7 @@
 import datetime
 import doctest
 import json
+from klangbecken.api_utils import JWTAuthorizationMiddleware
 import unittest
 from unittest import mock
 
@@ -28,6 +29,7 @@ class AdditionalTestCase(unittest.TestCase):
         def root(request):
             int("1.5")
 
+        self.app = app
         self.client = Client(app)
 
     def testError500(self):
@@ -46,6 +48,13 @@ class AdditionalTestCase(unittest.TestCase):
             def dummy(request, number):
                 pass
 
+    def testWeakSecret(self):
+        with self.assertRaises(ValueError):
+            JWTAuthorizationMiddleware(self.app, "too short")
+
+        with self.assertRaises(ValueError):
+            JWTAuthorizationMiddleware(self.app, "*****************************")
+
 
 class TokenRenewalTestCase(unittest.TestCase):
     def setUp(self):
@@ -61,7 +70,7 @@ class TokenRenewalTestCase(unittest.TestCase):
         def root(request):
             return "Hello World"
 
-        app = JWTAuthorizationMiddleware(api, "no secret")
+        app = JWTAuthorizationMiddleware(api, "very secret")
         app = DummyAuthenticationMiddleware(app)
         self.client = Client(app)
 

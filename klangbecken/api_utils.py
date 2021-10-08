@@ -1,6 +1,7 @@
 import datetime
 import functools
 import inspect
+import itertools
 import json
 import sys
 import traceback
@@ -311,6 +312,10 @@ class JWTAuthorizationMiddleware:
             + [("POST", prefix + "/renew/")]
         )
 
+        # remove consecutive repetitions
+        secret = "".join(c for c, it in itertools.groupby(secret))
+        if len(secret) < 10:
+            raise ValueError(f"Secret string to short: {len(secret)} < 10")
         self.secret = secret
 
     def __call__(self, environ, start_response):
