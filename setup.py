@@ -7,7 +7,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="klangbecken",
-    version="0.0.36",
+    version="0.1.0",
     description="Klangbecken Audio Player",
     long_description=long_description,
     long_description_content_type="text/markdown",
