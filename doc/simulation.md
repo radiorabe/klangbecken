@@ -4,7 +4,7 @@ By shortening the track duration by a factor 100 we can cover a day in 15 minute
 
 ## Preparation
 
-### Calculate playlist properties (optional)
+### Calculate playlist properties _(optional)_
 
 Copy the `index.json` file from production:
 ```bash
@@ -46,7 +46,7 @@ After running the simulation you can revert the changes:
 patch -p1 -R < doc/simulation-timing-changes.patch
 ```
 
-##### Applying changes manually (optional)
+##### Applying changes manually _(optional)_
 
 Comment out the section that checks the track length in the `ffmpeg_analyzer` function in the [playlist code](../klangbecken/playlist.py).
 ```python

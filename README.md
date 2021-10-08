@@ -10,7 +10,7 @@ It supports configurable and editable playlists, jingle insertion, metadata publ
 
 It is [designed](doc/design.md) for stand-alone operation, robustness and easy maintainability. All files are stored in a single [data directory](doc/data-dir.md).
 
-This repository contains three components of the RaBe-Klangbecken:
+This repository contains three components of the RaBe Klangbecken:
 * The [API](doc/api.md)
 * The [command line interface](doc/cli.md)
 * The [liquidsoap playout script](klangbecken.liq)
@@ -34,7 +34,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 * **Liquidsoap** audio player (v1.3 _without_ inotify support)
 
 
-## Setup
+## Local Setup
 
 Clone the repository
 ```bash
@@ -83,12 +83,12 @@ Initialize the data directory:
 python -m klangbecken init
 ```
 
-Run the development API server:
+Run the development backend server (API and data directory):
 ```bash
 python -m klangbecken serve
 ```
 
-Run the client UI development server:
+Run the client development server (user interface):
 ```bash
 cd ../klangbecken-ui
 npm run serve
@@ -110,11 +110,13 @@ echo "klangbecken.on_air True" | nc -U -w 1 klangbecken.sock
 
 ## Development
 
+For contributing to this project, fork this repository, and clone your local working copy from your personal fork. Push commits to your repository to create a pull request with your changes.
+
 ### Python Package
 
 The Python code is tested with a test suite and follows the flake8 coding guidelines.
 
-Before submitting your code make sure that ...
+Before submitting your code you might want to make sure that ...
 
 1. ... you have installed the test dependencies
    ```bash
@@ -125,7 +127,7 @@ Before submitting your code make sure that ...
    ```bash
    python -m unittest discover
    ```
-3. ... all your code is covered by unit tests
+3. ... all your code is covered by (hopefully) meaningful unit tests
    ```bash
    coverage run -m unittest discover
    coverage report
@@ -135,14 +137,14 @@ Before submitting your code make sure that ...
    flake8
    ```
 
-#### Recommended Tools (_optional_)
+#### Recommended Tools _(optional)_
 
 We recommend the use of `tox`, `black` and `isort` for development.
 ```bash
 pip install tox black isort
 ```
 ##### tox
-Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version additionally installed, that is used in production (currently Python 3.9). `tox` is also what we use in continous integration, so using it locally helps you to make your code pass it. To call it simply type:
+Instead of running all the above commands manually, `tox` lets you run them all at once for all installed Python versions. Make sure to have at least the Python version installed, that is used in production (currently Python 3.9). `tox` is also what we use in continuos integration, so using it locally helps you to make your code pass it. To call it simply type:
 ```bash
 tox
 ```
@@ -154,7 +156,7 @@ black .
 ```
 
 ##### isort
-Finally, `isort` helps to consistantly organize package imports.
+Finally, `isort` helps to consistently organize package imports.
 ```bash
 isort .
 ```
