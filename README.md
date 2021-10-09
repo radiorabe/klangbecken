@@ -36,28 +36,28 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 
 ## Local Setup
 
-Clone the repository
+Fork this repository and clone it from there:
 ```bash
-git clone https://github.com/radiorabe/klangbecken.git
+git clone https://github.com/YOUR-GITHUB-USERNAME/klangbecken.git
 cd klangbecken
 ```
 
-We strongly recommend to create a virtual environment (see [additional tools](doc/additional-tools.md)). E.g.
+Create a virtual environment (also see [additional tools](doc/additional-tools.md)):
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
 ### Install dependencies
-Install Python dependencies
+Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
-Install `ffmpeg` with your system's package manager. E.g.
+Install `ffmpeg` with your system's package manager. E.g.:
 ```bash
 yum install ffmpeg
 ```
-Install Liquidsoap (on CentOS 7 you can also use our prebuilt [package](https://github.com/radiorabe/centos-rpm-liquidsoap))
+Install Liquidsoap (_Note:_ On CentOS 7 you can also use our prebuilt [package](https://github.com/radiorabe/centos-rpm-liquidsoap)):
 ```bash
 yum install opam
 opam init
@@ -83,7 +83,7 @@ Initialize the data directory:
 python -m klangbecken init
 ```
 
-Run the development backend server (API and data directory):
+Run the development back-end server (API and data directory):
 ```bash
 python -m klangbecken serve
 ```
@@ -180,11 +180,11 @@ Your code has passed continuous integration, and your pull request has been acce
 
 _Preparation before deploying for the first time:_
 * Make sure that you have access to the production server (e.g. SSH publik key authentication).
-* Configure a remote `prod` pointing at the repository on the production system.
+* Configure a remote `prod` pointing at the repository on the production system:
   ```bash
   git add remote prod root@YOUR_PRODUCTION_VM_NAME:klangbecken.git
   ```
-* _Optional:_ Install the Apache development libraries locally. E.g.
+* _Optional:_ Install the Apache development libraries locally. E.g.:
   ```bash
   yum install httpd-devel
   ```
@@ -223,7 +223,7 @@ _Run the script:_
 It perfoms the following steps:
 - Increment and commit a new version number.
 - Download all run-time dependencies.
-- Optionally download `mod_wsgi` (Requires `httpd-devel` libraries to be installed locally. Use `--no-mod-wsgi` to not reinstall `mod_wsgi`).
+- Optionally download `mod_wsgi` (Requires `httpd-devel` libraries to be installed locally. Use `--no-mod-wsgi` to skip this step).
 - Copy the dependencies to production.
 - Push your code to production.
 - Install all dependencies in production.
@@ -233,7 +233,7 @@ It perfoms the following steps:
 - If everything was successful, tag the current commit with the new version number, and push it to the `upstream` repository.
 
 _Finalize deployment:_
-- If the liquidsoap script (`klangbecken.liq`) changed, restart the liquidsoap player during a "off air" moment:
+- If the liquidsoap script `klangbecken.liq` changed, restart the liquidsoap player during an "off air" moment:
   ```bash
   systemctl restart liquidsoap@klangbecken
   ```
