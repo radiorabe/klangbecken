@@ -172,7 +172,7 @@ liquidsoap --check klangbecken.liq
 
 #### Simulation
 
-Apart from type checking, the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit test. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accellerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
+Apart from type checking, the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit tests. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accellerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
 
 ## Deployment
 
@@ -199,6 +199,7 @@ _Preparation before deploying for the first time:_
 
 
 _Preparation before deploying_:
+* When deploying both, the [front-end](https://github.com/radiorabe/klangbecken-ui) and the back-end app, deploy the front-end _first_.
 * Check again that the code you want to deploy passed continuous integration.
 * Make sure that your working directory is clean, and that you are on the master branch:
   ```bash
