@@ -238,3 +238,7 @@ _Finalize deployment:_
   ```
 
 For detailed information on how to setup a productive server see [Deployment](doc/deployment.md).
+
+## License
+
+_Klangbecken_ is released under the terms of the GNU Affero General Public License. Copyright 2017-2021 Radio RaBe. See `LICENSE` for further information.
