@@ -172,31 +172,48 @@ liquidsoap --check klangbecken.liq
 
 #### Simulation
 
-Apart from type checking the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit test. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accellerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
+Apart from type checking, the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit test. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accellerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
 
 ## Deployment
 
-The deploy script `deploy.sh` automates deploying the code.
+Your code has passed continuous integration, and your pull request has been accepted. Now you want to deploy your (or somebody else's) code to production. First, some preparation is necessary, but then the deployment script `deploy.sh` automates most of the work deploying the code.
 
-_Preparation:_
-* Configure a remote repository `upstream` pointing at this upstream repository:
-  ```bash
-  git remote add upstream git@github.com:radiorabe/klangbecken.git
-  ```
-* Configure git to automatically fetch tags from `upstream/master`:
-  ```bash
-  git config remote.upstream.tagOpt --tags
-  ```
+_Preparation before deploying for the first time:_
+* Make sure that you have access to the production server (e.g. SSH publik key authentication).
 * Configure a remote `prod` pointing at the repository on the production system.
   ```bash
   git add remote prod root@YOUR_PRODUCTION_VM_NAME:klangbecken.git
   ```
-* Pull the latest version from `upstream`:
+* _Optional:_ Install the Apache development libraries locally. E.g.
   ```bash
-  git pull upstream master --ff-only
+  yum install httpd-devel
   ```
-* Verify that the code you want to deploy passed continuous integration.
-* Make sure that your working directory is clean.
+* Configure a remote repository `upstream` pointing at this upstream repository:
+  ```bash
+  git remote add upstream git@github.com:radiorabe/klangbecken-ui.git
+  ```
+* Configure git to automatically fetch tags from `upstream`:
+  ```bash
+  git config remote.upstream.tagOpt --tags
+  ```
+
+
+_Preparation before deploying_:
+* Check again that the code you want to deploy passed continuous integration.
+* Make sure that your working directory is clean, and that you are on the master branch:
+  ```bash
+  git stash
+  git checkout master
+  ```
+* Bring your code in sync with the latest version from `upstream`:
+  ```bash
+  git fetch upstream
+  git rebase upstream/master
+  ```
+* Verify that you are indeed in sync with `upstream`:
+  ```bash
+  git show --no-patch
+  ```
 
 _Run the script:_
 ```bash
@@ -205,8 +222,8 @@ _Run the script:_
 It perfoms the following steps:
 - Increment and commit a new version number.
 - Download all run-time dependencies.
-- Optionally download `mod_wsgi` (requires `httpd-devel` libraries to be installed locally).
-- `scp` the dependencies to production.
+- Optionally download `mod_wsgi` (Requires `httpd-devel` libraries to be installed locally. Use `--no-mod-wsgi` to not reinstall `mod_wsgi`).
+- Copy the dependencies to production.
 - Push your code to production.
 - Install all dependencies in production.
 - Install the Python package (API and CLI) in production.
