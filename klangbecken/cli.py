@@ -226,7 +226,7 @@ def fsck_cmd(data_dir):  # noqa: C901
         except UnprocessableEntity as e:
             err("ERROR:", str(e))
         if song_id != entries["id"]:
-            err("ERROR: Id missmatch", song_id, entries["id"])
+            err("ERROR: Id mismatch", song_id, entries["id"])
         file_path = os.path.join(
             entries["playlist"], entries["id"] + "." + entries["ext"]
         )
