@@ -14,7 +14,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
 
-    - name: Install additional Python interpreters (3.7 and 3.10)
+    - name: Install additional Python interpreters
       run: |
         sudo add-apt-repository ppa:deadsnakes/ppa
         sudo apt-get update
