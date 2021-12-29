@@ -19,8 +19,8 @@ class FsckTestCase(unittest.TestCase):
 
         # Correctly import a couple of files
         files = [
-            os.path.join(self.current_path, "audio", "padded" + ext)
-            for ext in "-stereo.mp3 -jointstereo.mp3 -end-stereo.mp3".split()
+            os.path.join(self.current_path, "audio", "padded-" + spec + ".mp3")
+            for spec in "stereo jointstereo start-stereo end-stereo".split()
         ]
         try:
             args = [self.tempdir, "jingles", files, True]
@@ -133,6 +133,8 @@ class FsckTestCase(unittest.TestCase):
         track1 = os.listdir(self.jingles_dir)[0]
         track2 = os.listdir(self.jingles_dir)[1]
         track3 = os.listdir(self.jingles_dir)[2]
+        track4 = os.listdir(self.jingles_dir)[3]
+
         playlog_cmd(self.tempdir, os.path.join("jingles", track1))
 
         # back up index.json cache
@@ -145,6 +147,7 @@ class FsckTestCase(unittest.TestCase):
         playlog_cmd(self.tempdir, os.path.join("jingles", track1))
         playlog_cmd(self.tempdir, os.path.join("jingles", track2))
         playlog_cmd(self.tempdir, os.path.join("jingles", track3))
+        playlog_cmd(self.tempdir, os.path.join("jingles", track4))
 
         # restore index.json cache
         shutil.copy(
