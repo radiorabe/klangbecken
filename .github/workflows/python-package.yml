@@ -14,11 +14,11 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
 
-    - name: Install additional Python interpreters (3.7 and 3.10)
+    - name: Install additional Python interpreters
       run: |
         sudo add-apt-repository ppa:deadsnakes/ppa
         sudo apt-get update
-        sudo apt-get install python3.7 python3.10 python3.10-distutils
+        sudo apt-get install python3.7 python3.9 python3.10 python3.10-distutils
 
     - name: Install ffmpeg
       run: sudo apt-get install ffmpeg
