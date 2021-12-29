@@ -184,7 +184,7 @@ class FsckTestCase(unittest.TestCase):
             with self.assertRaises(SystemExit) as cm:
                 with capture(main) as (out, err, ret):
                     self.assertIn("ERROR", err)
-                    self.assertIn("Id missmatch", err)
+                    self.assertIn("Id mismatch", err)
             self.assertEqual(cm.exception.code, 1)
         finally:
             sys.arv = argv
