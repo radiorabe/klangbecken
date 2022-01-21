@@ -1,6 +1,6 @@
 #!/bin/sh
 
-ssh klangbecken@vm-0020.vm-admin.int.rabe.ch -p 8093 'cat | sed -e "s/&/&amp;/" > Eingang/now-playing.xml' <<EOF
+ssh klangbecken@vm-0020.vm-admin.int.rabe.ch -p 8093 'cat > Eingang/now-playing.xml' <<EOF
 <?xml version="1.0"?>
 <now_playing playing="1" timestamp="$(date -Iseconds | cut -b-19)">
   <song timestamp="$(date -Iseconds | cut -b-19)">
