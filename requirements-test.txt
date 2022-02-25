@@ -1,8 +1,3 @@
 -r requirements.txt
 coverage==6.3.2
 flake8==4.0.1
-
-# secondary dependencies (flake8)
-mccabe==0.6.1
-pycodestyle==2.8.0
-pyflakes==2.4.0
