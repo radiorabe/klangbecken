@@ -394,7 +394,7 @@ def disable_expired_cmd(data_dir):
                         entry["playlist"],
                         entry["id"],
                         entry["ext"],
-                        [MetadataChange("weight", 0), MetadataChange("expiration", "")],
+                        [MetadataChange("weight", 0)],
                     )
 
 
