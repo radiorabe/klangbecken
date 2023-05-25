@@ -1,7 +1,6 @@
 import re
 import socket
 import sys
-import telnetlib
 
 from werkzeug.exceptions import NotFound
 
@@ -29,22 +28,22 @@ class LiquidsoapClient:
     ...
     """
 
-    def __init__(self, path=None):
-        if path is not None:
-            self.path = path
+    def __init__(self, path=None, timeout=0.2):
+        self.path = path
+        self.timeout = timeout
         self.connected = False
 
     def __enter__(self):
         if not self.connected:
-            self.open(self.path)
+            self.open(self.path, self.timeout)
         self.log = []
         return self
 
     def __exit__(self, *exc_info):
         # Try to be nice
         try:
-            self.tel.write(b"exit\n")
-            self.tel.read_until(b"Bye!", timeout=0.1)
+            self.conn.write(b"exit\r\n")
+            self.conn.read_until(b"Bye!")
         finally:
             self.close()
 
@@ -56,16 +55,12 @@ class LiquidsoapClient:
 
             del self.log
 
-    def open(self, addr):
-        try:
-            self.tel = UnixDomainTelnet(addr)
-        except TypeError:
-            self.tel = telnetlib.Telnet(*addr)
-
+    def open(self, addr, timeout=0.2):
+        self.conn = SocketConnection(addr, timeout)
         self.connected = True
 
     def close(self):
-        self.tel.close()
+        self.conn.close()
         self.connected = False
 
     def command(self, cmd):
@@ -73,17 +68,8 @@ class LiquidsoapClient:
 
         Returns the response.
         """
-        self.tel.write(cmd.encode("ascii", "ignore") + b"\n")
-        ans = self.tel.read_until(b"\r\nEND", timeout=0.2)
-        if ans == b"":  # pragma: no cover
-            raise ConnectionError(
-                "Timeout while trying to read from player. Got no answer."
-            )
-        if not ans.endswith(b"END"):
-            raise ConnectionError(
-                f"Timeout while trying to read until 'END' from player. "
-                f"Only got: {repr(ans)}"
-            )
+        self.conn.write(cmd.encode("ascii", "ignore") + b"\r\n")
+        ans = self.conn.read_until(b"\r\nEND")
         ans = re.sub(b"[\r\n]*END$", b"", ans)
         ans = re.sub(b"^[\r\n]*", b"", ans)
         ans = re.subn(b"\r", b"", ans)[0]
@@ -225,15 +211,37 @@ class LiquidsoapClientQueueError(Exception):
     pass
 
 
-class UnixDomainTelnet(telnetlib.Telnet):
-    def __init__(self, path=None):
-        super().__init__()
-        if path is not None:
-            self.open(path)
+class SocketConnection:
+    def __init__(self, addr=None, timeout=None):
+        self.in_data = b""
+        if addr is not None:
+            self.open(addr, timeout)
 
-    def open(self, path):
-        """Connect to a local UNIX domain socket."""
-        self.eof = 0
-        self.path = path
-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.sock.connect(path)
+    def open(self, addr, timeout=None):
+        if isinstance(addr, str):   # Path to UNIX domain socket
+            try:
+                self.sock = socket.socket(socket.AF_UNIX)
+                self.sock.connect(addr)
+                self.sock.settimeout(timeout)
+            except OSError:
+                try:
+                    self.sock.close()
+                finally:
+                    pass
+                raise
+        else:                      # IP-Address and Port
+            self.sock = socket.create_connection(addr, timeout)
+
+    def write(self, data):
+        self.sock.send(data)
+
+    def read_until(self, expected):
+        while expected not in self.in_data:
+            self.in_data += self.sock.recv(128)
+        expected_end = self.in_data.index(expected) + len(expected)
+        data = self.in_data[:expected_end]
+        self.in_data = self.in_data[expected_end:]
+        return data
+
+    def close(self):
+        self.sock.close()

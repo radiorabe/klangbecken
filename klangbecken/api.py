@@ -140,7 +140,7 @@ def player_api(player_socket, data_dir):
         try:
             with LiquidsoapClient(player_socket) as client:
                 return client.info()
-        except (FileNotFoundError, ConnectionError):
+        except (FileNotFoundError, TimeoutError):
             raise NotFound("Player not running")
 
     @api.POST("/reload/<any(" + ", ".join(PLAYLISTS) + "):playlist>")
