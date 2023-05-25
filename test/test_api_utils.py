@@ -134,7 +134,7 @@ class TokenRenewalTestCase(unittest.TestCase):
 
         resp = self.client.post("/auth/renew/", data=json.dumps({"token": token}))
         self.assertEqual(resp.status_code, 401)
-        self.assertIn(b"Unrenewable expired token", resp.data)
+        self.assertIn(b"Nonrenewable expired token", resp.data)
 
     def testCorruptedToken(self):
         twentyMinutesAgo = datetime.datetime.utcnow() - datetime.timedelta(minutes=20)

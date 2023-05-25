@@ -397,7 +397,7 @@ class JWTAuthorizationMiddleware:
             )
             issued_at = datetime.datetime.utcfromtimestamp(claims["iat"])
             if issued_at + datetime.timedelta(days=7) < now:
-                raise Unauthorized("Unrenewable expired token")
+                raise Unauthorized("Nonrenewable expired token")
         except jwt.InvalidTokenError:
             raise Unauthorized("Invalid token")
 
