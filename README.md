@@ -2,22 +2,22 @@
 
 [![Python package](https://github.com/radiorabe/klangbecken/workflows/Python%20package/badge.svg)](https://github.com/radiorabe/klangbecken/actions?query=workflow%3A%22Python+package%22)
 [![Liquidsoap script](https://github.com/radiorabe/klangbecken/workflows/Liquidsoap%20script/badge.svg)](https://github.com/radiorabe/klangbecken/actions?query=workflow%3A%22Liquidsoap+script%22)
-[![Codestyle Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Code Style Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 _Klangbecken_ is the minimalistic endless music player for Radio Bern RaBe based on [liquidsoap](https://www.liquidsoap.info).
 
 It supports configurable and editable playlists, jingle insertion, metadata publishing and more.
 
-It is [designed](doc/design.md) for stand-alone operation, robustness and easy maintainability. All files are stored in a single [data directory](doc/data-dir.md).
+It is [designed](doc/design.md) for stand-alone operation, robustness and good maintainability. All data is stored in common files in a single [data directory](doc/data-dir.md).
 
 This repository contains three components of the RaBe Klangbecken:
 * The [API](doc/api.md)
 * The [command line interface](doc/cli.md)
-* The [liquidsoap playout script](klangbecken.liq)
+* The [liquidsoap play-out script](klangbecken.liq)
 
 Two additional components are in their own repository:
 * The listener for the current "on air" status, the [virtual Sämubox](https://github.com/radiorabe/virtual-saemubox).
-* The web-based [UI](https://github.com/radiorabe/klangbecken-ui) for playlist editing.
+* The [web-based UI](https://github.com/radiorabe/klangbecken-ui) for playlist editing.
 
 How they interact can be seen in the [system overview diagram](doc/system-overview.png):
 
@@ -28,7 +28,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 * **Python** (>= v3.7)
   * *docopt* library for parsing command line arguments
   * *Werkzeug* library (>= v2.0) for WSGI support
-  * *PyJWT* library (>= v2.0) for creating and verifing JWT authentication tokens
+  * *PyJWT* library (>= v2.0) for creating and verifying JWT authentication tokens
   * *mutagen* library for audio tag editing
 * **ffmpeg** binary (>= v2.8) for audio analysis
 * **Liquidsoap** audio player (v1.3 _without_ inotify support)
@@ -102,7 +102,7 @@ eval $(opam env)
 liquidsoap klangbecken.liq
 ```
 
-Manually set the onair status of the player using `netcat`:
+Manually set the on-air status of the player using `netcat`:
 ```bash
 echo "klangbecken.on_air True" | nc -U -w 1 klangbecken.sock
 ```
@@ -110,7 +110,7 @@ echo "klangbecken.on_air True" | nc -U -w 1 klangbecken.sock
 
 ## Development
 
-For contributing to this project, fork this repository, and clone your local working copy from your personal fork. Push commits to your repository to create a pull request with your changes.
+For contributing to this project, fork this repository, and clone your local working copy from your personal fork. Push commits to your repository to create pull requests with your changes.
 
 ### Python Package
 
@@ -172,13 +172,13 @@ liquidsoap --check klangbecken.liq
 
 #### Simulation
 
-Apart from type checking, the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit tests. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accellerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
+Apart from type checking, the inherent nature of the liquidsoap language generating a live audio stream makes it difficult to test the code with unit tests. Observing the behavior of the player script and the effects of changes in real-time take lot of time, usually weeks or even months. [Accelerated simulation runs](doc/simulation.md) help to observe the long-time player behavior in a reasonable amount of time.
 
 ## Deployment
 
-Your code has passed continuous integration, and your pull request has been accepted. Now you want to deploy your (or somebody else's) code to production. First, some preparation is necessary, but then the deployment script `deploy.sh` automates most of the work deploying the code.
+Your code has passed continuous integration, and your pull request has been accepted. Now you want to deploy your (or somebody else's) code to production. First, some preparations are necessary, but then the deployment script `deploy.sh` automates most of the work deploying the code.
 
-_Preparation before deploying for the first time:_
+_Preparations before deploying for the first time:_
 * Make sure that you have access to the production server (e.g. SSH publik key authentication).
 * Configure a remote `prod` pointing at the repository on the production system:
   ```bash
@@ -188,7 +188,7 @@ _Preparation before deploying for the first time:_
   ```bash
   yum install httpd-devel
   ```
-* Configure a remote repository `upstream` pointing at this upstream repository:
+* Configure a remote repository `upstream` pointing at the upstream repository:
   ```bash
   git remote add upstream git@github.com:radiorabe/klangbecken-ui.git
   ```
@@ -220,7 +220,7 @@ _Run the script:_
 ```bash
 ./deploy.sh [--no-mod-wsgi]
 ```
-It perfoms the following steps:
+It performs the following steps:
 - Increment and commit a new version number.
 - Download all run-time dependencies.
 - Optionally download `mod_wsgi` (Requires `httpd-devel` libraries to be installed locally. Use `--no-mod-wsgi` to skip this step).
@@ -242,4 +242,4 @@ For detailed information on how to setup a productive server see [Deployment](do
 
 ## License
 
-_Klangbecken_ is released under the terms of the GNU Affero General Public License. Copyright 2017-2021 Radio RaBe. See `LICENSE` for further information.
+_Klangbecken_ is released under the terms of the GNU Affero General Public License. Copyright 2017-2022 Radio Bern RaBe. See `LICENSE` for further information.

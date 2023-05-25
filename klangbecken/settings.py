@@ -29,7 +29,7 @@ ISO8601_TZ_AWARE_RE = (
 #   (e.g. lambda x: x > 0 for positive numbers)
 # - String interpreted as a regular expression. The checked values are
 #   expected to be strings. (e.g. r"[1-9][0-9]{3}" for four digit zip codes)
-# - List or tuple cotaining an arbitrary combination of the above.
+# - List or tuple containing an arbitrary combination of the above.
 #
 # Note: The checks are evaluated in their specified order.
 METADATA = {

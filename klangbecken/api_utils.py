@@ -283,7 +283,7 @@ class JWTAuthorizationMiddleware:
      - /auth/renew/ for renewing an existing token
 
     Tokens are short-lived and are valid for only 15 minutes, but expired tokens
-    can be renewed during one week starting from their initial issueing date.
+    can be renewed during one week starting from their initial issuing date.
     """
 
     def __init__(

@@ -423,7 +423,7 @@ _mutagenLock = threading.Lock()
 def locked_open(path):
     """Lock a file for writing.
 
-    Serialize write access to file from other threads and processes.
+    Serialize write access to file from other threads *and* processes.
     """
     if path not in _locks:
         _locks[path] = threading.Lock()
