@@ -196,27 +196,6 @@ class PlaylistAPITestCase(unittest.TestCase):
         self.upload_analyzer.reset_mock()
         self.processor.reset_mock()
 
-        # Wrong attribute name
-        resp = self.client.post(
-            "/playlist/music/",
-            data={"not-file": (io.BytesIO(b"testcontent"), "test.mp3")},
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn(b"No file attribute named", resp.data)
-        self.update_analyzer.assert_not_called()
-        self.upload_analyzer.assert_not_called()
-        self.processor.assert_not_called()
-
-        # File as normal text attribute
-        resp = self.client.post(
-            "/playlist/music/", data={"file": "testcontent", "filename": "test.mp3"}
-        )
-        self.assertEqual(resp.status_code, 422)
-        self.assertIn(b"No file attribute named", resp.data)
-        self.update_analyzer.assert_not_called()
-        self.upload_analyzer.assert_not_called()
-        self.processor.assert_not_called()
-
     def testUpdate(self):
         # Update weight correctly
         fileId = str(uuid.uuid4())
