@@ -295,7 +295,6 @@ class JWTAuthorizationMiddleware:
         prefix="/auth",
         login_methods=("POST",),
     ):
-
         auth_api = API()
         auth_api.route(
             "/login/", methods=login_methods, func=functools.partial(self._login)

@@ -1,11 +1,12 @@
 import datetime
 import doctest
 import json
-from klangbecken.api_utils import JWTAuthorizationMiddleware
 import unittest
 from unittest import mock
 
 from werkzeug.test import Client
+
+from klangbecken.api_utils import JWTAuthorizationMiddleware
 
 from .utils import capture
 

@@ -5,7 +5,6 @@ import sys
 
 @contextlib.contextmanager
 def capture(command, *args, **kwargs):
-
     out, sys.stdout = sys.stdout, io.StringIO()
     err, sys.stderr = sys.stderr, io.StringIO()
     commandException = None
