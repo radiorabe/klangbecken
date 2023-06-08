@@ -381,7 +381,7 @@ def disable_expired_cmd(data_dir):
     now = datetime.datetime.now().astimezone()
 
     for entry in data.values():
-        if entry["expiration"]:
+        if entry["expiration"] and entry["weight"] != 0:
             expiration = datetime.datetime.fromisoformat(entry["expiration"])
             if expiration < now:
                 print(

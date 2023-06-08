@@ -81,11 +81,14 @@ class DisableExpiredTestCase(unittest.TestCase):
         argv, sys.argv = sys.argv, ["", "disable-expired", "-d", self.tempdir]
         try:
             with capture(main) as (out, err, ret):
-                self.assertEqual(err.strip(), "")
+                pass
         finally:
             sys.arv = argv
 
+        self.assertEqual(err.strip(), "")
         self.assertIn(track1, out)
+        self.assertNotIn(track2, out)
+        self.assertNotIn(track3, out)
         with open(self.jingles_playlist) as f:
             lines = [line.strip() for line in f.readlines()]
         self.assertEqual(len(lines), 2)
@@ -104,3 +107,14 @@ class DisableExpiredTestCase(unittest.TestCase):
                 self.assertEqual(entry["expiration"], past.astimezone().isoformat())
             else:
                 self.assertEqual(entry["weight"], 1)
+
+        # run again for real, nothing should happen now
+        argv, sys.argv = sys.argv, ["", "disable-expired", "-d", self.tempdir]
+        try:
+            with capture(main) as (out, err, ret):
+                pass
+        finally:
+            sys.arv = argv
+
+        self.assertEqual(err.strip(), "")
+        self.assertEqual(out.strip(), "")
