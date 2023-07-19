@@ -1,4 +1,4 @@
 docopt==0.6.2
 mutagen==1.46.0
-PyJWT==2.7.0
+PyJWT==2.8.0
 Werkzeug==2.3.6
