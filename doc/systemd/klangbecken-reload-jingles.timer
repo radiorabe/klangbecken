@@ -1,0 +1,8 @@
+[Unit]
+Description=Run klangbecken-reload-jingles.service daily
+
+[Timer]
+OnCalendar=*-*-* *:05:30
+
+[Install]
+WantedBy=timers.target

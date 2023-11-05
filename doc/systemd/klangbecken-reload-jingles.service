@@ -1,0 +1,12 @@
+[Unit]
+Description=Reload Jingles playlist after expire to workaround missing inotify support
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/klangbecken.conf
+ExecStart=/bin/bash -c 'echo "jingles.reload" | nc -U ${KLANGBECKEN_PLAYER_SOCKET}'
+User=liquidsoap
+Group=liquidsoap
+
+[Install]
+WantedBy=multi-user.target
