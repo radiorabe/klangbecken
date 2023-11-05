@@ -1,5 +1,5 @@
 [Unit]
-Description=Run klangbecken-disable-expired.service hourly
+Description=Run klangbecken-disable-expired.service daily
 
 [Timer]
 OnCalendar=*-*-* *:05:00
