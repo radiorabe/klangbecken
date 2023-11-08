@@ -25,7 +25,7 @@ How they interact can be seen in the [system overview diagram](doc/system-overvi
 
 ## System requirements
 * Unix-like operating system environment
-* **Python** (>= v3.7)
+* **Python** (>= v3.9)
   * *docopt* library for parsing command line arguments
   * *Werkzeug* library (>= v2.0) for WSGI support
   * *PyJWT* library (>= v2.0) for creating and verifying JWT authentication tokens
